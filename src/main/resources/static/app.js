@@ -177,14 +177,16 @@ const updateDropdownFilters = () => {
     const selectedCards = getSelectedCards();
     console.log('updateDropdownFilters - selected cards:', selectedCards);
 
-    const buildOptions = (select, options) => {
+    const buildOptions = (select, options, includeRandom) => {
         while (select.options.length > 0) {
             select.remove(0);
         }
-        const randomOption = document.createElement('option');
-        randomOption.value = '';
-        randomOption.textContent = 'Random';
-        select.appendChild(randomOption);
+        if (includeRandom) {
+            const randomOption = document.createElement('option');
+            randomOption.value = '';
+            randomOption.textContent = 'Random';
+            select.appendChild(randomOption);
+        }
         options.forEach(optionItem => {
             const option = document.createElement('option');
             option.value = optionItem.value;
@@ -217,7 +219,7 @@ const updateDropdownFilters = () => {
             return SUITS.some(suit => !usedSet.has(`${rank.value}:${suit.value}`));
         });
 
-        buildOptions(rankSelect, rankOptions);
+        buildOptions(rankSelect, rankOptions, true);
 
         if (currentRank && rankOptions.some(rank => rank.value === currentRank)) {
             rankSelect.value = currentRank;
@@ -228,9 +230,16 @@ const updateDropdownFilters = () => {
             ? SUITS.filter(suit => !usedSet.has(`${effectiveRank}:${suit.value}`))
             : SUITS.slice();
 
-        buildOptions(suitSelect, suitOptions);
+        const includeRandomSuit = !effectiveRank;
+        buildOptions(suitSelect, suitOptions, includeRandomSuit);
 
-        if (currentSuit && suitOptions.some(suit => suit.value === currentSuit)) {
+        if (effectiveRank && suitOptions.length > 0) {
+            if (currentSuit && suitOptions.some(suit => suit.value === currentSuit)) {
+                suitSelect.value = currentSuit;
+            } else {
+                suitSelect.value = suitOptions[0].value;
+            }
+        } else if (!effectiveRank && currentSuit && suitOptions.some(suit => suit.value === currentSuit)) {
             suitSelect.value = currentSuit;
         }
 
