@@ -1,4 +1,4 @@
-package com.example.blackjack.model;
+package us.laderman.blackjack.model;
 
 import java.util.List;
 
@@ -120,6 +120,7 @@ public class GameState {
         private final boolean busted;
         private final boolean standing;
         private final boolean insured;
+        private final boolean insuranceDeclined;
         private final boolean insuranceWon;
         private final String result;
         private final String recommendedAction;
@@ -132,6 +133,7 @@ public class GameState {
                 boolean busted,
                 boolean standing,
                 boolean insured,
+                boolean insuranceDeclined,
                 boolean insuranceWon,
                 String result,
                 String recommendedAction,
@@ -143,6 +145,7 @@ public class GameState {
             this.busted = busted;
             this.standing = standing;
             this.insured = insured;
+            this.insuranceDeclined = insuranceDeclined;
             this.insuranceWon = insuranceWon;
             this.result = result;
             this.recommendedAction = recommendedAction;
@@ -175,6 +178,10 @@ public class GameState {
 
         public boolean isInsured() {
             return insured;
+        }
+
+        public boolean isInsuranceDeclined() {
+            return insuranceDeclined;
         }
 
         public boolean isInsuranceWon() {

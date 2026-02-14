@@ -1,8 +1,8 @@
-package com.example.blackjack.service;
+package us.laderman.blackjack.service;
 
-import com.example.blackjack.model.Card;
-import com.example.blackjack.model.Rank;
-import com.example.blackjack.model.Suit;
+import us.laderman.blackjack.model.Card;
+import us.laderman.blackjack.model.Rank;
+import us.laderman.blackjack.model.Suit;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -1,6 +1,6 @@
-package com.example.blackjack;
+package us.laderman.blackjack;
 
-import com.example.blackjack.model.GameState;
+import us.laderman.blackjack.model.GameState;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

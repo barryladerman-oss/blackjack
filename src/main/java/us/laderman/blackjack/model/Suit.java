@@ -1,4 +1,4 @@
-package com.example.blackjack.model;
+package us.laderman.blackjack.model;
 
 public enum Suit {
     CLUBS("Clubs"),

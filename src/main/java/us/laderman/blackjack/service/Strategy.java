@@ -1,6 +1,6 @@
-package com.example.blackjack.service;
+package us.laderman.blackjack.service;
 
-import com.example.blackjack.model.Rank;
+import us.laderman.blackjack.model.Rank;
 
 /**
  * Implements optimal blackjack strategy based on:

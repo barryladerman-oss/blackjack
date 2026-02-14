@@ -1,4 +1,4 @@
-package com.example.blackjack.service;
+package us.laderman.blackjack.service;
 
 public enum GamePhase {
     PLAYER_TURN,

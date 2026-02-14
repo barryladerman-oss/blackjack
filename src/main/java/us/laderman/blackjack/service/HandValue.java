@@ -1,4 +1,4 @@
-package com.example.blackjack.service;
+package us.laderman.blackjack.service;
 
 public class HandValue {
     private final int total;

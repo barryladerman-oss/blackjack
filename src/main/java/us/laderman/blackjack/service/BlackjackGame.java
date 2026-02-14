@@ -1,8 +1,8 @@
-package com.example.blackjack.service;
+package us.laderman.blackjack.service;
 
-import com.example.blackjack.model.Card;
-import com.example.blackjack.model.GameState;
-import com.example.blackjack.model.Rank;
+import us.laderman.blackjack.model.Card;
+import us.laderman.blackjack.model.GameState;
+import us.laderman.blackjack.model.Rank;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -173,11 +173,38 @@ public class BlackjackGame {
             throw new IllegalArgumentException("Insurance only available when dealer shows an Ace");
         }
         hand.setInsured(true);
+        hand.setInsuranceDeclined(false);
         // Check if dealer has blackjack (21 with exactly 2 cards)
         HandValue dealerValue = dealerHand.getValue();
         if (dealerValue.getTotal() == 21 && dealerHand.getCards().size() == 2) {
             hand.setInsuranceWon(true);
             // If dealer has blackjack, check if all hands have resolved insurance
+            if (allHandsResolvedInsurance()) {
+                completeRound();
+            }
+        }
+        return toGameState();
+    }
+
+    public GameState declineInsurance(int handIndex) {
+        ensurePlayerTurn();
+        Hand hand = getPlayerHand(handIndex);
+        if (hand.isStanding() || hand.isBusted() || hand.isInsured() || hand.isInsuranceDeclined()) {
+            return toGameState();
+        }
+        // Insurance available only on first 2 cards
+        if (hand.getCards().size() != 2) {
+            throw new IllegalArgumentException("Insurance decision only available with exactly two cards");
+        }
+        // Dealer must be showing an Ace
+        Card dealerUpCard = dealerHand.getCards().isEmpty() ? null : dealerHand.getCards().get(0);
+        if (dealerUpCard == null || dealerUpCard.getRank() != Rank.ACE) {
+            throw new IllegalArgumentException("Insurance decision only available when dealer shows an Ace");
+        }
+        hand.setInsuranceDeclined(true);
+        // If dealer has blackjack, end round once all hands have resolved insurance
+        HandValue dealerValue = dealerHand.getValue();
+        if (dealerValue.getTotal() == 21 && dealerHand.getCards().size() == 2) {
             if (allHandsResolvedInsurance()) {
                 completeRound();
             }
@@ -202,7 +229,7 @@ public class BlackjackGame {
         for (Hand hand : playerHands) {
             if (!hand.isBusted() && !hand.isStanding()) {
                 // This hand is still playing and hasn't resolved insurance yet
-                if (hand.getCards().size() == 2 && !hand.isInsured()) {
+                if (hand.getCards().size() == 2 && !hand.isInsured() && !hand.isInsuranceDeclined()) {
                     // Hand has 2 cards but hasn't made insurance decision
                     return false;
                 }
@@ -403,6 +430,7 @@ public class BlackjackGame {
                     hand.isBusted(),
                     hand.isStanding(),
                     hand.isInsured(),
+                    hand.isInsuranceDeclined(),
                     hand.isInsuranceWon(),
                     result,
                     recommended,
@@ -472,11 +500,13 @@ public class BlackjackGame {
     private String recommendAction(Hand hand, HandValue value, Card dealerUpCard, double trueCount) {
         // Check for insurance opportunity first
         if (phase == GamePhase.PLAYER_TURN && dealerUpCard != null && dealerUpCard.getRank() == Rank.ACE) {
-            if (hand.getCards().size() == 2 && !hand.isInsured() && !hand.isStanding() && !hand.isBusted()) {
+            if (hand.getCards().size() == 2 && !hand.isInsured() && !hand.isInsuranceDeclined()
+                    && !hand.isStanding() && !hand.isBusted()) {
                 // Recommend insurance when true count is high (2 or higher)
                 if (trueCount >= 2) {
                     return "INSURE";
                 }
+                return "NO_INSURANCE";
             }
         }
 

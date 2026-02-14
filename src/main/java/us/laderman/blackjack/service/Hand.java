@@ -1,7 +1,7 @@
-package com.example.blackjack.service;
+package us.laderman.blackjack.service;
 
-import com.example.blackjack.model.Card;
-import com.example.blackjack.model.Rank;
+import us.laderman.blackjack.model.Card;
+import us.laderman.blackjack.model.Rank;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,6 +13,7 @@ public class Hand {
     private boolean busted;
     private boolean insured;
     private boolean insuranceWon;
+    private boolean insuranceDeclined;
     private int betUnits = 1;
     private boolean isFromSplit = false;
     private boolean canHitAfterSplitAces = true;
@@ -55,6 +56,14 @@ public class Hand {
 
     public void setInsuranceWon(boolean insuranceWon) {
         this.insuranceWon = insuranceWon;
+    }
+
+    public boolean isInsuranceDeclined() {
+        return insuranceDeclined;
+    }
+
+    public void setInsuranceDeclined(boolean insuranceDeclined) {
+        this.insuranceDeclined = insuranceDeclined;
     }
 
     public int getBetUnits() {

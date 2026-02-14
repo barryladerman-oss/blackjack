@@ -1,4 +1,4 @@
-package com.example.blackjack.model;
+package us.laderman.blackjack.model;
 
 public enum Rank {
     TWO("2", 2),

@@ -1,9 +1,8 @@
-package com.example.blackjack.controller;
+package us.laderman.blackjack.controller;
 
-import com.example.blackjack.model.GameState;
-import com.example.blackjack.service.BlackjackService;
+import us.laderman.blackjack.model.GameState;
+import us.laderman.blackjack.service.BlackjackService;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,6 +57,11 @@ public class BlackjackController {
         return handleStateRequest(id, hand, ActionType.INSURANCE);
     }
 
+    @PostMapping("/decline-insurance/{id}")
+    public GameState declineInsurance(@PathVariable String id, @RequestParam int hand) {
+        return handleStateRequest(id, hand, ActionType.DECLINE_INSURANCE);
+    }
+
     private GameState handleStateRequest(String id, Integer hand, ActionType action) {
         UUID gameId;
         try {
@@ -74,6 +78,7 @@ public class BlackjackController {
                 case DOUBLE -> service.doubleDown(gameId, hand);
                 case SPLIT -> service.split(gameId, hand);
                 case INSURANCE -> service.insurance(gameId, hand);
+                case DECLINE_INSURANCE -> service.declineInsurance(gameId, hand);
             };
         } catch (IllegalArgumentException ex) {
             HttpStatus status = ex.getMessage() != null && ex.getMessage().contains("not found")
@@ -91,6 +96,7 @@ public class BlackjackController {
         STAND,
         DOUBLE,
         SPLIT,
-        INSURANCE
+        INSURANCE,
+        DECLINE_INSURANCE
     }
 }

@@ -1,9 +1,9 @@
-package com.example.blackjack.service;
+package us.laderman.blackjack.service;
 
-import com.example.blackjack.model.Card;
-import com.example.blackjack.model.GameState;
-import com.example.blackjack.model.Rank;
-import com.example.blackjack.model.Suit;
+import us.laderman.blackjack.model.Card;
+import us.laderman.blackjack.model.GameState;
+import us.laderman.blackjack.model.Rank;
+import us.laderman.blackjack.model.Suit;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -114,6 +114,10 @@ public class BlackjackService {
 
     public GameState insurance(UUID gameId, int handIndex) {
         return getGame(gameId).insurance(handIndex);
+    }
+
+    public GameState declineInsurance(UUID gameId, int handIndex) {
+        return getGame(gameId).declineInsurance(handIndex);
     }
 
     public GameState getState(UUID gameId) {
