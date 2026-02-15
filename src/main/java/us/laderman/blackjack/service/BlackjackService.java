@@ -4,8 +4,10 @@ import us.laderman.blackjack.model.Card;
 import us.laderman.blackjack.model.GameState;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Suit;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,7 +17,9 @@ public class BlackjackService {
     private static final int DEFAULT_DECKS = 1;
     private static final int MAX_HANDS = 5;
 
-    private final Map<UUID, BlackjackGame> games = new ConcurrentHashMap<>();
+    private static final Duration GAME_TTL = Duration.ofMinutes(30);
+
+    private final Map<UUID, GameEntry> games = new ConcurrentHashMap<>();
 
     public GameState startGame(int hands, Map<String, String> allParams) {
         if (hands < 1 || hands > MAX_HANDS) {
@@ -43,19 +47,40 @@ public class BlackjackService {
 
         // Collect all cards for duplicate validation
         java.util.List<Card> allCards = new java.util.ArrayList<>();
-        if (dealerCard1 != null)
+        if (dealerCard1 != null) {
             allCards.add(dealerCard1);
+        }
         for (HandCards hc : playerHandCards.values()) {
-            if (hc.card1 != null)
+            if (hc.card1 != null) {
                 allCards.add(hc.card1);
-            if (hc.card2 != null)
+            }
+            if (hc.card2 != null) {
                 allCards.add(hc.card2);
+            }
         }
         validateNoDuplicates(allCards.toArray(new Card[0]));
 
         BlackjackGame game = new BlackjackGame(hands, DEFAULT_DECKS, playerHandCards, dealerCard1, null);
-        games.put(game.getId(), game);
+        games.put(game.getId(), new GameEntry(game));
         return game.getState();
+    }
+
+    private static class GameEntry {
+        private final BlackjackGame game;
+        private volatile long lastAccessMillis;
+
+        private GameEntry(BlackjackGame game) {
+            this.game = game;
+            touch();
+        }
+
+        private void touch() {
+            lastAccessMillis = System.currentTimeMillis();
+        }
+
+        private boolean isExpired(long nowMillis) {
+            return nowMillis - lastAccessMillis > GAME_TTL.toMillis();
+        }
     }
 
     public static class HandCards {
@@ -97,7 +122,12 @@ public class BlackjackService {
     }
 
     public GameState hit(UUID gameId, int handIndex) {
-        return getGame(gameId).hit(handIndex);
+        return getGame(gameId).hit(handIndex, null);
+    }
+
+    public GameState hit(UUID gameId, int handIndex, String rankStr, String suitStr) {
+        Card selectedCard = parseCard(rankStr, suitStr);
+        return getGame(gameId).hit(handIndex, selectedCard);
     }
 
     public GameState stand(UUID gameId, int handIndex) {
@@ -109,7 +139,17 @@ public class BlackjackService {
     }
 
     public GameState split(UUID gameId, int handIndex) {
-        return getGame(gameId).split(handIndex);
+        return getGame(gameId).split(handIndex, null, null);
+    }
+
+    public GameState split(UUID gameId, int handIndex, String card1Rank, String card1Suit,
+            String card2Rank, String card2Suit) {
+        System.out.println("DEBUG: split called with card1Rank=" + card1Rank + ", card1Suit=" + card1Suit
+                + ", card2Rank=" + card2Rank + ", card2Suit=" + card2Suit);
+        Card selectedCard1 = parseCard(card1Rank, card1Suit);
+        Card selectedCard2 = parseCard(card2Rank, card2Suit);
+        System.out.println("DEBUG: Parsed cards - card1=" + selectedCard1 + ", card2=" + selectedCard2);
+        return getGame(gameId).split(handIndex, selectedCard1, selectedCard2);
     }
 
     public GameState insurance(UUID gameId, int handIndex) {
@@ -125,10 +165,22 @@ public class BlackjackService {
     }
 
     private BlackjackGame getGame(UUID gameId) {
-        BlackjackGame game = games.get(gameId);
-        if (game == null) {
+        GameEntry entry = games.get(gameId);
+        if (entry == null) {
             throw new IllegalArgumentException("Game not found");
         }
-        return game;
+        long now = System.currentTimeMillis();
+        if (entry.isExpired(now)) {
+            games.remove(gameId);
+            throw new IllegalArgumentException("Game expired");
+        }
+        entry.touch();
+        return entry.game;
+    }
+
+    @Scheduled(fixedDelayString = "#{T(java.time.Duration).ofMinutes(5).toMillis()}")
+    public void cleanupExpiredGames() {
+        long now = System.currentTimeMillis();
+        games.entrySet().removeIf(entry -> entry.getValue().isExpired(now));
     }
 }

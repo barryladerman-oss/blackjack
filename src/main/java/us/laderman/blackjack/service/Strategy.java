@@ -190,10 +190,12 @@ public class Strategy {
 
     private static int getDealerIndex(int dealerUpCard) {
         // Convert dealer card value to index (2-11 -> 0-9, with 10 for T,J,Q,K,A)
-        if (dealerUpCard == 11)
+        if (dealerUpCard == 11) {
             return 9; // Ace
-        if (dealerUpCard == 10)
+        }
+        if (dealerUpCard == 10) {
             return 8; // 10, J, Q, K
+        }
         return Math.max(0, Math.min(7, dealerUpCard - 2)); // 2-9 -> 0-7
     }
 
@@ -213,21 +215,24 @@ public class Strategy {
     }
 
     private static int getHardHandAction(int total, int dealerIndex) {
-        if (total < 5 || total > 20)
+        if (total < 5 || total > 20) {
             return 0; // Invalid, hit
+        }
         return HARD_STRATEGY[total - 5][dealerIndex];
     }
 
     private static String getSoftHandAction(int total, int dealerIndex) {
         int action = getSoftHandActionValue(total, dealerIndex);
-        if (action == 2)
+        if (action == 2) {
             return "DOUBLE";
+        }
         return action == 1 ? "STAND" : "HIT";
     }
 
     private static int getSoftHandActionValue(int total, int dealerIndex) {
-        if (total < 12 || total > 20)
+        if (total < 12 || total > 20) {
             return 0; // Invalid, hit
+        }
         return SOFT_STRATEGY[total - 12][dealerIndex];
     }
 }

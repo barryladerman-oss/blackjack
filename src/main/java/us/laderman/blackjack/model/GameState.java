@@ -12,6 +12,7 @@ public class GameState {
     private final double decksRemaining;
     private final double netUnits;
     private final double insuranceTotal;
+    private final int suggestedBetUnits;
     private final String note;
 
     public GameState(String id,
@@ -23,6 +24,7 @@ public class GameState {
             double decksRemaining,
             double netUnits,
             double insuranceTotal,
+            int suggestedBetUnits,
             String note) {
         this.id = id;
         this.phase = phase;
@@ -33,6 +35,7 @@ public class GameState {
         this.decksRemaining = decksRemaining;
         this.netUnits = netUnits;
         this.insuranceTotal = insuranceTotal;
+        this.suggestedBetUnits = suggestedBetUnits;
         this.note = note;
     }
 
@@ -70,6 +73,10 @@ public class GameState {
 
     public double getInsuranceTotal() {
         return insuranceTotal;
+    }
+
+    public int getSuggestedBetUnits() {
+        return suggestedBetUnits;
     }
 
     public String getNote() {
@@ -125,6 +132,8 @@ public class GameState {
         private final String result;
         private final String recommendedAction;
         private final boolean isFromSplit;
+        private final boolean canHitAfterSplitAces;
+        private final int betUnits;
 
         public PlayerHandState(int index,
                 List<Card> cards,
@@ -137,7 +146,9 @@ public class GameState {
                 boolean insuranceWon,
                 String result,
                 String recommendedAction,
-                boolean isFromSplit) {
+                boolean isFromSplit,
+                boolean canHitAfterSplitAces,
+                int betUnits) {
             this.index = index;
             this.cards = cards;
             this.total = total;
@@ -150,6 +161,8 @@ public class GameState {
             this.result = result;
             this.recommendedAction = recommendedAction;
             this.isFromSplit = isFromSplit;
+            this.canHitAfterSplitAces = canHitAfterSplitAces;
+            this.betUnits = betUnits;
         }
 
         public int getIndex() {
@@ -198,6 +211,18 @@ public class GameState {
 
         public boolean isFromSplit() {
             return isFromSplit;
+        }
+
+        public boolean isCanHitAfterSplitAces() {
+            return canHitAfterSplitAces;
+        }
+
+        public boolean getCanHitAfterSplitAces() {
+            return canHitAfterSplitAces;
+        }
+
+        public int getBetUnits() {
+            return betUnits;
         }
     }
 }

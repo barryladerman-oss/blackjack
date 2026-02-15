@@ -1,5 +1,4 @@
 const handsInput = document.getElementById("hands");
-const statusText = document.getElementById("statusText");
 const handList = document.getElementById("handList");
 const dealerRow = document.getElementById("dealerRow");
 const dealerCards = document.getElementById("dealerCards");
@@ -37,6 +36,8 @@ const handsWonEl = document.getElementById("handsWon");
 const handsLostEl = document.getElementById("handsLost");
 const handsPushEl = document.getElementById("handsPush");
 const netUnitsEl = document.getElementById("netUnits");
+const doublesWonEl = document.getElementById("doublesWon");
+const doublesLostEl = document.getElementById("doublesLost");
 const insuranceTotalEl = document.getElementById("insuranceTotal");
 const buttons = [
     document.getElementById("startBtn")
@@ -44,6 +45,7 @@ const buttons = [
 
 let isBusy = false;
 let lastState = null;
+let recommendationRefreshPending = false;
 
 const setBusy = (busy) => {
     isBusy = busy;
@@ -52,19 +54,17 @@ const setBusy = (busy) => {
 
 const updateButtonStates = () => {
     const startBtn = document.getElementById("startBtn");
-    const gameInProgress = lastState && lastState.phase && lastState.phase !== "COMPLETE";
-    startBtn.disabled = isBusy || gameInProgress;
+    if (startBtn) {
+        const gameInProgress = lastState && lastState.phase && lastState.phase !== "COMPLETE";
+        startBtn.disabled = isBusy || gameInProgress;
+    }
     document.querySelectorAll(".hand-actions button").forEach((button) => {
         button.disabled = isBusy;
     });
 };
 
 const setStatus = (message, tone) => {
-    statusText.textContent = message;
-    statusText.classList.remove("ok", "error");
-    if (tone) {
-        statusText.classList.add(tone);
-    }
+    // Status display removed - keeping function for compatibility
 };
 
 // Generate player hand card selectors dynamically
@@ -80,27 +80,18 @@ const generatePlayerCardSelectors = (numHands) => {
 
     // Generate selectors for each player hand
     for (let handNum = 1; handNum <= numHands; handNum++) {
-        // Card 1
-        const card1Row = document.createElement('div');
-        card1Row.setAttribute('data-player-hand', handNum);
-        card1Row.style.cssText = 'display: grid; grid-template-columns: 120px 1fr 1fr; gap: 4px; align-items: center;';
-        card1Row.innerHTML = `
-                    <label>Hand ${handNum} Card 1:</label>
+        // Combined row for both cards
+        const handRow = document.createElement('div');
+        handRow.setAttribute('data-player-hand', handNum);
+        handRow.style.cssText = 'display: grid; grid-template-columns: 80px 1fr 1fr 1fr 1fr; gap: 4px; align-items: center;';
+        handRow.innerHTML = `
+                    <label>Hand ${handNum}:</label>
                     <select id="playerHand${handNum}Card1Rank" class="card-rank-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 4px;">
                         <option value="">Random</option>
                     </select>
                     <select id="playerHand${handNum}Card1Suit" class="card-suit-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 4px;">
                         <option value="">Random</option>
                     </select>
-                `;
-        cardSelectionContainer.appendChild(card1Row);
-
-        // Card 2
-        const card2Row = document.createElement('div');
-        card2Row.setAttribute('data-player-hand', handNum);
-        card2Row.style.cssText = 'display: grid; grid-template-columns: 120px 1fr 1fr; gap: 4px; align-items: center;';
-        card2Row.innerHTML = `
-                    <label>Hand ${handNum} Card 2:</label>
                     <select id="playerHand${handNum}Card2Rank" class="card-rank-select" data-card="player${handNum}-2" style="font-size: 11px; padding: 4px;">
                         <option value="">Random</option>
                     </select>
@@ -108,7 +99,7 @@ const generatePlayerCardSelectors = (numHands) => {
                         <option value="">Random</option>
                     </select>
                 `;
-        cardSelectionContainer.appendChild(card2Row);
+        cardSelectionContainer.appendChild(handRow);
     }
 
     // Populate all dropdowns with options
@@ -172,28 +163,33 @@ const getSelectedCards = () => {
     return selected;
 };
 
+// Helper function to build dropdown options
+const buildOptions = (select, options, includeRandom, selectFirst = false) => {
+    if (!select) return;
+    while (select.options.length > 0) {
+        select.remove(0);
+    }
+    if (includeRandom) {
+        const randomOption = document.createElement('option');
+        randomOption.value = '';
+        randomOption.textContent = 'Random';
+        select.appendChild(randomOption);
+    }
+    options.forEach((optionItem, index) => {
+        const option = document.createElement('option');
+        option.value = optionItem.value;
+        option.textContent = optionItem.label;
+        if (selectFirst && index === 0) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+};
+
 // Update dropdown filters to prevent duplicate card selections
 const updateDropdownFilters = () => {
     const selectedCards = getSelectedCards();
     console.log('updateDropdownFilters - selected cards:', selectedCards);
-
-    const buildOptions = (select, options, includeRandom) => {
-        while (select.options.length > 0) {
-            select.remove(0);
-        }
-        if (includeRandom) {
-            const randomOption = document.createElement('option');
-            randomOption.value = '';
-            randomOption.textContent = 'Random';
-            select.appendChild(randomOption);
-        }
-        options.forEach(optionItem => {
-            const option = document.createElement('option');
-            option.value = optionItem.value;
-            option.textContent = optionItem.label;
-            select.appendChild(option);
-        });
-    };
 
     // For each dropdown pair, filter options
     document.querySelectorAll('.card-rank-select').forEach(rankSelect => {
@@ -256,10 +252,15 @@ const toJson = async (response) => {
 };
 
 const apiFetch = async (path, options) => {
-    const response = await fetch(`${window.location.origin}${path}`, options);
+    const fullUrl = `${window.location.origin}${path}`;
+    console.log("apiFetch - URL:", fullUrl, "options:", options);
+    const response = await fetch(fullUrl, options);
+    console.log("apiFetch - response status:", response.status, response.statusText);
     const data = await toJson(response);
+    console.log("apiFetch - data:", data);
     if (!response.ok) {
         const message = data.message || data.error || response.statusText;
+        console.error("apiFetch - error:", message);
         throw new Error(message);
     }
     return data;
@@ -303,10 +304,10 @@ const cardFace = (card) => {
 };
 
 const suitGlyph = (suit) => {
-    if (suit === "H") return "H";
-    if (suit === "D") return "D";
-    if (suit === "C") return "C";
-    if (suit === "S") return "S";
+    if (suit === "H") return "♥";
+    if (suit === "D") return "♦";
+    if (suit === "C") return "♣";
+    if (suit === "S") return "♠";
     return "?";
 };
 
@@ -328,11 +329,22 @@ const renderCards = (cards, isDealer = false, phase = null) => {
             }
 
             const face = cardFace(card);
+            const suitSymbol = suitGlyph(face.suit);
+            const isFaceCard = ['J', 'Q', 'K'].includes(face.rank);
             return `
                         <div class="playing-card" data-suit="${face.suit}" ${isDealer && originalIndex === 1 && phase !== "PLAYER_TURN" ? 'class="flipping"' : ''}>
-                            <div class="card-corner">${face.rank}${face.suit}</div>
-                            <div class="card-center">${face.rank}</div>
-                            <div class="card-suit">${suitGlyph(face.suit)}</div>
+                            <div class="card-corner">
+                                <div class="corner-rank">${face.rank}</div>
+                                <div class="corner-suit">${suitSymbol}</div>
+                            </div>
+                            <div class="card-center">
+                                ${isFaceCard ? `<div class="face-letter">${face.rank}</div>` : ''}
+                                <div class="center-suit">${suitSymbol}</div>
+                            </div>
+                            <div class="card-corner-bottom">
+                                <div class="corner-rank">${face.rank}</div>
+                                <div class="corner-suit">${suitSymbol}</div>
+                            </div>
                         </div>
                     `;
         })
@@ -358,7 +370,7 @@ const strategyFromCount = (state) => {
         if (trueCount >= 2) {
             text = "Increase bet. Favor doubles on 10/11 and tougher stands in high counts.";
         } else if (trueCount <= -1) {
-            text = "Lower bet. Avoid marginal doubles and play tighter.";
+            text = "Avoid marginal doubles and play tighter.";
         } else {
             text = "Maintain base bet and follow basic strategy.";
         }
@@ -383,9 +395,16 @@ const renderState = (state) => {
     const wins = results.filter((hand) => hand.result === "WIN").length;
     const losses = results.filter((hand) => hand.result === "LOSE").length;
     const pushes = results.filter((hand) => hand.result === "PUSH").length;
+
+    // Count double down wins and losses
+    const doublesWon = results.filter((hand) => hand.betUnits === 2 && hand.result === "WIN").length;
+    const doublesLost = results.filter((hand) => hand.betUnits === 2 && hand.result === "LOSE").length;
+
     handsWonEl.textContent = wins;
     handsLostEl.textContent = losses;
     handsPushEl.textContent = pushes;
+    doublesWonEl.textContent = state.phase === "COMPLETE" ? doublesWon : "--";
+    doublesLostEl.textContent = state.phase === "COMPLETE" ? doublesLost : "--";
     netUnitsEl.textContent = state.phase === "COMPLETE" ? (state.netUnits ?? 0) : "--";
     insuranceTotalEl.textContent = state.phase === "COMPLETE" ? (state.insuranceTotal ?? 0) : "--";
 
@@ -408,9 +427,24 @@ const renderState = (state) => {
         return;
     }
 
+    const missingRecommendation = state.hands.some((hand) => !hand.recommendedAction);
+    if (!missingRecommendation) {
+        recommendationRefreshPending = false;
+    } else if (!recommendationRefreshPending) {
+        recommendationRefreshPending = true;
+        const id = state.id;
+        if (id) {
+            apiFetch(`/api/blackjack/state/${id}`, { method: "POST" })
+                .then((data) => renderState(data))
+                .catch((error) => console.error("Recommendation refresh failed:", error));
+        }
+    }
+
     const activeIndex = state.phase === "PLAYER_TURN"
         ? state.hands.findIndex((hand) => !hand.busted && !hand.standing)
         : -1;
+
+    console.log('RENDER STATE:', { phase: state.phase, activeIndex, handCount: state.hands.length, handStates: state.hands.map(h => ({ index: h.index, standing: h.standing, busted: h.busted, isFromSplit: h.isFromSplit })) });
 
     // Check dealer's up card for insurance phase
     const dealerStateCards = state.dealer?.cards || [];
@@ -429,6 +463,10 @@ const renderState = (state) => {
         // 2. It's been auto-stood (from natural blackjack), OR
         // 3. It's already moved past 2 cards (implicitly refused insurance), OR
         // 4. It's already busted or standing
+        const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
+        if (isFromSplit) {
+            return true;
+        }
         return hand.insured ||
             hand.insuranceDeclined ||
             hand.standing ||
@@ -447,14 +485,34 @@ const renderState = (state) => {
         return String(value).replace(/_/g, " ");
     };
 
+    const getSplitFallbackRecommendation = (hand) => {
+        if (!hand || typeof hand.total !== "number") {
+            return "";
+        }
+        if (hand.soft) {
+            return hand.total >= 18 ? "stand" : "hit";
+        }
+        return hand.total >= 17 ? "stand" : "hit";
+    };
+
+    const getEffectiveRecommendation = (hand, normalizedRecommendation, isFromSplit) => {
+        if (!normalizedRecommendation) {
+            return isFromSplit ? getSplitFallbackRecommendation(hand) : "";
+        }
+        if (isFromSplit && normalizedRecommendation !== "hit" && normalizedRecommendation !== "stand") {
+            return getSplitFallbackRecommendation(hand);
+        }
+        return normalizedRecommendation;
+    };
+
     handList.innerHTML = state.hands
         .map((hand) => {
             const isActive = hand.index === activeIndex;
-            const canDouble = isActive && hand.cards && hand.cards.length === 2;
+            const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
+            const canDouble = isActive && hand.cards && hand.cards.length === 2 && !isFromSplit;
             const canSplit = isActive && hand.cards && hand.cards.length === 2 &&
                 hand.cards[0]?.rank === hand.cards[1]?.rank;
-
-            const canInsure = hand.cards && hand.cards.length === 2 && dealerShowsAce && !hand.insured && !hand.insuranceDeclined;
+            const canInsure = hand.cards && hand.cards.length === 2 && dealerShowsAce && !hand.insured && !hand.insuranceDeclined && !isFromSplit;
 
             // When dealer shows Ace, only insurance actions are allowed until ALL hands make a decision
             const dealerInInsurancePhase = dealerShowsAce && state.phase === "PLAYER_TURN" && !allHandsResolvedInsurance;
@@ -466,16 +524,57 @@ const renderState = (state) => {
             const regularActionsEnabled = isActive && (!dealerShowsAce || state.phase === "COMPLETE" || allHandsResolvedInsurance);
 
             console.log('Insurance check:', { isActive, hasCards: !!hand.cards, cardCount: hand.cards?.length, dealerShowsAce, alreadyInsured: hand.insured, canInsure, dealerInInsurancePhase, regularActionsEnabled, allHandsResolvedInsurance });
-            const recommendedAction = normalizeAction(hand.recommendedAction);
-            const recommendInsure = recommendedAction === "insure";
-            const recommendDecline = recommendedAction === "no_insurance" || recommendedAction === "decline_insurance";
-            const showHit = regularActionsEnabled;
-            const showStand = regularActionsEnabled;
-            const showDouble = regularActionsEnabled && canDouble;
-            const showSplit = regularActionsEnabled && canSplit;
-            const result = hand.result ? `<span class="tag">${hand.result}</span>` : "";
-            const hint = hand.recommendedAction ? `<span class="tag">${formatRecommendation(hand.recommendedAction)}</span>` : "";
-            const insuranceDecision = hand.insuranceDeclined ? `<span class="tag">NO INSURANCE</span>` : "";
+            const rawRecommendation = hand.recommendedAction || "";
+            const normalizedRecommendation = normalizeAction(rawRecommendation);
+            const recommendedAction = getEffectiveRecommendation(hand, normalizedRecommendation, isFromSplit);
+            const recommendInsure = normalizedRecommendation === "insure";
+            const recommendDecline = normalizedRecommendation === "no_insurance" || normalizedRecommendation === "decline_insurance";
+            const canHitAfterSplitAces = (hand.canHitAfterSplitAces ?? hand.isCanHitAfterSplitAces) !== false;
+            const handPlayable = !hand.standing && !hand.busted;
+
+            // For split aces with no hit allowed, the hand is complete - no actions available
+            const isSplitAceComplete = isFromSplit && !canHitAfterSplitAces;
+
+            // Log split ace hands
+            if (isFromSplit && hand.cards?.length <= 2 && hand.cards?.[0]?.rank?.value === 1) {
+                console.log('SPLIT ACE HAND STATE:', {
+                    handIndex: hand.index,
+                    isFromSplit,
+                    canHitAfterSplitAces,
+                    standing: hand.standing,
+                    busted: hand.busted,
+                    handPlayable,
+                    isSplitAceComplete,
+                    phase: state.phase
+                });
+            }
+
+            const showHit = !isSplitAceComplete && regularActionsEnabled && handPlayable && canHitAfterSplitAces;
+            const showStand = !isSplitAceComplete && regularActionsEnabled && handPlayable;
+            const showDouble = !isSplitAceComplete && regularActionsEnabled && handPlayable && canDouble;
+            const showSplit = !isSplitAceComplete && regularActionsEnabled && handPlayable && canSplit && !isFromSplit;
+
+            if (isFromSplit && hand.getCards?.length === 2 && hand.cards?.[0]?.rank === 'ACE') {
+                console.log('SPLIT ACE DEBUG:', { handIndex: hand.index, standing: hand.standing, busted: hand.busted, handPlayable, showHit, showStand, regularActionsEnabled, isActive, activeIndex, phase: state.phase });
+            }
+
+            // Calculate result display with bet units
+            let resultDisplay = "";
+            if (hand.result && hand.result !== "IN_PROGRESS") {
+                const betUnits = hand.betUnits || 1;
+                console.log('Result display:', { handIndex: hand.index, result: hand.result, betUnits: hand.betUnits, calculated: betUnits });
+                if (hand.result === "WIN") {
+                    resultDisplay = `<span class="tag">WIN +${betUnits}</span>`;
+                } else if (hand.result === "LOSE") {
+                    resultDisplay = `<span class="tag">LOSE -${betUnits}</span>`;
+                } else if (hand.result === "PUSH") {
+                    resultDisplay = `<span class="tag">PUSH</span>`;
+                }
+            }
+            const result = resultDisplay;
+            const doubled = (hand.betUnits === 2) ? `<span class="tag">DOUBLED</span>` : "";
+            const hint = recommendedAction ? `<span class="tag">${formatRecommendation(recommendedAction)}</span>` : "";
+            const insuranceDecision = "";
             const handStatus = [
                 `${hand.total}`,
                 hand.soft ? "(soft)" : null,
@@ -493,12 +592,12 @@ const renderState = (state) => {
             return `
                         <div class="hand-row${isActive ? " active" : ""}${resultClass}">
                             <div class="hand-header">
-                                <div class="row-title">Hand ${hand.index}</div>
+                                <div class="row-title">Hand ${hand.index + 1}</div>
                                 <div class="meta-line">
                                     <span>${handStatus}</span>
                                     ${result}
+                                    ${doubled}
                                     ${hint}
-                                    ${insuranceDecision}
                                 </div>
                             </div>
                             <div class="cards">${renderCards(hand.cards)}</div>
@@ -530,11 +629,15 @@ const run = async (task) => {
     try {
         setBusy(true);
         setStatus("Working...", null);
+        console.log("run() - executing task...");
         const data = await task();
+        console.log("run() - received data:", data);
         renderState(data);
         setStatus("Updated with latest game state.", "ok");
     } catch (error) {
+        console.error("run() - error:", error);
         setStatus(error.message || "Request failed.", "error");
+        alert("Error: " + (error.message || "Request failed."));
     } finally {
         setBusy(false);
     }
@@ -550,6 +653,10 @@ const initializeCardSelectors = () => {
     console.log('initialHands:', initialHands);
     // Generate player card selectors
     generatePlayerCardSelectors(initialHands);
+    const dealerRankSelect = document.getElementById("dealerCard1Rank");
+    if (dealerRankSelect) {
+        setTimeout(() => dealerRankSelect.focus(), 0);
+    }
 };
 
 // Listen to card selection changes for filtering
@@ -557,6 +664,14 @@ document.addEventListener('change', (e) => {
     if (e.target.classList.contains('card-rank-select') ||
         e.target.classList.contains('card-suit-select')) {
         updateDropdownFilters();
+    }
+    if (e.target.classList.contains('card-rank-select') && cardSelectionContainer) {
+        const rankSelects = Array.from(cardSelectionContainer.querySelectorAll('.card-rank-select'));
+        const currentIndex = rankSelects.indexOf(e.target);
+        const nextSelect = currentIndex >= 0 ? rankSelects[currentIndex + 1] : null;
+        if (nextSelect) {
+            setTimeout(() => nextSelect.focus(), 0);
+        }
     }
 });
 
@@ -572,100 +687,105 @@ if (handsInput) {
 // Since script is at the end of body, DOM should be ready
 initializeCardSelectors();
 
-document.getElementById("startBtn").addEventListener("click", () => {
-    const hands = Number(handsInput.value || 1);
+const startBtn = document.getElementById("startBtn");
+if (startBtn) {
+    startBtn.addEventListener("click", () => {
+        const hands = Number(handsInput.value || 1);
 
-    // Collect optional card selections
-    const params = new URLSearchParams();
-    params.append('hands', hands);
+        // Collect optional card selections
+        const params = new URLSearchParams();
+        params.append('hands', hands);
 
-    // Collect dealer card
-    const d1r = document.getElementById("dealerCard1Rank").value;
-    const d1s = document.getElementById("dealerCard1Suit").value;
+        // Collect dealer card
+        const d1r = document.getElementById("dealerCard1Rank").value;
+        const d1s = document.getElementById("dealerCard1Suit").value;
 
-    // Validate dealer card
-    if ((d1r && !d1s) || (!d1r && d1s)) {
-        alert("Dealer Up Card: Please select both rank and suit, or leave both as Random");
-        return;
-    }
-
-    // Collect all player hand cards
-    const playerCards = [];
-    for (let handNum = 1; handNum <= hands; handNum++) {
-        const c1r = document.getElementById(`playerHand${handNum}Card1Rank`);
-        const c1s = document.getElementById(`playerHand${handNum}Card1Suit`);
-        const c2r = document.getElementById(`playerHand${handNum}Card2Rank`);
-        const c2s = document.getElementById(`playerHand${handNum}Card2Suit`);
-
-        if (!c1r || !c1s || !c2r || !c2s) continue;
-
-        const card1Rank = c1r.value;
-        const card1Suit = c1s.value;
-        const card2Rank = c2r.value;
-        const card2Suit = c2s.value;
-
-        // Validate rank and suit pairs
-        if ((card1Rank && !card1Suit) || (!card1Rank && card1Suit)) {
-            alert(`Hand ${handNum} Card 1: Please select both rank and suit, or leave both as Random`);
-            return;
-        }
-        if ((card2Rank && !card2Suit) || (!card2Rank && card2Suit)) {
-            alert(`Hand ${handNum} Card 2: Please select both rank and suit, or leave both as Random`);
+        // Validate dealer card
+        if ((d1r && !d1s) || (!d1r && d1s)) {
+            alert("Dealer Up Card: Please select both rank and suit, or leave both as Random");
             return;
         }
 
-        playerCards.push({
-            hand: handNum,
-            card1: { rank: card1Rank, suit: card1Suit },
-            card2: { rank: card2Rank, suit: card2Suit }
-        });
-    }
+        // Collect all player hand cards
+        const playerCards = [];
+        for (let handNum = 1; handNum <= hands; handNum++) {
+            const c1r = document.getElementById(`playerHand${handNum}Card1Rank`);
+            const c1s = document.getElementById(`playerHand${handNum}Card1Suit`);
+            const c2r = document.getElementById(`playerHand${handNum}Card2Rank`);
+            const c2s = document.getElementById(`playerHand${handNum}Card2Suit`);
 
-    // Check for duplicate cards
-    const allSelectedCards = [];
-    if (d1r && d1s) allSelectedCards.push({ rank: d1r, suit: d1s, name: "Dealer Up Card" });
+            if (!c1r || !c1s || !c2r || !c2s) continue;
 
-    playerCards.forEach(hand => {
-        if (hand.card1.rank && hand.card1.suit) {
-            allSelectedCards.push({
-                rank: hand.card1.rank,
-                suit: hand.card1.suit,
-                name: `Hand ${hand.hand} Card 1`
-            });
-        }
-        if (hand.card2.rank && hand.card2.suit) {
-            allSelectedCards.push({
-                rank: hand.card2.rank,
-                suit: hand.card2.suit,
-                name: `Hand ${hand.hand} Card 2`
-            });
-        }
-    });
+            const card1Rank = c1r.value;
+            const card1Suit = c1s.value;
+            const card2Rank = c2r.value;
+            const card2Suit = c2s.value;
 
-    for (let i = 0; i < allSelectedCards.length; i++) {
-        for (let j = i + 1; j < allSelectedCards.length; j++) {
-            if (allSelectedCards[i].rank === allSelectedCards[j].rank &&
-                allSelectedCards[i].suit === allSelectedCards[j].suit) {
-                alert(`Duplicate card detected: ${allSelectedCards[i].name} and ${allSelectedCards[j].name} are both ${allSelectedCards[i].rank} of ${allSelectedCards[i].suit}`);
+            // Validate rank and suit pairs
+            if ((card1Rank && !card1Suit) || (!card1Rank && card1Suit)) {
+                alert(`Hand ${handNum} Card 1: Please select both rank and suit, or leave both as Random`);
                 return;
             }
+            if ((card2Rank && !card2Suit) || (!card2Rank && card2Suit)) {
+                alert(`Hand ${handNum} Card 2: Please select both rank and suit, or leave both as Random`);
+                return;
+            }
+
+            playerCards.push({
+                hand: handNum,
+                card1: { rank: card1Rank, suit: card1Suit },
+                card2: { rank: card2Rank, suit: card2Suit }
+            });
         }
-    }
 
-    // Add dealer card to params
-    if (d1r) params.append('dealerCard1Rank', d1r);
-    if (d1s) params.append('dealerCard1Suit', d1s);
+        // Check for duplicate cards
+        const allSelectedCards = [];
+        if (d1r && d1s) allSelectedCards.push({ rank: d1r, suit: d1s, name: "Dealer Up Card" });
 
-    // Add all player hand cards to params
-    playerCards.forEach(hand => {
-        if (hand.card1.rank) params.append(`playerHand${hand.hand}Card1Rank`, hand.card1.rank);
-        if (hand.card1.suit) params.append(`playerHand${hand.hand}Card1Suit`, hand.card1.suit);
-        if (hand.card2.rank) params.append(`playerHand${hand.hand}Card2Rank`, hand.card2.rank);
-        if (hand.card2.suit) params.append(`playerHand${hand.hand}Card2Suit`, hand.card2.suit);
+        playerCards.forEach(hand => {
+            if (hand.card1.rank && hand.card1.suit) {
+                allSelectedCards.push({
+                    rank: hand.card1.rank,
+                    suit: hand.card1.suit,
+                    name: `Hand ${hand.hand} Card 1`
+                });
+            }
+            if (hand.card2.rank && hand.card2.suit) {
+                allSelectedCards.push({
+                    rank: hand.card2.rank,
+                    suit: hand.card2.suit,
+                    name: `Hand ${hand.hand} Card 2`
+                });
+            }
+        });
+
+        for (let i = 0; i < allSelectedCards.length; i++) {
+            for (let j = i + 1; j < allSelectedCards.length; j++) {
+                if (allSelectedCards[i].rank === allSelectedCards[j].rank &&
+                    allSelectedCards[i].suit === allSelectedCards[j].suit) {
+                    alert(`Duplicate card detected: ${allSelectedCards[i].name} and ${allSelectedCards[j].name} are both ${allSelectedCards[i].rank} of ${allSelectedCards[i].suit}`);
+                    return;
+                }
+            }
+        }
+
+        // Add dealer card to params
+        if (d1r) params.append('dealerCard1Rank', d1r);
+        if (d1s) params.append('dealerCard1Suit', d1s);
+
+        // Add all player hand cards to params
+        playerCards.forEach(hand => {
+            if (hand.card1.rank) params.append(`playerHand${hand.hand}Card1Rank`, hand.card1.rank);
+            if (hand.card1.suit) params.append(`playerHand${hand.hand}Card1Suit`, hand.card1.suit);
+            if (hand.card2.rank) params.append(`playerHand${hand.hand}Card2Rank`, hand.card2.rank);
+            if (hand.card2.suit) params.append(`playerHand${hand.hand}Card2Suit`, hand.card2.suit);
+        });
+
+        run(() => apiFetch(`/api/blackjack/start?${params.toString()}`, { method: "POST" }));
     });
-
-    run(() => apiFetch(`/api/blackjack/start?${params.toString()}`, { method: "POST" }));
-});
+} else {
+    console.error("Start button not found!");
+}
 
 handList.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");
@@ -677,8 +797,458 @@ handList.addEventListener("click", (event) => {
     }
     const action = button.dataset.action;
     const hand = Number(button.dataset.hand);
+
+    console.log("Hand button clicked - action:", action, "hand:", hand, "dataset.hand:", button.dataset.hand);
+
+    // Special handling for hit action - show card selection modal
+    if (action === "hit") {
+        console.log("Showing hit modal for hand:", hand);
+        showHitCardModal(hand);
+        return;
+    }
+
+    // Special handling for split action - show card selection modal
+    if (action === "split") {
+        console.log("Showing split modal for hand:", hand);
+        showSplitCardModal(hand);
+        return;
+    }
+
     run(() => {
         const id = guardGameId();
         return apiFetch(`/api/blackjack/${action}/${id}?hand=${hand}`, { method: "POST" });
     });
 });
+
+// Hit card modal functions
+const hitCardModal = document.getElementById("hitCardModal");
+const hitCardRankSelect = document.getElementById("hitCardRank");
+const hitCardSuitSelect = document.getElementById("hitCardSuit");
+const hitCardConfirmBtn = document.getElementById("hitCardConfirmBtn");
+const hitCardCancelBtn = document.getElementById("hitCardCancelBtn");
+
+let currentHitHandIndex = null;
+
+// Get all cards currently in play from game state
+const getCardsInPlay = () => {
+    const cardsInPlay = [];
+    if (!lastState) return cardsInPlay;
+
+    // Get dealer cards
+    if (lastState.dealer && lastState.dealer.cards) {
+        lastState.dealer.cards.forEach(card => {
+            if (card && card.rank && card.suit) {
+                const rank = card.rank.value || card.rank.label || card.rank;
+                const suit = card.suit.value || card.suit.label || card.suit;
+                cardsInPlay.push({ rank: String(rank).toUpperCase(), suit: String(suit).toUpperCase() });
+            }
+        });
+    }
+
+    // Get player hands cards
+    if (lastState.hands && Array.isArray(lastState.hands)) {
+        lastState.hands.forEach(hand => {
+            if (hand.cards && Array.isArray(hand.cards)) {
+                hand.cards.forEach(card => {
+                    if (card && card.rank && card.suit) {
+                        const rank = card.rank.value || card.rank.label || card.rank;
+                        const suit = card.suit.value || card.suit.label || card.suit;
+                        cardsInPlay.push({ rank: String(rank).toUpperCase(), suit: String(suit).toUpperCase() });
+                    }
+                });
+            }
+        });
+    }
+
+    return cardsInPlay;
+};
+
+const populateHitCardSelectors = () => {
+    if (!hitCardRankSelect || !hitCardSuitSelect) {
+        console.error("Hit card selectors not found!");
+        return;
+    }
+
+    const cardsInPlay = getCardsInPlay();
+    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+
+    // Filter ranks that have at least one available suit
+    const availableRanks = RANKS.filter(rank => {
+        return SUITS.some(suit => !usedCards.has(`${rank.value}:${suit.value}`));
+    });
+
+    // Populate ranks with available options only
+    buildOptions(hitCardRankSelect, availableRanks, true);
+
+    // Initial suits population (all suits since no rank selected yet)
+    buildOptions(hitCardSuitSelect, SUITS, true);
+};
+
+// Update suits when rank is selected
+const updateHitCardSuits = () => {
+    if (!hitCardRankSelect || !hitCardSuitSelect) return;
+
+    const selectedRank = hitCardRankSelect.value;
+    console.log("updateHitCardSuits - selected rank:", selectedRank);
+
+    if (!selectedRank) {
+        // No rank selected, show all suits with random option
+        buildOptions(hitCardSuitSelect, SUITS, true, false);
+        console.log("No rank selected - showing all suits with Random option");
+        return;
+    }
+
+    const cardsInPlay = getCardsInPlay();
+    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+
+    // Filter suits available for the selected rank
+    const availableSuits = SUITS.filter(suit => {
+        return !usedCards.has(`${selectedRank}:${suit.value}`);
+    });
+
+    console.log("Available suits for rank", selectedRank, ":", availableSuits.map(s => s.value));
+
+    // Populate suits (no random option when rank is selected) and auto-select first
+    buildOptions(hitCardSuitSelect, availableSuits, false, true);
+
+    console.log("Auto-selected suit:", hitCardSuitSelect.value);
+};
+
+const showHitCardModal = (handIndex) => {
+    console.log("showHitCardModal called with handIndex:", handIndex, "type:", typeof handIndex);
+    if (!hitCardModal || !hitCardRankSelect || !hitCardSuitSelect) {
+        console.error("Hit card modal elements not found!");
+        return;
+    }
+    currentHitHandIndex = handIndex;
+    console.log("Set currentHitHandIndex to:", currentHitHandIndex);
+    populateHitCardSelectors();
+    hitCardRankSelect.value = "";
+    hitCardSuitSelect.value = "";
+
+    // Add event listener for rank changes
+    hitCardRankSelect.removeEventListener('change', updateHitCardSuits);
+    hitCardRankSelect.addEventListener('change', updateHitCardSuits);
+
+    hitCardModal.style.display = "flex";
+    setTimeout(() => hitCardRankSelect.focus(), 0);
+};
+
+const closeHitCardModal = () => {
+    if (!hitCardModal) return;
+    hitCardModal.style.display = "none";
+    currentHitHandIndex = null;
+};
+
+if (hitCardCancelBtn) {
+    console.log("Adding cancel button listener");
+    hitCardCancelBtn.addEventListener("click", () => {
+        console.log("Cancel button clicked");
+        closeHitCardModal();
+    });
+} else {
+    console.error("hitCardCancelBtn not found!");
+}
+
+if (hitCardConfirmBtn) {
+    console.log("Adding confirm button listener");
+    hitCardConfirmBtn.addEventListener("click", () => {
+        console.log("Confirm button clicked!");
+        console.log("currentHitHandIndex at confirm time:", currentHitHandIndex);
+
+        // Save hand index to local variable before closing modal
+        const handIndex = currentHitHandIndex;
+        const rank = hitCardRankSelect ? hitCardRankSelect.value : "";
+        const suit = hitCardSuitSelect ? hitCardSuitSelect.value : "";
+
+        console.log("Hit confirm - hand:", handIndex, "rank:", rank, "suit:", suit);
+
+        // Validate: both or neither
+        if ((rank && !suit) || (!rank && suit)) {
+            alert("Please select both rank and suit, or leave both as Random");
+            return;
+        }
+
+        console.log("Closing modal and calling run()");
+        closeHitCardModal();
+
+        run(() => {
+            console.log("Inside run task function - handIndex:", handIndex);
+            const id = guardGameId();
+            console.log("Game ID:", id);
+            const params = new URLSearchParams();
+            params.append("hand", handIndex);
+            console.log("params.toString():", params.toString());
+            if (rank) params.append("rank", rank);
+            if (suit) params.append("suit", suit);
+            const url = `/api/blackjack/hit/${id}?${params.toString()}`;
+            console.log("Hit API call - URL:", url);
+            return apiFetch(url, { method: "POST" });
+        });
+    });
+} else {
+    console.error("hitCardConfirmBtn not found!");
+}
+
+// Close modal on background click
+if (hitCardModal) {
+    hitCardModal.addEventListener("click", (e) => {
+        if (e.target === hitCardModal) {
+            closeHitCardModal();
+        }
+    });
+}
+
+// Split card modal functions
+const splitCardModal = document.getElementById("splitCardModal");
+const splitCard1RankSelect = document.getElementById("splitCard1Rank");
+const splitCard1SuitSelect = document.getElementById("splitCard1Suit");
+const splitCard2RankSelect = document.getElementById("splitCard2Rank");
+const splitCard2SuitSelect = document.getElementById("splitCard2Suit");
+const splitCardConfirmBtn = document.getElementById("splitCardConfirmBtn");
+const splitCardCancelBtn = document.getElementById("splitCardCancelBtn");
+
+const isModalOpen = (modal) => {
+    if (!modal) return false;
+    return getComputedStyle(modal).display !== "none";
+};
+
+document.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") {
+        return;
+    }
+
+    if (isModalOpen(splitCardModal) && splitCardConfirmBtn) {
+        event.preventDefault();
+        splitCardConfirmBtn.click();
+        return;
+    }
+
+    if (isModalOpen(hitCardModal) && hitCardConfirmBtn) {
+        event.preventDefault();
+        hitCardConfirmBtn.click();
+        return;
+    }
+
+    const startBtn = document.getElementById("startBtn");
+    if (startBtn && !startBtn.disabled) {
+        event.preventDefault();
+        startBtn.click();
+    }
+});
+
+let currentSplitHandIndex = null;
+
+const populateSplitCardSelectors = () => {
+    if (!splitCard1RankSelect || !splitCard1SuitSelect || !splitCard2RankSelect || !splitCard2SuitSelect) {
+        console.error("Split card selectors not found!");
+        return;
+    }
+
+    refreshSplitRankOptions();
+
+    // Initial suits population (all suits since no rank selected yet)
+    buildOptions(splitCard1SuitSelect, SUITS, true);
+    buildOptions(splitCard2SuitSelect, SUITS, true);
+};
+
+const getAvailableSplitRanks = (excludedRank, excludedSuit) => {
+    const cardsInPlay = getCardsInPlay();
+    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+    if (excludedRank && excludedSuit) {
+        usedCards.add(`${excludedRank}:${excludedSuit}`);
+    }
+
+    return RANKS.filter(rank => {
+        return SUITS.some(suit => !usedCards.has(`${rank.value}:${suit.value}`));
+    });
+};
+
+const refreshSplitRankOptions = () => {
+    if (!splitCard1RankSelect || !splitCard2RankSelect) {
+        return;
+    }
+
+    const currentRank1 = splitCard1RankSelect.value;
+    const currentRank2 = splitCard2RankSelect.value;
+
+    const ranksForCard1 = getAvailableSplitRanks(splitCard2RankSelect.value, splitCard2SuitSelect.value);
+    buildOptions(splitCard1RankSelect, ranksForCard1, true);
+    if (currentRank1 && ranksForCard1.some(rank => rank.value === currentRank1)) {
+        splitCard1RankSelect.value = currentRank1;
+    } else {
+        splitCard1RankSelect.value = "";
+    }
+
+    const ranksForCard2 = getAvailableSplitRanks(splitCard1RankSelect.value, splitCard1SuitSelect.value);
+    buildOptions(splitCard2RankSelect, ranksForCard2, true);
+    if (currentRank2 && ranksForCard2.some(rank => rank.value === currentRank2)) {
+        splitCard2RankSelect.value = currentRank2;
+    } else {
+        splitCard2RankSelect.value = "";
+    }
+};
+
+// Update suits when rank is selected for card 1
+const updateSplitCard1Suits = () => {
+    if (!splitCard1RankSelect || !splitCard1SuitSelect) return;
+
+    const selectedRank = splitCard1RankSelect.value;
+
+    if (!selectedRank) {
+        buildOptions(splitCard1SuitSelect, SUITS, true, false);
+        return;
+    }
+
+    const cardsInPlay = getCardsInPlay();
+    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+
+    // Also exclude the card selected in the other dropdown
+    const card2Rank = splitCard2RankSelect.value;
+    const card2Suit = splitCard2SuitSelect.value;
+    if (card2Rank && card2Suit) {
+        usedCards.add(`${card2Rank}:${card2Suit}`);
+    }
+
+    const availableSuits = SUITS.filter(suit => {
+        return !usedCards.has(`${selectedRank}:${suit.value}`);
+    });
+
+    buildOptions(splitCard1SuitSelect, availableSuits, false, true);
+    refreshSplitRankOptions();
+    if (splitCard2RankSelect) {
+        setTimeout(() => splitCard2RankSelect.focus(), 0);
+    }
+};
+
+// Update suits when rank is selected for card 2
+const updateSplitCard2Suits = () => {
+    if (!splitCard2RankSelect || !splitCard2SuitSelect) return;
+
+    const selectedRank = splitCard2RankSelect.value;
+
+    if (!selectedRank) {
+        buildOptions(splitCard2SuitSelect, SUITS, true, false);
+        return;
+    }
+
+    const cardsInPlay = getCardsInPlay();
+    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+
+    // Also exclude the card selected in the other dropdown
+    const card1Rank = splitCard1RankSelect.value;
+    const card1Suit = splitCard1SuitSelect.value;
+    if (card1Rank && card1Suit) {
+        usedCards.add(`${card1Rank}:${card1Suit}`);
+    }
+
+    const availableSuits = SUITS.filter(suit => {
+        return !usedCards.has(`${selectedRank}:${suit.value}`);
+    });
+
+    buildOptions(splitCard2SuitSelect, availableSuits, false, true);
+    refreshSplitRankOptions();
+};
+
+const showSplitCardModal = (handIndex) => {
+    console.log("showSplitCardModal called with handIndex:", handIndex);
+    if (!splitCardModal || !splitCard1RankSelect || !splitCard1SuitSelect || !splitCard2RankSelect || !splitCard2SuitSelect) {
+        console.error("Split card modal elements not found!");
+        return;
+    }
+    currentSplitHandIndex = handIndex;
+    populateSplitCardSelectors();
+    splitCard1RankSelect.value = "";
+    splitCard1SuitSelect.value = "";
+    splitCard2RankSelect.value = "";
+    splitCard2SuitSelect.value = "";
+
+    // Add event listeners for rank changes
+    splitCard1RankSelect.removeEventListener('change', updateSplitCard1Suits);
+    splitCard1RankSelect.addEventListener('change', updateSplitCard1Suits);
+    splitCard2RankSelect.removeEventListener('change', updateSplitCard2Suits);
+    splitCard2RankSelect.addEventListener('change', updateSplitCard2Suits);
+
+    // Also update when the other card changes (to exclude it from available options)
+    splitCard1RankSelect.removeEventListener('change', updateSplitCard2Suits);
+    splitCard1RankSelect.addEventListener('change', updateSplitCard2Suits);
+    splitCard1SuitSelect.removeEventListener('change', updateSplitCard2Suits);
+    splitCard1SuitSelect.addEventListener('change', updateSplitCard2Suits);
+    splitCard2RankSelect.removeEventListener('change', updateSplitCard1Suits);
+    splitCard2RankSelect.addEventListener('change', updateSplitCard1Suits);
+    splitCard2SuitSelect.removeEventListener('change', updateSplitCard1Suits);
+    splitCard2SuitSelect.addEventListener('change', updateSplitCard1Suits);
+
+    splitCardModal.style.display = "flex";
+    setTimeout(() => splitCard1RankSelect.focus(), 0);
+};
+
+const closeSplitCardModal = () => {
+    if (!splitCardModal) return;
+    splitCardModal.style.display = "none";
+    currentSplitHandIndex = null;
+};
+
+if (splitCardCancelBtn) {
+    splitCardCancelBtn.addEventListener("click", () => {
+        console.log("Split cancel button clicked");
+        closeSplitCardModal();
+    });
+}
+
+if (splitCardConfirmBtn) {
+    splitCardConfirmBtn.addEventListener("click", () => {
+        console.log("Split confirm button clicked!");
+
+        // Save hand index to local variable before closing modal
+        const handIndex = currentSplitHandIndex;
+        const card1Rank = splitCard1RankSelect ? splitCard1RankSelect.value : "";
+        const card1Suit = splitCard1SuitSelect ? splitCard1SuitSelect.value : "";
+        const card2Rank = splitCard2RankSelect ? splitCard2RankSelect.value : "";
+        const card2Suit = splitCard2SuitSelect ? splitCard2SuitSelect.value : "";
+
+        console.log("Split confirm - hand:", handIndex, "card1:", card1Rank, card1Suit, "card2:", card2Rank, card2Suit);
+
+        // Validate: for each card, both or neither
+        if ((card1Rank && !card1Suit) || (!card1Rank && card1Suit)) {
+            alert("For Card 1: Please select both rank and suit, or leave both as Random");
+            return;
+        }
+        if ((card2Rank && !card2Suit) || (!card2Rank && card2Suit)) {
+            alert("For Card 2: Please select both rank and suit, or leave both as Random");
+            return;
+        }
+
+        // Validate: cannot select the same card twice
+        if (card1Rank && card1Suit && card2Rank && card2Suit) {
+            if (card1Rank === card2Rank && card1Suit === card2Suit) {
+                alert("Cannot select the same card for both hands");
+                return;
+            }
+        }
+
+        closeSplitCardModal();
+
+        run(() => {
+            const id = guardGameId();
+            const params = new URLSearchParams();
+            params.append("hand", handIndex);
+            if (card1Rank) params.append("card1Rank", card1Rank);
+            if (card1Suit) params.append("card1Suit", card1Suit);
+            if (card2Rank) params.append("card2Rank", card2Rank);
+            if (card2Suit) params.append("card2Suit", card2Suit);
+            const url = `/api/blackjack/split/${id}?${params.toString()}`;
+            console.log("Split API call - URL:", url);
+            return apiFetch(url, { method: "POST" });
+        });
+    });
+}
+
+// Close modal on background click
+if (splitCardModal) {
+    splitCardModal.addEventListener("click", (e) => {
+        if (e.target === splitCardModal) {
+            closeSplitCardModal();
+        }
+    });
+}

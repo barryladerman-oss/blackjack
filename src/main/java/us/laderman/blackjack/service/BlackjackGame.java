@@ -55,7 +55,7 @@ public class BlackjackGame {
         return id;
     }
 
-    public GameState hit(int handIndex) {
+    public GameState hit(int handIndex, Card selectedCard) {
         ensurePlayerTurn();
         Hand hand = getPlayerHand(handIndex);
         if (hand.isStanding() || hand.isBusted()) {
@@ -68,7 +68,16 @@ public class BlackjackGame {
         if (!hand.canHitAfterSplitAces()) {
             throw new IllegalArgumentException("Cannot hit after split aces - only one card dealt per ace");
         }
-        dealCard(hand);
+        if (selectedCard != null) {
+            if (!shoe.removeSpecificCard(selectedCard)) {
+                throw new IllegalArgumentException(
+                        "Selected card not available: " + selectedCard.getRank().getLabel() + " of "
+                                + selectedCard.getSuit().getLabel());
+            }
+            dealSpecificCard(hand, selectedCard);
+        } else {
+            dealCard(hand);
+        }
         if (hand.isBusted() || hand.getValue().getTotal() == 21) {
             hand.setStanding(true);
         }
@@ -104,10 +113,6 @@ public class BlackjackGame {
         if (hand.getCards().size() != 2) {
             throw new IllegalArgumentException("Double requires exactly two cards");
         }
-        int handTotal = hand.getValue().getTotal();
-        if (handTotal != 9 && handTotal != 10 && handTotal != 11) {
-            throw new IllegalArgumentException("Double only allowed on hands totaling 9, 10, or 11");
-        }
         hand.setBetUnits(2);
         dealCard(hand);
         hand.setStanding(true);
@@ -115,7 +120,7 @@ public class BlackjackGame {
         return toGameState();
     }
 
-    public GameState split(int handIndex) {
+    public GameState split(int handIndex, Card card1, Card card2) {
         ensurePlayerTurn();
         Hand hand = getPlayerHand(handIndex);
         if (hand.isStanding() || hand.isBusted()) {
@@ -132,11 +137,12 @@ public class BlackjackGame {
             throw new IllegalArgumentException("Max hands reached");
         }
 
-        // Resplit limits: prevent resplitting aces
-        boolean isAceHand = hand.getCards().get(0).getRank() == Rank.ACE;
-        if (hand.isFromSplit() && isAceHand) {
-            throw new IllegalArgumentException("Cannot resplit aces. Each ace receives only one card");
+        // Don't allow a split hand to be split again
+        if (hand.isFromSplit()) {
+            throw new IllegalArgumentException("Cannot split a hand that was already split");
         }
+
+        System.out.println("DEBUG: Split called with card1=" + card1 + ", card2=" + card2);
 
         Card moved = hand.splitOff();
         hand.setIsFromSplit(true);
@@ -144,6 +150,11 @@ public class BlackjackGame {
         newHand.setIsFromSplit(true);
 
         // If splitting aces, restrict to one card per ace
+        boolean isAceHand = hand.getCards().get(0).getRank() == Rank.ACE;
+        System.out.println("DEBUG: After splitOff, hand has " + hand.getCards().size() + " cards");
+        System.out.println(
+                "DEBUG: Card 0: " + hand.getCards().get(0).getRank() + " of " + hand.getCards().get(0).getSuit());
+        System.out.println("DEBUG: isAceHand=" + isAceHand);
         if (isAceHand) {
             hand.setCanHitAfterSplitAces(false);
             newHand.setCanHitAfterSplitAces(false);
@@ -151,9 +162,51 @@ public class BlackjackGame {
 
         newHand.addCard(moved);
         playerHands.add(handIndex + 1, newHand);
-        dealCard(hand);
-        dealCard(newHand);
+
+        // Deal cards to both hands
+        if (card1 != null) {
+            System.out.println("DEBUG: Dealing specific card1: " + card1.getRank() + " of " + card1.getSuit());
+            if (!shoe.removeSpecificCard(card1)) {
+                throw new IllegalArgumentException(
+                        "Selected card not available: " + card1.getRank().getLabel() + " of "
+                                + card1.getSuit().getLabel());
+            }
+            dealSpecificCard(hand, card1);
+        } else {
+            System.out.println("DEBUG: Dealing random card to original hand");
+            dealCard(hand);
+        }
+
+        if (card2 != null) {
+            System.out.println("DEBUG: Dealing specific card2: " + card2.getRank() + " of " + card2.getSuit());
+            if (!shoe.removeSpecificCard(card2)) {
+                throw new IllegalArgumentException(
+                        "Selected card not available: " + card2.getRank().getLabel() + " of "
+                                + card2.getSuit().getLabel());
+            }
+            dealSpecificCard(newHand, card2);
+        } else {
+            System.out.println("DEBUG: Dealing random card to new hand");
+            dealCard(newHand);
+        }
+
+        if (isAceHand) {
+            hand.setStanding(true);
+            newHand.setStanding(true);
+            System.out.println("DEBUG SPLIT ACES: Set both hands to standing");
+            System.out.println("DEBUG SPLIT ACES: Hand 0 after standing: standing=" + playerHands.get(0).isStanding());
+            System.out.println("DEBUG SPLIT ACES: Hand 1 after standing: standing=" + playerHands.get(1).isStanding());
+            System.out.println("DEBUG SPLIT ACES: Now calling finishIfReady()...");
+        }
+
         finishIfReady();
+        System.out.println("DEBUG SPLIT: About to return state with phase=" + phase);
+        System.out.println("DEBUG SPLIT: Hand 0: standing=" + playerHands.get(0).isStanding() + ", busted="
+                + playerHands.get(0).isBusted());
+        if (playerHands.size() > 1) {
+            System.out.println("DEBUG SPLIT: Hand 1: standing=" + playerHands.get(1).isStanding() + ", busted="
+                    + playerHands.get(1).isBusted());
+        }
         return toGameState();
     }
 
@@ -162,6 +215,9 @@ public class BlackjackGame {
         Hand hand = getPlayerHand(handIndex);
         if (hand.isStanding() || hand.isBusted() || hand.isInsured()) {
             return toGameState();
+        }
+        if (hand.isFromSplit()) {
+            throw new IllegalArgumentException("Insurance not available for split hands");
         }
         // Insurance available only on first 2 cards
         if (hand.getCards().size() != 2) {
@@ -192,6 +248,9 @@ public class BlackjackGame {
         if (hand.isStanding() || hand.isBusted() || hand.isInsured() || hand.isInsuranceDeclined()) {
             return toGameState();
         }
+        if (hand.isFromSplit()) {
+            throw new IllegalArgumentException("Insurance not available for split hands");
+        }
         // Insurance available only on first 2 cards
         if (hand.getCards().size() != 2) {
             throw new IllegalArgumentException("Insurance decision only available with exactly two cards");
@@ -221,6 +280,7 @@ public class BlackjackGame {
         // A hand has resolved insurance if either:
         // 1. The hand is not playable (busted, standing, blackjack)
         // 2. The hand has been offered insurance and either took it or ignored it
+        // 3. The hand was created by a split (split hands are not offered insurance)
         HandValue dealerValue = dealerHand.getValue();
         if (dealerValue.getTotal() != 21 || dealerHand.getCards().size() != 2) {
             return true; // Dealer doesn't have blackjack, insurance not applicable
@@ -228,6 +288,10 @@ public class BlackjackGame {
 
         for (Hand hand : playerHands) {
             if (!hand.isBusted() && !hand.isStanding()) {
+                // Skip split hands - they are not offered insurance
+                if (hand.isFromSplit()) {
+                    continue;
+                }
                 // This hand is still playing and hasn't resolved insurance yet
                 if (hand.getCards().size() == 2 && !hand.isInsured() && !hand.isInsuranceDeclined()) {
                     // Hand has 2 cards but hasn't made insurance decision
@@ -340,11 +404,18 @@ public class BlackjackGame {
     }
 
     private void finishIfReady() {
-        for (Hand hand : playerHands) {
+        System.out.println("DEBUG finishIfReady: Checking " + playerHands.size() + " hands...");
+        for (int i = 0; i < playerHands.size(); i++) {
+            Hand hand = playerHands.get(i);
+            System.out.println("DEBUG finishIfReady: Hand " + i + " - standing=" + hand.isStanding() + ", busted="
+                    + hand.isBusted());
             if (!hand.isStanding() && !hand.isBusted()) {
+                System.out.println("DEBUG finishIfReady: Found playable hand at index " + i + ", returning early");
                 return;
             }
         }
+        System.out
+                .println("DEBUG finishIfReady: No playable hands, calling playDealer() and setting phase to COMPLETE");
         playDealer();
         phase = GamePhase.COMPLETE;
     }
@@ -434,7 +505,9 @@ public class BlackjackGame {
                     hand.isInsuranceWon(),
                     result,
                     recommended,
-                    hand.isFromSplit()));
+                    hand.isFromSplit(),
+                    hand.canHitAfterSplitAces(),
+                    hand.getBetUnits()));
         }
 
         String note = phase == GamePhase.COMPLETE
@@ -453,6 +526,7 @@ public class BlackjackGame {
                 roundToTwo(decksRemaining),
                 roundToTwo(netUnits),
                 roundToTwo(insuranceTotal),
+                suggestedBet,
                 note);
     }
 
@@ -499,7 +573,8 @@ public class BlackjackGame {
 
     private String recommendAction(Hand hand, HandValue value, Card dealerUpCard, double trueCount) {
         // Check for insurance opportunity first
-        if (phase == GamePhase.PLAYER_TURN && dealerUpCard != null && dealerUpCard.getRank() == Rank.ACE) {
+        if (phase == GamePhase.PLAYER_TURN && !hand.isFromSplit() && dealerUpCard != null
+                && dealerUpCard.getRank() == Rank.ACE) {
             if (hand.getCards().size() == 2 && !hand.isInsured() && !hand.isInsuranceDeclined()
                     && !hand.isStanding() && !hand.isBusted()) {
                 // Recommend insurance when true count is high (2 or higher)
@@ -515,17 +590,39 @@ public class BlackjackGame {
         }
 
         // Don't recommend actions on blackjack (natural 21 with 2 cards)
-        if (hand.getCards().size() == 2 && value.getTotal() == 21) {
+        if (!hand.isFromSplit() && hand.getCards().size() == 2 && value.getTotal() == 21) {
             return "NONE";
         }
 
         int dealerUpValue = dealerUpCard == null ? 10 : dealerUpCard.getRank().getValue();
 
         // Get basic strategy recommendation
-        String recommendation = Strategy.getRecommendedAction(hand, dealerUpValue, hand.canSplit());
+        boolean allowSplit = !hand.isFromSplit() && hand.canSplit();
+        String recommendation = Strategy.getRecommendedAction(hand, dealerUpValue, allowSplit);
 
         // Apply count-based deviations for a more sophisticated strategy
         recommendation = Strategy.applyCountDeviation(recommendation, hand, dealerUpValue, trueCount);
+
+        if (hand.isFromSplit()) {
+            if ("INSURE".equals(recommendation) || "NO_INSURANCE".equals(recommendation)
+                    || "DOUBLE".equals(recommendation) || "SPLIT".equals(recommendation)) {
+                String fallback = Strategy.getRecommendedAction(hand, dealerUpValue, false);
+                if ("DOUBLE".equals(fallback) || "SPLIT".equals(fallback)) {
+                    return "HIT";
+                }
+                return fallback;
+            }
+        }
+
+        if ((recommendation == null || recommendation.isBlank() || "NONE".equals(recommendation))
+                && phase == GamePhase.PLAYER_TURN
+                && !hand.isStanding() && !hand.isBusted()) {
+            String fallback = Strategy.getRecommendedAction(hand, dealerUpValue, false);
+            if ("DOUBLE".equals(fallback) || "SPLIT".equals(fallback)) {
+                return "HIT";
+            }
+            return fallback;
+        }
 
         return recommendation;
     }
