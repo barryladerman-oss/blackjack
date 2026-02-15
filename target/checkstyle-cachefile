@@ -1,4 +1,4 @@
-#Sun Feb 15 09:24:39 EST 2026
+#Sun Feb 15 09:31:07 EST 2026
 C\:\\workspace\\blackjack\\src\\main\\java\\us\\laderman\\blackjack\\BlackjackApplication.java=1771158884752
 C\:\\workspace\\blackjack\\src\\main\\java\\us\\laderman\\blackjack\\controller\\BlackjackController.java=1771162309443
 C\:\\workspace\\blackjack\\src\\main\\java\\us\\laderman\\blackjack\\model\\Card.java=1771101641297
@@ -20,4 +20,6 @@ C\:\\workspace\\blackjack\\src\\test\\java\\us\\laderman\\blackjack\\service\\Bl
 C\:\\workspace\\blackjack\\src\\test\\java\\us\\laderman\\blackjack\\service\\BlackjackServiceTest.java=1771164133419
 C\:\\workspace\\blackjack\\src\\test\\java\\us\\laderman\\blackjack\\service\\CardCountingTest.java=1771165130955
 C\:\\workspace\\blackjack\\src\\test\\java\\us\\laderman\\blackjack\\service\\HandTest.java=1771163196558
+C\:\\workspace\\blackjack\\src\\test\\java\\us\\laderman\\blackjack\\ui\\BlackjackAdvancedSeleniumTest.java=1771165830396
+C\:\\workspace\\blackjack\\src\\test\\java\\us\\laderman\\blackjack\\ui\\BlackjackSeleniumTest.java=1771165814361
 configuration*?=4AD1FA44B1AD8987C5EFAEA62D6AB0B221C032CA
