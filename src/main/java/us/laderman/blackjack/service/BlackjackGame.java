@@ -98,10 +98,12 @@ public class BlackjackGame {
     }
 
     public GameState doubleDown(int handIndex, Card selectedCard) {
-        ensurePlayerTurn();
+        if (phase != GamePhase.PLAYER_TURN) {
+            throw new IllegalStateException("Cannot double down outside player turn");
+        }
         Hand hand = getPlayerHand(handIndex);
         if (hand.isStanding() || hand.isBusted()) {
-            return toGameState();
+            throw new IllegalStateException("Cannot double down on a completed hand");
         }
         // Check if insurance decisions are pending
         if (dealerHasAce() && !allHandsResolvedInsurance()) {

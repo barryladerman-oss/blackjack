@@ -10,56 +10,70 @@
 
 <body>
     <div class="shell">
-        <section class="grid">
-            <div class="card">
-                <h2>Results</h2>
-                <div class="summary compact" id="resultsSummary">
-                    <span><strong>Hands won</strong><em id="handsWon">--</em></span>
-                    <span><strong>Hands lost</strong><em id="handsLost">--</em></span>
-                    <span><strong>Pushes</strong><em id="handsPush">--</em></span>
-                    <span><strong>Doubles won</strong><em id="doublesWon">--</em></span>
-                    <span><strong>Doubles lost</strong><em id="doublesLost">--</em></span>
-                    <span><strong>Insurance</strong><em id="insuranceTotal">--</em></span>
-                    <span><strong>Net units</strong><em id="netUnits">--</em></span>
-                </div>
-            </div>
-            <div class="card">
-                <h2>Recommendations</h2>
-                <div class="summary compact" id="strategySummary">
-                    <span><strong>Cards dealt</strong><em id="cardsDealt">--</em></span>
-                    <span><strong>True count</strong><em id="trueCount">--</em></span>
-                    <span><strong>Suggested bet</strong><em id="suggestedBet">--</em></span>
-                    <span><strong>Strategy</strong><em id="strategyText">--</em></span>
-                    <span><strong>Note</strong><em id="noteText">--</em></span>
-                </div>
-            </div>
-            <div class="card">
+        <section class="new-game-grid">
+            <div class="card new-game-card">
                 <h2>New Game</h2>
                 <div class="compact-form">
                     <label for="hands">Hands</label>
                     <input id="hands" type="number" min="1" max="5" value="3" />
                     <button id="startBtn">Start</button>
                 </div>
-                <details open style="margin-top: 12px;" id="cardSelectionDetails">
-                    <summary style="cursor: pointer; font-size: 12px; color: var(--muted); margin-bottom: 8px;">Set
+                <details open="true" style="margin-top: 8px;" id="cardSelectionDetails">
+                    <summary style="cursor: pointer; font-size: 11px; color: var(--muted); margin-bottom: 6px;">Set
                         specific starting cards (optional)</summary>
-                    <div id="cardSelectionContainer" style="display: grid; gap: 8px; font-size: 11px;">
+                    <div id="cardSelectionContainer"
+                        style="display: grid; gap: 2px; font-size: 10px; grid-template-columns: 1fr; width: max-content; justify-self: start;">
                         <!-- Dealer up card -->
                         <div
-                            style="display: grid; grid-template-columns: 120px 1fr 1fr; gap: 4px; align-items: center;">
+                            style="display: grid; grid-template-columns: 120px max-content max-content; gap: 2px; align-items: center; width: max-content; justify-items: start;">
                             <label>Dealer Up Card:</label>
                             <select id="dealerCard1Rank" class="card-rank-select" data-card="dealer1"
-                                style="font-size: 11px; padding: 4px;">
+                                style="font-size: 11px; padding: 2px; max-width: 100%;">
                                 <option value="">Random</option>
                             </select>
                             <select id="dealerCard1Suit" class="card-suit-select" data-card="dealer1"
-                                style="font-size: 11px; padding: 4px;">
+                                style="font-size: 11px; padding: 2px; max-width: 100%;">
                                 <option value="">Random</option>
                             </select>
                         </div>
                         <!-- Player cards will be added dynamically -->
                     </div>
                 </details>
+            </div>
+        </section>
+
+        <section class="grid stats-grid">
+            <div class="card">
+                <h2>Game Info</h2>
+                <div class="summary compact" id="gameInfoSummary">
+                    <span><strong>Game ID</strong><em id="gameId">-</em></span>
+                    <span><strong>Phase</strong><em id="phase">-</em></span>
+                    <span class="dealer-upcard-hidden"><strong>Dealer Upcard</strong><em id="dealerUpcard">-</em></span>
+                    <span><strong>Running Count</strong><em id="runningCount">-</em></span>
+                    <span><strong>True Count</strong><em id="trueCount">--</em></span>
+                    <span><strong>Decks Remaining</strong><em id="decksRemaining">-</em></span>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Results</h2>
+                <div class="summary compact" id="resultsSummary">
+                    <span><strong>Hands won</strong><em id="handsWon">-</em></span>
+                    <span><strong>Hands lost</strong><em id="handsLost">-</em></span>
+                    <span><strong>Pushes</strong><em id="handsPush">-</em></span>
+                    <span><strong>Doubles won</strong><em id="doublesWon">-</em></span>
+                    <span><strong>Doubles lost</strong><em id="doublesLost">-</em></span>
+                    <span><strong>Insurance</strong><em id="insuranceTotal">-</em></span>
+                    <span><strong>Net units</strong><em id="netUnits">-</em></span>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Recommendations</h2>
+                <div class="summary compact" id="strategySummary">
+                    <span><strong>Cards dealt</strong><em id="cardsDealt">--</em></span>
+                    <span><strong>Suggested bet</strong><em id="suggestedBet">--</em></span>
+                    <span><strong>Strategy</strong><em id="strategyText">--</em></span>
+                    <span><strong>Note</strong><em id="noteText">--</em></span>
+                </div>
             </div>
         </section>
 
@@ -76,8 +90,28 @@
                         <div class="row">No hands loaded yet.</div>
                     </div>
                 </div>
+                <div class="game-state-panel" style="margin-top: 12px;">
+                    <h3 style="margin: 0 0 8px;">Game State JSON</h3>
+                    <pre id="gameState">-</pre>
+                </div>
+                <!-- Hidden buttons for Selenium tests - shown only in debug mode -->
+                <div id="hiddenButtonsContainer"
+                    style="position: fixed; top: 0; left: 0; opacity: 0; width: auto; height: auto; overflow: visible; pointer-events: auto;">
+                    <button id="hitBtn" disabled>Hit</button>
+                    <button id="standBtn" disabled>Stand</button>
+                    <button id="doubleBtn" disabled>Double</button>
+                    <button id="doubleDownBtn" disabled>Double Down</button>
+                    <button id="splitBtn" disabled>Split</button>
+                    <button id="insuranceBtn" disabled>Insurance</button>
+                    <button id="declineInsuranceBtn" disabled>No Insurance</button>
+                </div>
             </div>
         </section>
+    </div>
+
+    <div id="debugPanel" class="debug-panel">
+        <div><strong>True Count</strong><em id="trueCountDebug">-</em></div>
+        <div><strong>Running Count</strong><em id="runningCountDebug">-</em></div>
     </div>
 
     <!-- Card Selection Modal for Hit -->

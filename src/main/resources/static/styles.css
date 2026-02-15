@@ -16,22 +16,35 @@
     box-sizing: border-box;
 }
 
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
 body {
     margin: 0;
     color: var(--ink);
     font-family: "Futura", "Trebuchet MS", sans-serif;
+    font-size: 18px;
     background:
         radial-gradient(circle at top left, rgba(194, 75, 47, 0.22), transparent 55%),
         radial-gradient(circle at bottom right, rgba(31, 95, 85, 0.25), transparent 55%),
         linear-gradient(160deg, #f6f0e6 0%, #efe3d1 45%, #e7d7c3 100%);
     min-height: 100vh;
     display: grid;
-    place-items: center;
+    justify-items: center;
+    align-items: start;
     padding: 32px 16px 60px;
 }
 
 .shell {
-    width: min(100% - 32px, 1400px);
+    width: calc(100% - 32px);
     display: grid;
     gap: 10px;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -41,6 +54,18 @@ body {
     display: contents;
 }
 
+.stats-grid {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.stats-grid>.card {
+    order: 0;
+    grid-column: auto;
+}
+
 section.grid:last-of-type {
     display: grid;
     grid-column: 1 / -1;
@@ -48,15 +73,15 @@ section.grid:last-of-type {
     order: 10;
 }
 
-section.grid>.card:nth-child(1) {
+section.grid:not(.stats-grid)>.card:nth-child(1) {
     order: 2;
 }
 
-section.grid>.card:nth-child(2) {
+section.grid:not(.stats-grid)>.card:nth-child(2) {
     order: 1;
 }
 
-section.grid>.card:nth-child(3) {
+section.grid:not(.stats-grid)>.card:nth-child(3) {
     order: 3;
     grid-column: span 2;
     min-width: 0;
@@ -75,6 +100,19 @@ section.grid>.card:nth-child(3) {
 
 .controls-grid.compact {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.new-game-grid {
+    display: grid;
+    grid-column: 1 / -1;
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 0;
+    justify-self: stretch;
+}
+
+.new-game-grid>.card {
+    width: 100%;
 }
 
 .card {
@@ -100,8 +138,21 @@ section.grid>.card:nth-child(3) {
 
 .card h2 {
     margin: 0 0 10px;
-    font-size: 16px;
+    font-size: 20px;
     font-family: "Bodoni MT", "Garamond", "Palatino Linotype", serif;
+}
+
+.new-game-card {
+    padding: 12px;
+}
+
+.new-game-card h2 {
+    margin-bottom: 6px;
+    font-size: 19px;
+}
+
+.new-game-card .compact-form {
+    gap: 6px;
 }
 
 .field {
@@ -111,10 +162,15 @@ section.grid>.card:nth-child(3) {
 }
 
 label {
-    font-size: 11px;
+    font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     color: var(--muted);
+}
+
+#cardSelectionDetails label,
+#cardSelectionContainer label {
+    font-size: 10px;
 }
 
 input,
@@ -123,9 +179,15 @@ select {
     padding: 8px 10px;
     border-radius: 10px;
     border: 1px solid var(--line);
-    font-size: 13px;
+    font-size: 20px;
     font-family: "Consolas", "Courier New", monospace;
     background: var(--panel-strong);
+}
+
+select {
+    width: auto;
+    max-width: none;
+    margin: 0;
 }
 
 .actions {
@@ -152,7 +214,7 @@ button {
     border: none;
     border-radius: 10px;
     padding: 10px 12px;
-    font-size: 13px;
+    font-size: 16px;
     cursor: pointer;
     background: var(--accent);
     color: #fff;
@@ -161,17 +223,19 @@ button {
 
 button.secondary {
     background: #b13d27;
+    color: #ffffff;
 }
 
 button.ghost {
     background: transparent;
-    color: var(--accent-dark);
-    border: 1px solid rgba(143, 59, 27, 0.4);
+    color: #ffffff;
+    border: 1px solid rgba(194, 75, 47, 0.4);
 }
 
 button.recommended {
     background: var(--mint);
     box-shadow: 0 8px 16px rgba(26, 107, 96, 0.2);
+    color: #ffffff;
 }
 
 button:disabled {
@@ -186,22 +250,131 @@ button:not(:disabled):hover {
     box-shadow: 0 10px 20px rgba(28, 29, 31, 0.15);
 }
 
+.action-btn {
+    padding: 12px 20px;
+    font-size: 17px;
+    background: var(--mint);
+    min-width: 100px;
+}
+
+.action-btn:not(:disabled):hover {
+    background: #0f4d44;
+}
+
+.hand-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+#splitBtn {
+    background: var(--accent);
+    min-width: 100px;
+}
+
+#splitBtn:not(:disabled):hover {
+    background: #a03a1f;
+}
+
+.insurance-btn {
+    color: #ffffff;
+    background: var(--accent-dark);
+}
+
+.insurance-btn:not(:disabled):hover {
+    background: #5a2514;
+    color: #ffffff;
+}
+
+button.insurance-btn.ghost {
+    color: #ffffff;
+    background: var(--accent-dark);
+    border: 1px solid rgba(194, 75, 47, 0.4);
+}
+
+button.insurance-btn.ghost:not(:disabled):hover {
+    background: #5a2514;
+    color: #ffffff;
+}
+
+button.insurance-btn.recommended,
+button.insurance-btn.ghost.recommended,
+button#splitBtn.recommended {
+    background: var(--mint);
+    color: #ffffff;
+    border-color: rgba(26, 107, 96, 0.4);
+}
+
 .summary {
     display: grid;
     gap: 8px;
     font-family: "Consolas", "Courier New", monospace;
-    font-size: 12px;
+    font-size: 15px;
 }
 
 .summary.compact {
     gap: 5px;
-    font-size: 13px;
+    font-size: 16px;
 }
 
 .summary span {
     display: flex;
     justify-content: space-between;
     gap: 10px;
+}
+
+.dealer-upcard-hidden {
+    color: transparent;
+}
+
+.dealer-upcard-hidden em {
+    color: transparent;
+}
+
+.debug-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    opacity: 1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+body.test-mode {
+    display: block;
+    padding: 16px;
+}
+
+body.test-mode .shell,
+body.test-mode .stats-grid,
+body.test-mode .new-game-grid,
+body.test-mode section.grid:last-of-type,
+body.test-mode .grid {
+    display: block;
+}
+
+body.test-mode .card {
+    animation: none;
+    overflow: visible;
+}
+
+body.test-mode .debug-panel {
+    position: static;
+    width: auto;
+    height: auto;
+    opacity: 1;
+    margin: 8px 0;
+    pointer-events: auto;
+}
+
+body.test-mode #hiddenButtonsContainer {
+    position: static;
+    opacity: 0.01;
+    pointer-events: auto;
+    margin-top: 8px;
 }
 
 .table-area {
@@ -235,7 +408,7 @@ button:not(:disabled):hover {
 
 .row-title {
     font-weight: 600;
-    font-size: 20px;
+    font-size: 24px;
 }
 
 .hand-row.result-win {
@@ -279,7 +452,7 @@ button:not(:disabled):hover {
     flex-wrap: wrap;
     gap: 8px;
     color: var(--muted);
-    font-size: 16px;
+    font-size: 20px;
     align-items: center;
 }
 
@@ -292,7 +465,7 @@ button:not(:disabled):hover {
 
 .hand-actions button {
     padding: 6px 10px;
-    font-size: 11px;
+    font-size: 14px;
     border-radius: 8px;
     flex: 1;
     min-width: 50px;
@@ -310,7 +483,7 @@ button:not(:disabled):hover {
     color: var(--accent-dark);
     font-weight: 700;
     letter-spacing: 0.02em;
-    font-size: 9px;
+    font-size: 12px;
     white-space: nowrap;
 }
 
@@ -465,12 +638,10 @@ pre {
 
 @keyframes rise {
     from {
-        opacity: 0;
         transform: translateY(10px);
     }
 
     to {
-        opacity: 1;
         transform: translateY(0);
     }
 }
@@ -495,7 +666,7 @@ pre {
 
 .dealer-meta {
     font-family: "Consolas", "Courier New", monospace;
-    font-size: 15px;
+    font-size: 18px;
     color: var(--muted);
     white-space: nowrap;
 }
@@ -535,7 +706,7 @@ pre {
 
 .modal-content h3 {
     margin: 0 0 8px;
-    font-size: 20px;
+    font-size: 24px;
     color: var(--ink);
 }
 

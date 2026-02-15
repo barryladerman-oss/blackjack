@@ -20,7 +20,13 @@ class BlackjackGameTest {
 
     @BeforeEach
     void setUp() {
-        game = new BlackjackGame(1, 1);
+        HashMap<Integer, BlackjackService.HandCards> hands = new HashMap<>();
+        hands.put(0, new BlackjackService.HandCards(
+            new Card(Suit.HEARTS, Rank.FIVE),
+            new Card(Suit.SPADES, Rank.SIX)));
+        game = new BlackjackGame(1, 1, hands,
+            new Card(Suit.DIAMONDS, Rank.NINE),
+            new Card(Suit.CLUBS, Rank.SEVEN));
     }
 
     @Test
