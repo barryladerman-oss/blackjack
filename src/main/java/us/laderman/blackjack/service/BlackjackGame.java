@@ -97,7 +97,7 @@ public class BlackjackGame {
         return toGameState();
     }
 
-    public GameState doubleDown(int handIndex) {
+    public GameState doubleDown(int handIndex, Card selectedCard) {
         ensurePlayerTurn();
         Hand hand = getPlayerHand(handIndex);
         if (hand.isStanding() || hand.isBusted()) {
@@ -114,7 +114,14 @@ public class BlackjackGame {
             throw new IllegalArgumentException("Double requires exactly two cards");
         }
         hand.setBetUnits(2);
-        dealCard(hand);
+
+        // Deal specific or random card
+        if (selectedCard != null) {
+            hand.addCard(selectedCard);
+        } else {
+            dealCard(hand);
+        }
+
         hand.setStanding(true);
         finishIfReady();
         return toGameState();

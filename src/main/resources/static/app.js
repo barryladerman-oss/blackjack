@@ -814,6 +814,13 @@ handList.addEventListener("click", (event) => {
         return;
     }
 
+    // Special handling for double action - show card selection modal
+    if (action === "double") {
+        console.log("Showing double modal for hand:", hand);
+        showDoubleCardModal(hand);
+        return;
+    }
+
     run(() => {
         const id = guardGameId();
         return apiFetch(`/api/blackjack/${action}/${id}?hand=${hand}`, { method: "POST" });
@@ -995,6 +1002,133 @@ if (hitCardModal) {
     hitCardModal.addEventListener("click", (e) => {
         if (e.target === hitCardModal) {
             closeHitCardModal();
+        }
+    });
+}
+
+// Double card modal functions
+const doubleCardModal = document.getElementById("doubleCardModal");
+const doubleCardRankSelect = document.getElementById("doubleCardRank");
+const doubleCardSuitSelect = document.getElementById("doubleCardSuit");
+const doubleCardConfirmBtn = document.getElementById("doubleCardConfirmBtn");
+const doubleCardCancelBtn = document.getElementById("doubleCardCancelBtn");
+
+let currentDoubleHandIndex = null;
+
+const populateDoubleCardSelectors = () => {
+    if (!doubleCardRankSelect || !doubleCardSuitSelect) {
+        console.error("Double card selectors not found!");
+        return;
+    }
+
+    const cardsInPlay = getCardsInPlay();
+    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+
+    const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+    const suits = ["♠", "♥", "♦", "♣"];
+
+    doubleCardRankSelect.innerHTML = '<option value="">Random</option>';
+    ranks.forEach(rank => {
+        const option = document.createElement("option");
+        option.value = rank;
+        option.textContent = rank;
+        doubleCardRankSelect.appendChild(option);
+    });
+
+    doubleCardSuitSelect.innerHTML = '<option value="">Random</option>';
+    suits.forEach(suit => {
+        const option = document.createElement("option");
+        option.value = suit;
+        option.textContent = suit;
+        doubleCardSuitSelect.appendChild(option);
+    });
+};
+
+const updateDoubleCardSuits = () => {
+    const selectedRank = doubleCardRankSelect.value;
+    if (!selectedRank) {
+        populateDoubleCardSelectors();
+        return;
+    }
+
+    const cardsInPlay = getCardsInPlay();
+    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+    const suits = ["♠", "♥", "♦", "♣"];
+
+    doubleCardSuitSelect.innerHTML = '<option value="">Random</option>';
+    suits.forEach(suit => {
+        const cardKey = `${selectedRank}:${suit}`;
+        if (!usedCards.has(cardKey)) {
+            const option = document.createElement("option");
+            option.value = suit;
+            option.textContent = suit;
+            doubleCardSuitSelect.appendChild(option);
+        }
+    });
+};
+
+const showDoubleCardModal = (handIndex) => {
+    console.log("showDoubleCardModal called with handIndex:", handIndex);
+    if (!doubleCardModal || !doubleCardRankSelect || !doubleCardSuitSelect) {
+        console.error("Double card modal elements not found!");
+        return;
+    }
+    currentDoubleHandIndex = handIndex;
+    populateDoubleCardSelectors();
+    doubleCardRankSelect.value = "";
+    doubleCardSuitSelect.value = "";
+
+    doubleCardRankSelect.removeEventListener('change', updateDoubleCardSuits);
+    doubleCardRankSelect.addEventListener('change', updateDoubleCardSuits);
+
+    doubleCardModal.style.display = "flex";
+    setTimeout(() => doubleCardRankSelect.focus(), 0);
+};
+
+const closeDoubleCardModal = () => {
+    if (!doubleCardModal) return;
+    doubleCardModal.style.display = "none";
+    currentDoubleHandIndex = null;
+};
+
+if (doubleCardCancelBtn) {
+    doubleCardCancelBtn.addEventListener("click", () => {
+        closeDoubleCardModal();
+    });
+}
+
+if (doubleCardConfirmBtn) {
+    doubleCardConfirmBtn.addEventListener("click", () => {
+        const handIndex = currentDoubleHandIndex;
+        const rank = doubleCardRankSelect ? doubleCardRankSelect.value : "";
+        const suit = doubleCardSuitSelect ? doubleCardSuitSelect.value : "";
+
+        console.log("Double confirm - hand:", handIndex, "rank:", rank, "suit:", suit);
+
+        if ((rank && !suit) || (!rank && suit)) {
+            alert("Please select both rank and suit, or leave both as Random");
+            return;
+        }
+
+        closeDoubleCardModal();
+
+        run(() => {
+            const id = guardGameId();
+            const params = new URLSearchParams();
+            params.append("hand", handIndex);
+            if (rank) params.append("rank", rank);
+            if (suit) params.append("suit", suit);
+            const url = `/api/blackjack/double/${id}?${params.toString()}`;
+            console.log("Double API call - URL:", url);
+            return apiFetch(url, { method: "POST" });
+        });
+    });
+}
+
+if (doubleCardModal) {
+    doubleCardModal.addEventListener("click", (e) => {
+        if (e.target === doubleCardModal) {
+            closeDoubleCardModal();
         }
     });
 }

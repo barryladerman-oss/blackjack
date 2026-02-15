@@ -134,8 +134,9 @@ public class BlackjackService {
         return getGame(gameId).stand(handIndex);
     }
 
-    public GameState doubleDown(UUID gameId, int handIndex) {
-        return getGame(gameId).doubleDown(handIndex);
+    public GameState doubleDown(UUID gameId, int handIndex, String rank, String suit) {
+        Card selectedCard = parseCard(rank, suit);
+        return getGame(gameId).doubleDown(handIndex, selectedCard);
     }
 
     public GameState split(UUID gameId, int handIndex) {

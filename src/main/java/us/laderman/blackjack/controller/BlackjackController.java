@@ -72,8 +72,32 @@ public class BlackjackController {
     }
 
     @PostMapping("/double/{id}")
-    public GameState doubleDown(@PathVariable String id, @RequestParam int hand) {
-        return handleStateRequest(id, hand, ActionType.DOUBLE);
+    public GameState doubleDown(
+            @PathVariable String id,
+            @RequestParam int hand,
+            @RequestParam(required = false) String rank,
+            @RequestParam(required = false) String suit) {
+        return handleDoubleRequest(id, hand, rank, suit);
+    }
+
+    private GameState handleDoubleRequest(String id, Integer hand, String rank, String suit) {
+        UUID gameId;
+        try {
+            gameId = UUID.fromString(id);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid game id", ex);
+        }
+
+        try {
+            return service.doubleDown(gameId, hand, rank, suit);
+        } catch (IllegalArgumentException ex) {
+            HttpStatus status = ex.getMessage() != null && ex.getMessage().contains("not found")
+                    ? HttpStatus.NOT_FOUND
+                    : HttpStatus.BAD_REQUEST;
+            throw new ResponseStatusException(status, ex.getMessage(), ex);
+        } catch (IllegalStateException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage(), ex);
+        }
     }
 
     @PostMapping("/split/{id}")
@@ -130,12 +154,10 @@ public class BlackjackController {
         try {
             return switch (action) {
                 case STATE -> service.getState(gameId);
-                case HIT -> service.hit(gameId, hand);
                 case STAND -> service.stand(gameId, hand);
-                case DOUBLE -> service.doubleDown(gameId, hand);
-                case SPLIT -> service.split(gameId, hand);
                 case INSURANCE -> service.insurance(gameId, hand);
                 case DECLINE_INSURANCE -> service.declineInsurance(gameId, hand);
+                default -> throw new IllegalArgumentException("Unsupported action: " + action);
             };
         } catch (IllegalArgumentException ex) {
             HttpStatus status = ex.getMessage() != null && ex.getMessage().contains("not found")

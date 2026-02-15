@@ -107,6 +107,33 @@
         </div>
     </div>
 
+    <!-- Card Selection Modal for Double -->
+    <div id="doubleCardModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Select Card to Double</h3>
+            <p style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">Choose a specific card or draw
+                randomly</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+                <div>
+                    <label style="font-size: 11px; display: block; margin-bottom: 4px;">Rank</label>
+                    <select id="doubleCardRank" style="width: 100%; font-size: 13px; padding: 6px;">
+                        <option value="">Random</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 11px; display: block; margin-bottom: 4px;">Suit</label>
+                    <select id="doubleCardSuit" style="width: 100%; font-size: 13px; padding: 6px;">
+                        <option value="">Random</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button id="doubleCardCancelBtn" class="secondary">Cancel</button>
+                <button id="doubleCardConfirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Card Selection Modal for Split -->
     <div id="splitCardModal" class="modal" style="display: none;">
         <div class="modal-content">
