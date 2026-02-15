@@ -4,11 +4,14 @@ import us.laderman.blackjack.model.GameState;
 import us.laderman.blackjack.service.BlackjackService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.UUID;
 
@@ -21,10 +24,39 @@ public class BlackjackController {
         this.service = service;
     }
 
-    @PostMapping("/start")
+    private void logRequest(String endpoint, String additionalInfo) {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return;
+        }
+
+        HttpServletRequest request = attributes.getRequest();
+        StringBuilder logMessage = new StringBuilder();
+        logMessage.append("\n").append("=".repeat(80)).append("\n");
+        logMessage.append("📥 INCOMING REQUEST\n");
+        logMessage.append("=".repeat(80)).append("\n");
+        logMessage.append(String.format("Method: %s\n", request.getMethod()));
+        logMessage.append(String.format("Endpoint: %s\n", endpoint));
+        logMessage.append(String.format("Full URL: %s\n", request.getRequestURL()));
+        logMessage.append(String.format("Remote Address: %s\n", request.getRemoteAddr()));
+
+        if (request.getQueryString() != null && !request.getQueryString().isEmpty()) {
+            logMessage.append(String.format("Query String: %s\n", request.getQueryString()));
+        }
+
+        if (additionalInfo != null && !additionalInfo.isEmpty()) {
+            logMessage.append(String.format("Parameters: %s\n", additionalInfo));
+        }
+
+        logMessage.append("=".repeat(80));
+        System.out.println(logMessage.toString());
+    }
+
+    @RequestMapping(value = "/start", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState start(
             @RequestParam int hands,
             @RequestParam java.util.Map<String, String> allParams) {
+        logRequest("/api/blackjack/start", "hands=" + hands);
         try {
             return service.startGame(hands, allParams);
         } catch (IllegalArgumentException e) {
@@ -32,17 +64,20 @@ public class BlackjackController {
         }
     }
 
-    @PostMapping("/state/{id}")
+    @RequestMapping(value = "/state/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState state(@PathVariable String id) {
+        logRequest("/api/blackjack/state/" + id, "id=" + id);
         return handleStateRequest(id, null, ActionType.STATE);
     }
 
-    @PostMapping("/hit/{id}")
+    @RequestMapping(value = "/hit/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState hit(
             @PathVariable String id,
             @RequestParam int hand,
             @RequestParam(required = false) String rank,
             @RequestParam(required = false) String suit) {
+        String params = String.format("id=%s, hand=%d, rank=%s, suit=%s", id, hand, rank, suit);
+        logRequest("/api/blackjack/hit/" + id, params);
         return handleHitRequest(id, hand, rank, suit);
     }
 
@@ -66,17 +101,21 @@ public class BlackjackController {
         }
     }
 
-    @PostMapping("/stand/{id}")
+    @RequestMapping(value = "/stand/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState stand(@PathVariable String id, @RequestParam int hand) {
+        String params = String.format("id=%s, hand=%d", id, hand);
+        logRequest("/api/blackjack/stand/" + id, params);
         return handleStateRequest(id, hand, ActionType.STAND);
     }
 
-    @PostMapping("/double/{id}")
+    @RequestMapping(value = "/double/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState doubleDown(
             @PathVariable String id,
             @RequestParam int hand,
             @RequestParam(required = false) String rank,
             @RequestParam(required = false) String suit) {
+        String params = String.format("id=%s, hand=%d, rank=%s, suit=%s", id, hand, rank, suit);
+        logRequest("/api/blackjack/double/" + id, params);
         return handleDoubleRequest(id, hand, rank, suit);
     }
 
@@ -100,14 +139,15 @@ public class BlackjackController {
         }
     }
 
-    @PostMapping("/split/{id}")
+    @RequestMapping(value = "/split/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState split(@PathVariable String id, @RequestParam int hand,
             @RequestParam(required = false) String card1Rank,
             @RequestParam(required = false) String card1Suit,
             @RequestParam(required = false) String card2Rank,
             @RequestParam(required = false) String card2Suit) {
-        System.out.println("DEBUG: Controller split called with hand=" + hand + ", card1Rank=" + card1Rank
-                + ", card1Suit=" + card1Suit + ", card2Rank=" + card2Rank + ", card2Suit=" + card2Suit);
+        String params = String.format("id=%s, hand=%d, card1Rank=%s, card1Suit=%s, card2Rank=%s, card2Suit=%s",
+                id, hand, card1Rank, card1Suit, card2Rank, card2Suit);
+        logRequest("/api/blackjack/split/" + id, params);
         UUID gameId;
         try {
             gameId = UUID.fromString(id);
@@ -117,10 +157,8 @@ public class BlackjackController {
 
         try {
             if (card1Rank != null || card1Suit != null || card2Rank != null || card2Suit != null) {
-                System.out.println("DEBUG: Calling service.split with card parameters");
                 return service.split(gameId, hand, card1Rank, card1Suit, card2Rank, card2Suit);
             } else {
-                System.out.println("DEBUG: Calling service.split without card parameters");
                 return service.split(gameId, hand);
             }
         } catch (IllegalArgumentException ex) {
@@ -133,13 +171,17 @@ public class BlackjackController {
         }
     }
 
-    @PostMapping("/insurance/{id}")
+    @RequestMapping(value = "/insurance/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState insurance(@PathVariable String id, @RequestParam int hand) {
+        String params = String.format("id=%s, hand=%d", id, hand);
+        logRequest("/api/blackjack/insurance/" + id, params);
         return handleStateRequest(id, hand, ActionType.INSURANCE);
     }
 
-    @PostMapping("/decline-insurance/{id}")
+    @RequestMapping(value = "/decline-insurance/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState declineInsurance(@PathVariable String id, @RequestParam int hand) {
+        String params = String.format("id=%s, hand=%d", id, hand);
+        logRequest("/api/blackjack/decline-insurance/" + id, params);
         return handleStateRequest(id, hand, ActionType.DECLINE_INSURANCE);
     }
 
