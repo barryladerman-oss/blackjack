@@ -135,6 +135,57 @@ class BlackjackControllerTest {
     }
 
     @Test
+    @DisplayName("should handle split endpoint with rank-only for both cards")
+    void testSplitEndpointWithRankOnly() {
+        // Arrange
+        String gameId = UUID.randomUUID().toString();
+        GameState mockState = createMockGameState();
+        when(mockService.split(any(UUID.class), anyInt(), any(), any(), any(), any()))
+                .thenReturn(mockState);
+
+        // Act - passing rank without suit
+        GameState result = controller.split(gameId, 0, "FOUR", null, "FIVE", null);
+
+        // Assert
+        assertThat(result).isNotNull();
+        verify(mockService).split(any(UUID.class), eq(0), eq("FOUR"), eq(null), eq("FIVE"), eq(null));
+    }
+
+    @Test
+    @DisplayName("should handle split endpoint with rank-only for first card")
+    void testSplitEndpointWithRankOnlyFirstCard() {
+        // Arrange
+        String gameId = UUID.randomUUID().toString();
+        GameState mockState = createMockGameState();
+        when(mockService.split(any(UUID.class), anyInt(), any(), any(), any(), any()))
+                .thenReturn(mockState);
+
+        // Act
+        GameState result = controller.split(gameId, 0, "THREE", null, null, null);
+
+        // Assert
+        assertThat(result).isNotNull();
+        verify(mockService).split(any(UUID.class), eq(0), eq("THREE"), eq(null), eq(null), eq(null));
+    }
+
+    @Test
+    @DisplayName("should handle split endpoint with rank-only for second card")
+    void testSplitEndpointWithRankOnlySecondCard() {
+        // Arrange
+        String gameId = UUID.randomUUID().toString();
+        GameState mockState = createMockGameState();
+        when(mockService.split(any(UUID.class), anyInt(), any(), any(), any(), any()))
+                .thenReturn(mockState);
+
+        // Act
+        GameState result = controller.split(gameId, 0, null, null, "ACE", null);
+
+        // Assert
+        assertThat(result).isNotNull();
+        verify(mockService).split(any(UUID.class), eq(0), eq(null), eq(null), eq("ACE"), eq(null));
+    }
+
+    @Test
     @DisplayName("should handle insurance endpoint")
     void testInsuranceEndpoint() {
         // Arrange
@@ -191,10 +242,8 @@ class BlackjackControllerTest {
                 List.of(
                         createMockPlayerHandState(0),
                         createMockPlayerHandState(1),
-                        createMockPlayerHandState(2)
-                ),
-                0, 0, 1.0, 0, 0, 1, "Dealer up card 6"
-        );
+                        createMockPlayerHandState(2)),
+                0, 0, 1.0, 0, 0, 1, "Dealer up card 6");
         when(mockService.startGame(eq(3), any())).thenReturn(mockState);
 
         // Act
@@ -284,15 +333,13 @@ class BlackjackControllerTest {
                 0.0,
                 0.0,
                 1,
-                "New game"
-        );
+                "New game");
     }
 
     private PlayerHandState createMockPlayerHandState(int index) {
         List<Card> cards = List.of(
                 new Card(Suit.HEARTS, Rank.TEN),
-                new Card(Suit.DIAMONDS, Rank.FIVE)
-        );
+                new Card(Suit.DIAMONDS, Rank.FIVE));
         return new PlayerHandState(
                 index,
                 cards,
@@ -307,7 +354,6 @@ class BlackjackControllerTest {
                 "HIT",
                 false,
                 true,
-                1
-        );
+                1);
     }
 }

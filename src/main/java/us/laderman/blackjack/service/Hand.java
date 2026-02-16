@@ -16,6 +16,7 @@ public class Hand {
     private boolean insuranceDeclined;
     private int betUnits = 1;
     private boolean isFromSplit = false;
+    private Rank splitFromRank = null;
     private boolean canHitAfterSplitAces = true;
 
     public void addCard(Card card) {
@@ -94,6 +95,14 @@ public class Hand {
 
     public void setIsFromSplit(boolean fromSplit) {
         isFromSplit = fromSplit;
+    }
+
+    public Rank getSplitFromRank() {
+        return splitFromRank;
+    }
+
+    public void setSplitFromRank(Rank rank) {
+        splitFromRank = rank;
     }
 
     public boolean canHitAfterSplitAces() {

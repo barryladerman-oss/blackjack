@@ -15,4 +15,9 @@ public enum Suit {
     public String getLabel() {
         return label;
     }
+
+    @Override
+    public String toString() {
+        return label;
+    }
 }

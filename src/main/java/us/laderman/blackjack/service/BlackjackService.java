@@ -113,7 +113,7 @@ public class BlackjackService {
             return null;
         }
         try {
-            Rank rank = Rank.valueOf(rankStr.toUpperCase());
+            Rank rank = Rank.fromString(rankStr);
             Suit suit = Suit.valueOf(suitStr.toUpperCase());
             return new Card(suit, rank);
         } catch (IllegalArgumentException e) {
@@ -147,10 +147,37 @@ public class BlackjackService {
             String card2Rank, String card2Suit) {
         System.out.println("DEBUG: split called with card1Rank=" + card1Rank + ", card1Suit=" + card1Suit
                 + ", card2Rank=" + card2Rank + ", card2Suit=" + card2Suit);
+
+        // Normalize empty strings to null
+        card1Rank = (card1Rank != null && card1Rank.isEmpty()) ? null : card1Rank;
+        card1Suit = (card1Suit != null && card1Suit.isEmpty()) ? null : card1Suit;
+        card2Rank = (card2Rank != null && card2Rank.isEmpty()) ? null : card2Rank;
+        card2Suit = (card2Suit != null && card2Suit.isEmpty()) ? null : card2Suit;
+
         Card selectedCard1 = parseCard(card1Rank, card1Suit);
         Card selectedCard2 = parseCard(card2Rank, card2Suit);
-        System.out.println("DEBUG: Parsed cards - card1=" + selectedCard1 + ", card2=" + selectedCard2);
-        return getGame(gameId).split(handIndex, selectedCard1, selectedCard2);
+
+        // Handle rank-only specifications
+        Rank rank1 = null;
+        Rank rank2 = null;
+        if (selectedCard1 == null && card1Rank != null) {
+            try {
+                rank1 = Rank.fromString(card1Rank);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid rank: " + card1Rank);
+            }
+        }
+        if (selectedCard2 == null && card2Rank != null) {
+            try {
+                rank2 = Rank.fromString(card2Rank);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid rank: " + card2Rank);
+            }
+        }
+
+        System.out.println("DEBUG: Parsed cards - card1=" + selectedCard1 + ", card2=" + selectedCard2
+                + ", rank1=" + rank1 + ", rank2=" + rank2);
+        return getGame(gameId).split(handIndex, selectedCard1, selectedCard2, rank1, rank2);
     }
 
     public GameState insurance(UUID gameId, int handIndex) {

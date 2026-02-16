@@ -24,4 +24,9 @@ public class Card {
     public String getLabel() {
         return rank.getLabel() + " of " + suit.getLabel();
     }
+
+    @Override
+    public String toString() {
+        return rank.getLabel() + " of " + suit.getLabel();
+    }
 }

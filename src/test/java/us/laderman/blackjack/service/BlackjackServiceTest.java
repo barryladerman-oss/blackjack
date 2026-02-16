@@ -125,7 +125,8 @@ class BlackjackServiceTest {
             assertThat(standState).isNotNull();
             assertThat(standState.getPhase()).isNotNull();
         } catch (IllegalStateException e) {
-            // Hand was auto-stood (e.g., blackjack), so standing again fails - this is acceptable
+            // Hand was auto-stood (e.g., blackjack), so standing again fails - this is
+            // acceptable
             assertThat(e.getMessage()).contains("Player actions are closed");
         }
     }

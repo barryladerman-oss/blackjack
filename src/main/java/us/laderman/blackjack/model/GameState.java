@@ -117,6 +117,17 @@ public class GameState {
         public boolean isStanding() {
             return standing;
         }
+
+        @Override
+        public String toString() {
+            return "DealerState{" +
+                    "cards=" + cards +
+                    ", total=" + total +
+                    ", soft=" + soft +
+                    ", busted=" + busted +
+                    ", standing=" + standing +
+                    '}';
+        }
     }
 
     public static class PlayerHandState {
@@ -224,5 +235,42 @@ public class GameState {
         public int getBetUnits() {
             return betUnits;
         }
+
+        @Override
+        public String toString() {
+            return "PlayerHandState{" +
+                    "index=" + index +
+                    ", cards=" + cards +
+                    ", total=" + total +
+                    ", soft=" + soft +
+                    ", busted=" + busted +
+                    ", standing=" + standing +
+                    ", insured=" + insured +
+                    ", insuranceDeclined=" + insuranceDeclined +
+                    ", insuranceWon=" + insuranceWon +
+                    ", result='" + result + '\'' +
+                    ", recommendedAction='" + recommendedAction + '\'' +
+                    ", isFromSplit=" + isFromSplit +
+                    ", canHitAfterSplitAces=" + canHitAfterSplitAces +
+                    ", betUnits=" + betUnits +
+                    '}';
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "GameState{" +
+                "id='" + id + '\'' +
+                ", phase='" + phase + '\'' +
+                ", dealer=" + dealer +
+                ", hands=" + hands +
+                ", runningCount=" + runningCount +
+                ", trueCount=" + trueCount +
+                ", decksRemaining=" + decksRemaining +
+                ", netUnits=" + netUnits +
+                ", insuranceTotal=" + insuranceTotal +
+                ", suggestedBetUnits=" + suggestedBetUnits +
+                ", note='" + note + '\'' +
+                '}';
     }
 }

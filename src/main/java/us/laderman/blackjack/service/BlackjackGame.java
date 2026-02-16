@@ -109,8 +109,9 @@ public class BlackjackGame {
         if (dealerHasAce() && !allHandsResolvedInsurance()) {
             throw new IllegalStateException("All hands must make an insurance decision first");
         }
-        if (hand.isFromSplit()) {
-            throw new IllegalArgumentException("Cannot double on a split hand");
+        // Allow doubling on split hands, except split aces
+        if (hand.isFromSplit() && hand.getSplitFromRank() == Rank.ACE) {
+            throw new IllegalArgumentException("Cannot double on split aces");
         }
         if (hand.getCards().size() != 2) {
             throw new IllegalArgumentException("Double requires exactly two cards");
@@ -130,6 +131,10 @@ public class BlackjackGame {
     }
 
     public GameState split(int handIndex, Card card1, Card card2) {
+        return split(handIndex, card1, card2, null, null);
+    }
+
+    public GameState split(int handIndex, Card card1, Card card2, Rank rank1, Rank rank2) {
         ensurePlayerTurn();
         Hand hand = getPlayerHand(handIndex);
         if (hand.isStanding() || hand.isBusted()) {
@@ -142,21 +147,24 @@ public class BlackjackGame {
         if (!hand.canSplit()) {
             throw new IllegalArgumentException("Hand cannot be split");
         }
-        if (playerHands.size() >= 5) {
-            throw new IllegalArgumentException("Max hands reached");
-        }
 
         // Don't allow a split hand to be split again
         if (hand.isFromSplit()) {
             throw new IllegalArgumentException("Cannot split a hand that was already split");
         }
 
-        System.out.println("DEBUG: Split called with card1=" + card1 + ", card2=" + card2);
+        System.out.println("DEBUG: Split called with card1=" + card1 + ", card2=" + card2
+                + ", rank1=" + rank1 + ", rank2=" + rank2);
 
         Card moved = hand.splitOff();
         hand.setIsFromSplit(true);
         Hand newHand = new Hand();
         newHand.setIsFromSplit(true);
+
+        // Track the rank that was split
+        Rank splitRank = hand.getCards().get(0).getRank();
+        hand.setSplitFromRank(splitRank);
+        newHand.setSplitFromRank(splitRank);
 
         // If splitting aces, restrict to one card per ace
         boolean isAceHand = hand.getCards().get(0).getRank() == Rank.ACE;
@@ -181,6 +189,13 @@ public class BlackjackGame {
                                 + card1.getSuit().getLabel());
             }
             dealSpecificCard(hand, card1);
+        } else if (rank1 != null) {
+            System.out.println("DEBUG: Dealing specific rank1: " + rank1);
+            Card drawnCard = shoe.drawSpecificRank(rank1);
+            if (drawnCard == null) {
+                throw new IllegalArgumentException("No card with rank " + rank1.getLabel() + " available");
+            }
+            dealSpecificCard(hand, drawnCard);
         } else {
             System.out.println("DEBUG: Dealing random card to original hand");
             dealCard(hand);
@@ -194,6 +209,13 @@ public class BlackjackGame {
                                 + card2.getSuit().getLabel());
             }
             dealSpecificCard(newHand, card2);
+        } else if (rank2 != null) {
+            System.out.println("DEBUG: Dealing specific rank2: " + rank2);
+            Card drawnCard = shoe.drawSpecificRank(rank2);
+            if (drawnCard == null) {
+                throw new IllegalArgumentException("No card with rank " + rank2.getLabel() + " available");
+            }
+            dealSpecificCard(newHand, drawnCard);
         } else {
             System.out.println("DEBUG: Dealing random card to new hand");
             dealCard(newHand);

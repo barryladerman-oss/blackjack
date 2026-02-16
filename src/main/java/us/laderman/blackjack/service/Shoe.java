@@ -43,6 +43,17 @@ public class Shoe {
         return false;
     }
 
+    public Card drawSpecificRank(Rank rank) {
+        for (int i = 0; i < cards.size(); i++) {
+            Card card = cards.get(i);
+            if (card.getRank() == rank) {
+                cards.remove(i);
+                return card;
+            }
+        }
+        return null;
+    }
+
     public int remaining() {
         return cards.size();
     }

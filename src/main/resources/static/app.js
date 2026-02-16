@@ -448,6 +448,19 @@ const isAceRank = (card) => {
     return normalizedRank === "ACE" || normalizedRank === "1" || normalizedRank === "14";
 };
 
+const getDealerUpValue = (card) => {
+    const rankValue = getCardRankValue(card);
+    const normalizedRank = String(rankValue).toUpperCase();
+    if (normalizedRank === "ACE" || normalizedRank === "1" || normalizedRank === "14") {
+        return 11;
+    }
+    if (["KING", "QUEEN", "JACK", "K", "Q", "J", "10"].includes(normalizedRank)) {
+        return 10;
+    }
+    const parsed = Number(normalizedRank);
+    return Number.isFinite(parsed) ? parsed : 10;
+};
+
 const normalizeRank = (rank) => {
     if (!rank) {
         return "?";
@@ -651,6 +664,10 @@ const renderState = (state) => {
         dealerShowsAce = isAceRank(dealerStateCards[0]);
     }
 
+    const dealerUpValue = dealerStateCards.length > 0
+        ? getDealerUpValue(dealerStateCards[0])
+        : 10;
+
     const dealerOffersInsurance = dealerShowsAce || isTestMode;
 
     // Check if all hands have resolved insurance (made an explicit decision)
@@ -695,27 +712,35 @@ const renderState = (state) => {
         return String(value).replace(/_/g, " ");
     };
 
-    const getSplitFallbackRecommendation = (hand) => {
+    const getSplitFallbackRecommendation = (hand, dealerUpValue) => {
         if (!hand || typeof hand.total !== "number") {
             return "hit"; // Safe default
         }
+        const total = hand.total;
         if (hand.soft) {
-            return hand.total >= 18 ? "stand" : "hit";
+            const dealer = typeof dealerUpValue === "number" ? dealerUpValue : 10;
+            if (total <= 17) {
+                return "hit";
+            }
+            if (total === 18) {
+                return dealer >= 9 || dealer === 11 ? "hit" : "stand";
+            }
+            return "stand";
         }
-        return hand.total >= 17 ? "stand" : "hit";
+        return total >= 17 ? "stand" : "hit";
     };
 
-    const getEffectiveRecommendation = (hand, normalizedRecommendation, isFromSplit) => {
+    const getEffectiveRecommendation = (hand, normalizedRecommendation, isFromSplit, dealerUpValue) => {
         // Check if recommendation is missing or invalid
         const validActions = ["hit", "stand", "double", "split", "insure", "no_insurance", "decline_insurance"];
         const hasValidRecommendation = normalizedRecommendation && normalizedRecommendation.trim() && validActions.includes(normalizedRecommendation);
 
         if (!hasValidRecommendation) {
             // Provide fallback recommendation for any hand without valid server recommendation
-            return getSplitFallbackRecommendation(hand);
+            return getSplitFallbackRecommendation(hand, dealerUpValue);
         }
         if (isFromSplit && normalizedRecommendation !== "hit" && normalizedRecommendation !== "stand") {
-            return getSplitFallbackRecommendation(hand);
+            return getSplitFallbackRecommendation(hand, dealerUpValue);
         }
         return normalizedRecommendation;
     };
@@ -724,7 +749,9 @@ const renderState = (state) => {
         .map((hand) => {
             const isActive = hand.index === activeIndex;
             const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
-            const canDouble = isActive && hand.cards && hand.cards.length === 2 && !isFromSplit && (hand.total === 9 || hand.total === 10 || hand.total === 11);
+            const isSplitAce = isFromSplit && hand.cards && hand.cards.length > 0 &&
+                (hand.cards[0].rank.value === 1 || hand.cards[0].rank === 1 || hand.cards[0].rank === "ACE");
+            const canDouble = isActive && hand.cards && hand.cards.length === 2 && !isSplitAce && (hand.total === 9 || hand.total === 10 || hand.total === 11);
             const canSplit = isActive && hand.cards && hand.cards.length === 2 &&
                 getCardRankValue(hand.cards[0]) === getCardRankValue(hand.cards[1]);
             const canInsure = hand.cards && hand.cards.length === 2 && dealerOffersInsurance && !hand.insured && !hand.insuranceDeclined && !isFromSplit && !hand.standing && !hand.busted;
@@ -739,14 +766,28 @@ const renderState = (state) => {
             const regularActionsEnabled = isActive && (!dealerShowsAce || state.phase === "COMPLETE" || allHandsResolvedInsurance);
 
             console.log('Insurance check:', { isActive, hasCards: !!hand.cards, cardCount: hand.cards?.length, dealerShowsAce, alreadyInsured: hand.insured, canInsure, dealerInInsurancePhase, regularActionsEnabled, allHandsResolvedInsurance });
-            const rawRecommendation = hand.recommendedAction || "";
-            const normalizedRecommendation = normalizeAction(rawRecommendation);
-            const recommendedAction = getEffectiveRecommendation(hand, normalizedRecommendation, isFromSplit);
-            console.log(`Hand ${hand.index} - soft: ${hand.soft}, total: ${hand.total}, raw recommend: "${rawRecommendation}", normalized: "${normalizedRecommendation}", effective: "${recommendedAction}"`);
-            const recommendInsure = normalizedRecommendation === "insure";
-            const recommendDecline = normalizedRecommendation === "no_insurance" || normalizedRecommendation === "decline_insurance";
+
+            // Declare these variables before they're used
             const canHitAfterSplitAces = (hand.canHitAfterSplitAces ?? hand.isCanHitAfterSplitAces) !== false;
             const handPlayable = !hand.standing && !hand.busted;
+
+            const rawRecommendation = hand.recommendedAction || "";
+            const normalizedRecommendation = normalizeAction(rawRecommendation);
+            let recommendedAction = getEffectiveRecommendation(hand, normalizedRecommendation, isFromSplit, dealerUpValue);
+
+            // Ensure we always have a recommendation for playable hands, regardless of insurance
+            if (!recommendedAction && handPlayable) {
+                recommendedAction = getSplitFallbackRecommendation(hand, dealerUpValue);
+            }
+
+            // Align recommendation with available actions when double is not allowed
+            if (recommendedAction === "double" && !canDouble) {
+                recommendedAction = getSplitFallbackRecommendation(hand, dealerUpValue);
+            }
+
+            console.log(`Hand ${hand.index} - soft: ${hand.soft}, total: ${hand.total}, raw recommend: "${rawRecommendation}", normalized: "${normalizedRecommendation}", effective: "${recommendedAction}", playable: ${handPlayable}`);
+            const recommendInsure = normalizedRecommendation === "insure";
+            const recommendDecline = normalizedRecommendation === "no_insurance" || normalizedRecommendation === "decline_insurance";
 
             // For split aces with no hit allowed, the hand is complete - no actions available
             const isSplitAceComplete = isFromSplit && !canHitAfterSplitAces;
@@ -1576,7 +1617,9 @@ const populateSplitCardSelectors = () => {
     }
 
     const cardsInPlay = getCardsInPlay();
+    console.log("SPLIT DIALOG - Cards in play:", cardsInPlay);
     const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+    console.log("SPLIT DIALOG - Used cards set:", Array.from(usedCards));
 
     // Filter ranks for card 1 (exclude card 2's selection)
     const card2Rank = splitCard2RankSelect?.value;
@@ -1588,6 +1631,7 @@ const populateSplitCardSelectors = () => {
     const availableRanks1 = RANKS.filter(rank => {
         return SUITS.some(suit => !usedCards.has(`${rank.value}:${suit.value}`));
     });
+    console.log("SPLIT DIALOG - Available ranks for card 1:", availableRanks1.map(r => r.value));
 
     buildOptions(splitCard1RankSelect, availableRanks1, true);
 
@@ -1635,7 +1679,12 @@ const updateSplitCard1Suits = () => {
         return !usedCards.has(`${selectedRank}:${suit.value}`);
     });
 
-    buildOptions(splitCard1SuitSelect, availableSuits, false, true);
+    buildOptions(splitCard1SuitSelect, availableSuits, true, false);
+
+    // Move focus to card 2 rank selector after card 1 rank is selected
+    if (splitCard2RankSelect && selectedRank) {
+        setTimeout(() => splitCard2RankSelect.focus(), 0);
+    }
 };
 
 // Update suits when rank is selected for card 2
@@ -1663,7 +1712,7 @@ const updateSplitCard2Suits = () => {
         return !usedCards.has(`${selectedRank}:${suit.value}`);
     });
 
-    buildOptions(splitCard2SuitSelect, availableSuits, false, true);
+    buildOptions(splitCard2SuitSelect, availableSuits, true, false);
 };
 
 const showSplitCardModal = (handIndex) => {
@@ -1673,11 +1722,14 @@ const showSplitCardModal = (handIndex) => {
         return;
     }
     currentSplitHandIndex = handIndex;
-    populateSplitCardSelectors();
+
+    // Reset dropdown values BEFORE populating to avoid filtering issues
     splitCard1RankSelect.value = "";
     splitCard1SuitSelect.value = "";
     splitCard2RankSelect.value = "";
     splitCard2SuitSelect.value = "";
+
+    populateSplitCardSelectors();
 
     // Add event listeners for rank changes
     splitCard1RankSelect.removeEventListener('change', updateSplitCard1Suits);
@@ -1713,17 +1765,24 @@ if (splitCardConfirmBtn) {
         const card2Rank = splitCard2RankSelect ? splitCard2RankSelect.value : "";
         const card2Suit = splitCard2SuitSelect ? splitCard2SuitSelect.value : "";
 
-        console.log("Split confirm - hand:", handIndex, "card1:", card1Rank, card1Suit, "card2:", card2Rank, card2Suit);
+        console.log("SPLIT CONFIRM - User selections:", {
+            handIndex,
+            card1: card1Rank ? `${card1Rank} of ${card1Suit}` : "Random",
+            card2: card2Rank ? `${card2Rank} of ${card2Suit}` : "Random"
+        });
 
-        // Validate: for each card, both or neither
-        if ((card1Rank && !card1Suit) || (!card1Rank && card1Suit)) {
-            alert("For Card 1: Please select both rank and suit, or leave both as Random");
-            return;
+        // Log the hand being split
+        if (lastState && lastState.hands && lastState.hands[handIndex]) {
+            const hand = lastState.hands[handIndex];
+            if (hand.cards && hand.cards.length === 2) {
+                console.log("SPLIT CONFIRM - Original hand cards:", {
+                    card1: `${hand.cards[0].rank?.value || hand.cards[0].rank} of ${hand.cards[0].suit?.value || hand.cards[0].suit}`,
+                    card2: `${hand.cards[1].rank?.value || hand.cards[1].rank} of ${hand.cards[1].suit?.value || hand.cards[1].suit}`
+                });
+            }
         }
-        if ((card2Rank && !card2Suit) || (!card2Rank && card2Suit)) {
-            alert("For Card 2: Please select both rank and suit, or leave both as Random");
-            return;
-        }
+
+        console.log("Split confirm - hand:", handIndex, "card1:", card1Rank, card1Suit, "card2:", card2Rank, card2Suit);
 
         // Validate: cannot select the same card twice
         if (card1Rank && card1Suit && card2Rank && card2Suit) {
