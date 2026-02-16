@@ -523,7 +523,7 @@ public class BlackjackGame {
             Hand hand = playerHands.get(i);
             HandValue value = hand.getValue();
             String result = resolveResult(hand, value.getTotal(), hand.isBusted(), dealerValue);
-            String recommended = recommendAction(hand, value, dealerUpCard, trueCount);
+            String recommended = recommendAction(i, hand, value, dealerUpCard, trueCount);
             handStates.add(new GameState.PlayerHandState(
                     i,
                     hand.getCards(),
@@ -566,6 +566,19 @@ public class BlackjackGame {
         return (phase == GamePhase.COMPLETE) ? result : "IN_PROGRESS";
     }
 
+    private boolean isActiveHand(int handIndex) {
+        if (phase != GamePhase.PLAYER_TURN) {
+            return false;
+        }
+        for (int i = 0; i < handIndex; i++) {
+            Hand prior = playerHands.get(i);
+            if (!prior.isStanding() && !prior.isBusted()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private String getResultString(int playerTotal, boolean playerBusted, HandValue dealerValue) {
         if (playerBusted) {
             return "LOSE";
@@ -602,7 +615,10 @@ public class BlackjackGame {
         };
     }
 
-    private String recommendAction(Hand hand, HandValue value, Card dealerUpCard, double trueCount) {
+    private String recommendAction(int handIndex, Hand hand, HandValue value, Card dealerUpCard, double trueCount) {
+        if (!isActiveHand(handIndex)) {
+            return "NONE";
+        }
         // Check for insurance opportunity first
         if (phase == GamePhase.PLAYER_TURN && !hand.isFromSplit() && dealerUpCard != null
                 && dealerUpCard.getRank() == Rank.ACE) {

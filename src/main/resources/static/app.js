@@ -45,7 +45,6 @@ const buttons = [
 
 let isBusy = false;
 let lastState = null;
-let recommendationRefreshPending = false;
 let replaceGameStateNext = false;
 let fallbackGameId = null;
 let testModeGameId = null;
@@ -448,19 +447,6 @@ const isAceRank = (card) => {
     return normalizedRank === "ACE" || normalizedRank === "1" || normalizedRank === "14";
 };
 
-const getDealerUpValue = (card) => {
-    const rankValue = getCardRankValue(card);
-    const normalizedRank = String(rankValue).toUpperCase();
-    if (normalizedRank === "ACE" || normalizedRank === "1" || normalizedRank === "14") {
-        return 11;
-    }
-    if (["KING", "QUEEN", "JACK", "K", "Q", "J", "10"].includes(normalizedRank)) {
-        return 10;
-    }
-    const parsed = Number(normalizedRank);
-    return Number.isFinite(parsed) ? parsed : 10;
-};
-
 const normalizeRank = (rank) => {
     if (!rank) {
         return "?";
@@ -546,37 +532,6 @@ const renderCards = (cards, isDealer = false, phase = null) => {
         .join("");
 };
 
-const countVisibleCards = (state) => {
-    const dealerCards = state.dealer?.cards ? state.dealer.cards.length : 0;
-    const playerCards = Array.isArray(state.hands)
-        ? state.hands.reduce((sum, hand) => sum + (hand.cards ? hand.cards.length : 0), 0)
-        : 0;
-    return dealerCards + playerCards;
-};
-
-const strategyFromCount = (state) => {
-    const trueCount = typeof state.trueCount === "number" ? state.trueCount : null;
-    const visibleCards = countVisibleCards(state);
-    if (visibleCards === 0 || trueCount === null) {
-        return { cardsDealt: "-", trueCount: "-", text: "No count data available." };
-    }
-    let text = "Keep bets flat until more cards are seen.";
-    if (visibleCards >= 8) {
-        if (trueCount >= 2) {
-            text = "Increase bet. Favor doubles on 10/11 and tougher stands in high counts.";
-        } else if (trueCount <= -1) {
-            text = "Avoid marginal doubles and play tighter.";
-        } else {
-            text = "Maintain base bet and follow basic strategy.";
-        }
-    }
-    return {
-        cardsDealt: `${visibleCards} visible`,
-        trueCount: trueCount.toFixed(2),
-        text
-    };
-};
-
 const renderState = (state) => {
     const previousPhase = lastState?.phase;
     lastState = state;
@@ -585,11 +540,12 @@ const renderState = (state) => {
     }
     updateDebugPanel(state);
     updateGameInfoDisplay(state);
-    const strategy = strategyFromCount(state);
     const isTestMode = document.body.classList.contains("test-mode");
-    cardsDealtEl.textContent = isTestMode ? "-" : strategy.cardsDealt;
-    trueCountEl.textContent = isTestMode ? "-" : strategy.trueCount;
-    strategyTextEl.textContent = isTestMode ? "-" : strategy.text;
+    cardsDealtEl.textContent = "-";
+    trueCountEl.textContent = isTestMode
+        ? "-"
+        : (typeof state.trueCount === "number" ? state.trueCount.toFixed(2) : "-");
+    strategyTextEl.textContent = "-";
     if (isTestMode) {
         suggestedBetEl.textContent = "-";
         if (state.suggestedBetUnits !== undefined && state.suggestedBetUnits !== null) {
@@ -638,19 +594,6 @@ const renderState = (state) => {
         return;
     }
 
-    const missingRecommendation = state.hands.some((hand) => !hand.recommendedAction);
-    if (!missingRecommendation) {
-        recommendationRefreshPending = false;
-    } else if (!recommendationRefreshPending) {
-        recommendationRefreshPending = true;
-        const id = state.id;
-        if (id) {
-            apiFetch(`/api/blackjack/state/${id}`, { method: "POST" })
-                .then((data) => renderState(data))
-                .catch((error) => console.error("Recommendation refresh failed:", error));
-        }
-    }
-
     const activeIndex = state.phase === "PLAYER_TURN"
         ? state.hands.findIndex((hand) => !hand.busted && !hand.standing)
         : -1;
@@ -663,10 +606,6 @@ const renderState = (state) => {
     if (dealerStateCards.length > 0) {
         dealerShowsAce = isAceRank(dealerStateCards[0]);
     }
-
-    const dealerUpValue = dealerStateCards.length > 0
-        ? getDealerUpValue(dealerStateCards[0])
-        : 10;
 
     const dealerOffersInsurance = dealerShowsAce || isTestMode;
 
@@ -712,39 +651,6 @@ const renderState = (state) => {
         return String(value).replace(/_/g, " ");
     };
 
-    const getSplitFallbackRecommendation = (hand, dealerUpValue) => {
-        if (!hand || typeof hand.total !== "number") {
-            return "hit"; // Safe default
-        }
-        const total = hand.total;
-        if (hand.soft) {
-            const dealer = typeof dealerUpValue === "number" ? dealerUpValue : 10;
-            if (total <= 17) {
-                return "hit";
-            }
-            if (total === 18) {
-                return dealer >= 9 || dealer === 11 ? "hit" : "stand";
-            }
-            return "stand";
-        }
-        return total >= 17 ? "stand" : "hit";
-    };
-
-    const getEffectiveRecommendation = (hand, normalizedRecommendation, isFromSplit, dealerUpValue) => {
-        // Check if recommendation is missing or invalid
-        const validActions = ["hit", "stand", "double", "split", "insure", "no_insurance", "decline_insurance"];
-        const hasValidRecommendation = normalizedRecommendation && normalizedRecommendation.trim() && validActions.includes(normalizedRecommendation);
-
-        if (!hasValidRecommendation) {
-            // Provide fallback recommendation for any hand without valid server recommendation
-            return getSplitFallbackRecommendation(hand, dealerUpValue);
-        }
-        if (isFromSplit && normalizedRecommendation !== "hit" && normalizedRecommendation !== "stand") {
-            return getSplitFallbackRecommendation(hand, dealerUpValue);
-        }
-        return normalizedRecommendation;
-    };
-
     handList.innerHTML = state.hands
         .map((hand) => {
             const isActive = hand.index === activeIndex;
@@ -773,21 +679,14 @@ const renderState = (state) => {
 
             const rawRecommendation = hand.recommendedAction || "";
             const normalizedRecommendation = normalizeAction(rawRecommendation);
-            let recommendedAction = getEffectiveRecommendation(hand, normalizedRecommendation, isFromSplit, dealerUpValue);
-
-            // Ensure we always have a recommendation for playable hands, regardless of insurance
-            if (!recommendedAction && handPlayable) {
-                recommendedAction = getSplitFallbackRecommendation(hand, dealerUpValue);
-            }
-
-            // Align recommendation with available actions when double is not allowed
-            if (recommendedAction === "double" && !canDouble) {
-                recommendedAction = getSplitFallbackRecommendation(hand, dealerUpValue);
-            }
+            const recommendedAction = isActive && normalizedRecommendation && normalizedRecommendation !== "none"
+                ? normalizedRecommendation
+                : "";
 
             console.log(`Hand ${hand.index} - soft: ${hand.soft}, total: ${hand.total}, raw recommend: "${rawRecommendation}", normalized: "${normalizedRecommendation}", effective: "${recommendedAction}", playable: ${handPlayable}`);
-            const recommendInsure = normalizedRecommendation === "insure";
-            const recommendDecline = normalizedRecommendation === "no_insurance" || normalizedRecommendation === "decline_insurance";
+            const recommendInsure = isActive && normalizedRecommendation === "insure";
+            const recommendDecline = isActive
+                && (normalizedRecommendation === "no_insurance" || normalizedRecommendation === "decline_insurance");
 
             // For split aces with no hit allowed, the hand is complete - no actions available
             const isSplitAceComplete = isFromSplit && !canHitAfterSplitAces;

@@ -9,6 +9,8 @@ import us.laderman.blackjack.model.Card;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Suit;
 
+import java.util.HashMap;
+
 @DisplayName("Card Counting Strategy Tests")
 class CardCountingTest {
 
@@ -126,13 +128,25 @@ class CardCountingTest {
     @Test
     @DisplayName("should provide strategy recommendation based on count")
     void testStrategyRecommendationWithCount() {
-        BlackjackGame game = new BlackjackGame(1, 1);
+        HashMap<Integer, BlackjackService.HandCards> hands = new HashMap<>();
+        hands.put(0, new BlackjackService.HandCards(
+                new Card(Suit.HEARTS, Rank.FIVE),
+                new Card(Suit.SPADES, Rank.SIX)));
+        hands.put(1, new BlackjackService.HandCards(
+                new Card(Suit.CLUBS, Rank.NINE),
+                new Card(Suit.DIAMONDS, Rank.SEVEN)));
+
+        BlackjackGame game = new BlackjackGame(2, 1, hands,
+                new Card(Suit.HEARTS, Rank.NINE),
+                new Card(Suit.CLUBS, Rank.FOUR));
+
         var state = game.getState();
         String recommendation = state.getHands().get(0).getRecommendedAction();
 
-        // Should have a recommendation
         assertThat(recommendation).isNotNull();
         assertThat(recommendation).isNotBlank();
+        assertThat(recommendation).isNotEqualTo("NONE");
+        assertThat(state.getHands().get(1).getRecommendedAction()).isEqualTo("NONE");
     }
 
     @Test

@@ -191,13 +191,30 @@ class BlackjackGameTest {
     }
 
     @Test
-    @DisplayName("should provide strategy recommendation")
+    @DisplayName("should recommend action for active hand only")
     void testStrategyRecommendation() {
-        GameState state = game.getState();
-        String recommendation = state.getHands().get(0).getRecommendedAction();
+        HashMap<Integer, BlackjackService.HandCards> hands = new HashMap<>();
+        hands.put(0, new BlackjackService.HandCards(
+                new Card(Suit.HEARTS, Rank.FIVE),
+                new Card(Suit.SPADES, Rank.SIX)));
+        hands.put(1, new BlackjackService.HandCards(
+                new Card(Suit.CLUBS, Rank.NINE),
+                new Card(Suit.DIAMONDS, Rank.SEVEN)));
+
+        BlackjackGame multiHandGame = new BlackjackGame(2, 1, hands,
+                new Card(Suit.HEARTS, Rank.NINE),
+                new Card(Suit.CLUBS, Rank.FOUR));
+
+        GameState initialState = multiHandGame.getState();
+        assertThat(initialState.getHands().get(0).getRecommendedAction()).isNotNull().isNotBlank();
+        assertThat(initialState.getHands().get(1).getRecommendedAction()).isEqualTo("NONE");
+
+        GameState afterStand = multiHandGame.stand(0);
+        String recommendation = afterStand.getHands().get(1).getRecommendedAction();
 
         assertThat(recommendation).isNotNull();
-        assertThat(recommendation).isNotEmpty();
+        assertThat(recommendation).isNotBlank();
+        assertThat(recommendation).isNotEqualTo("NONE");
     }
 
     @Test
@@ -355,15 +372,19 @@ class BlackjackGameTest {
         // Create a soft 18 (Ace + 7)
         HashMap<Integer, BlackjackService.HandCards> softHands = new HashMap<>();
         softHands.put(0, new BlackjackService.HandCards(
+                new Card(Suit.HEARTS, Rank.FIVE),
+                new Card(Suit.SPADES, Rank.SIX)));
+        softHands.put(1, new BlackjackService.HandCards(
                 new Card(Suit.HEARTS, Rank.ACE),
                 new Card(Suit.SPADES, Rank.SEVEN)));
 
-        BlackjackGame softGame = new BlackjackGame(1, 1, softHands,
+        BlackjackGame softGame = new BlackjackGame(2, 1, softHands,
                 new Card(Suit.DIAMONDS, Rank.NINE),
                 new Card(Suit.CLUBS, Rank.SEVEN));
 
+        softGame.stand(0);
         GameState state = softGame.getState();
-        GameState.PlayerHandState hand = state.getHands().get(0);
+        GameState.PlayerHandState hand = state.getHands().get(1);
 
         // Verify hand is soft
         assertThat(hand.isSoft()).isTrue();
@@ -383,15 +404,19 @@ class BlackjackGameTest {
         // Create a soft 13 (Ace + 2)
         HashMap<Integer, BlackjackService.HandCards> softHands = new HashMap<>();
         softHands.put(0, new BlackjackService.HandCards(
+                new Card(Suit.HEARTS, Rank.FIVE),
+                new Card(Suit.SPADES, Rank.SIX)));
+        softHands.put(1, new BlackjackService.HandCards(
                 new Card(Suit.HEARTS, Rank.ACE),
                 new Card(Suit.SPADES, Rank.TWO)));
 
-        BlackjackGame softGame = new BlackjackGame(1, 1, softHands,
+        BlackjackGame softGame = new BlackjackGame(2, 1, softHands,
                 new Card(Suit.DIAMONDS, Rank.FIVE),
                 new Card(Suit.CLUBS, Rank.SEVEN));
 
+        softGame.stand(0);
         GameState state = softGame.getState();
-        GameState.PlayerHandState hand = state.getHands().get(0);
+        GameState.PlayerHandState hand = state.getHands().get(1);
 
         // Verify hand is soft
         assertThat(hand.isSoft()).isTrue();
@@ -411,15 +436,19 @@ class BlackjackGameTest {
         // Create a soft 19 (Ace + 8)
         HashMap<Integer, BlackjackService.HandCards> softHands = new HashMap<>();
         softHands.put(0, new BlackjackService.HandCards(
+                new Card(Suit.HEARTS, Rank.FIVE),
+                new Card(Suit.SPADES, Rank.SIX)));
+        softHands.put(1, new BlackjackService.HandCards(
                 new Card(Suit.HEARTS, Rank.ACE),
                 new Card(Suit.SPADES, Rank.EIGHT)));
 
-        BlackjackGame softGame = new BlackjackGame(1, 1, softHands,
+        BlackjackGame softGame = new BlackjackGame(2, 1, softHands,
                 new Card(Suit.DIAMONDS, Rank.NINE),
                 new Card(Suit.CLUBS, Rank.SEVEN));
 
+        softGame.stand(0);
         GameState state = softGame.getState();
-        GameState.PlayerHandState hand = state.getHands().get(0);
+        GameState.PlayerHandState hand = state.getHands().get(1);
 
         // Verify hand is soft
         assertThat(hand.isSoft()).isTrue();
@@ -437,15 +466,19 @@ class BlackjackGameTest {
         // Create a soft 20 (Ace + 9)
         HashMap<Integer, BlackjackService.HandCards> softHands = new HashMap<>();
         softHands.put(0, new BlackjackService.HandCards(
+                new Card(Suit.HEARTS, Rank.FIVE),
+                new Card(Suit.SPADES, Rank.SIX)));
+        softHands.put(1, new BlackjackService.HandCards(
                 new Card(Suit.HEARTS, Rank.ACE),
                 new Card(Suit.SPADES, Rank.NINE)));
 
-        BlackjackGame softGame = new BlackjackGame(1, 1, softHands,
+        BlackjackGame softGame = new BlackjackGame(2, 1, softHands,
                 new Card(Suit.DIAMONDS, Rank.NINE),
                 new Card(Suit.CLUBS, Rank.SEVEN));
 
+        softGame.stand(0);
         GameState state = softGame.getState();
-        GameState.PlayerHandState hand = state.getHands().get(0);
+        GameState.PlayerHandState hand = state.getHands().get(1);
 
         // Verify hand is soft
         assertThat(hand.isSoft()).isTrue();
