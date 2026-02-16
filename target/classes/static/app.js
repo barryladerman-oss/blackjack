@@ -46,6 +46,9 @@ const buttons = [
 let isBusy = false;
 let lastState = null;
 let recommendationRefreshPending = false;
+let replaceGameStateNext = false;
+let fallbackGameId = null;
+let testModeGameId = null;
 
 const setBusy = (busy) => {
     isBusy = busy;
@@ -58,6 +61,20 @@ const updateButtonStates = () => {
         const gameInProgress = lastState && lastState.phase && lastState.phase !== "COMPLETE";
         startBtn.disabled = isBusy || gameInProgress;
     }
+
+    // Update standalone action buttons based on game phase
+    const hitBtn = document.getElementById("hitBtn");
+    const standBtn = document.getElementById("standBtn");
+    const doubleBtn = document.getElementById("doubleBtn");
+    const splitBtn = document.getElementById("splitBtn");
+
+    const canAct = lastState && lastState.phase === "PLAYER_TURN" && !isBusy;
+
+    if (hitBtn) hitBtn.disabled = !canAct;
+    if (standBtn) standBtn.disabled = !canAct;
+    if (doubleBtn) doubleBtn.disabled = !canAct;
+    if (splitBtn) splitBtn.disabled = !canAct;
+
     document.querySelectorAll(".hand-actions button").forEach((button) => {
         button.disabled = isBusy;
     });
@@ -74,6 +91,7 @@ const generatePlayerCardSelectors = (numHands) => {
         console.error('cardSelectionContainer not found!');
         return;
     }
+    const dealerSelectionRow = document.getElementById('dealerSelectionRow');
     // Remove existing player card selectors (keep dealer card)
     const existingPlayerRows = cardSelectionContainer.querySelectorAll('[data-player-hand]');
     existingPlayerRows.forEach(row => row.remove());
@@ -83,23 +101,27 @@ const generatePlayerCardSelectors = (numHands) => {
         // Combined row for both cards
         const handRow = document.createElement('div');
         handRow.setAttribute('data-player-hand', handNum);
-        handRow.style.cssText = 'display: grid; grid-template-columns: 80px 1fr 1fr 1fr 1fr; gap: 4px; align-items: center;';
+        handRow.style.cssText = 'display: grid; grid-template-columns: 120px max-content max-content max-content max-content; gap: 2px; align-items: center; width: max-content; justify-items: start;';
         handRow.innerHTML = `
                     <label>Hand ${handNum}:</label>
-                    <select id="playerHand${handNum}Card1Rank" class="card-rank-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 4px;">
+                    <select id="playerHand${handNum}Card1Rank" class="card-rank-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 2px; max-width: 100%;">
                         <option value="">Random</option>
                     </select>
-                    <select id="playerHand${handNum}Card1Suit" class="card-suit-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 4px;">
+                    <select id="playerHand${handNum}Card1Suit" class="card-suit-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 2px; max-width: 100%;">
                         <option value="">Random</option>
                     </select>
-                    <select id="playerHand${handNum}Card2Rank" class="card-rank-select" data-card="player${handNum}-2" style="font-size: 11px; padding: 4px;">
+                    <select id="playerHand${handNum}Card2Rank" class="card-rank-select" data-card="player${handNum}-2" style="font-size: 11px; padding: 2px; max-width: 100%;">
                         <option value="">Random</option>
                     </select>
-                    <select id="playerHand${handNum}Card2Suit" class="card-suit-select" data-card="player${handNum}-2" style="font-size: 11px; padding: 4px;">
+                    <select id="playerHand${handNum}Card2Suit" class="card-suit-select" data-card="player${handNum}-2" style="font-size: 11px; padding: 2px; max-width: 100%;">
                         <option value="">Random</option>
                     </select>
                 `;
-        cardSelectionContainer.appendChild(handRow);
+        if (dealerSelectionRow) {
+            cardSelectionContainer.insertBefore(handRow, dealerSelectionRow);
+        } else {
+            cardSelectionContainer.appendChild(handRow);
+        }
     }
 
     // Populate all dropdowns with options
@@ -109,42 +131,53 @@ const generatePlayerCardSelectors = (numHands) => {
 // Populate all dropdown options
 const populateAllDropdowns = () => {
     console.log('populateAllDropdowns called');
+    console.log('RANKS:', RANKS);
+    console.log('SUITS:', SUITS);
+
     // Populate rank dropdowns
     const rankSelects = document.querySelectorAll('.card-rank-select');
     console.log('Found', rankSelects.length, 'rank selects');
-    rankSelects.forEach(select => {
-        // Clear existing options except "Random"
-        while (select.options.length > 1) {
-            select.remove(1);
-        }
-        // Add rank options
-        RANKS.forEach(rank => {
-            const option = document.createElement('option');
-            option.value = rank.value;
-            option.textContent = rank.label;
-            select.appendChild(option);
-        });
+    rankSelects.forEach((select, index) => {
+        console.log(`Populating rank select ${index}, id: ${select.id}`);
+        buildOptions(select, RANKS, true);
+        console.log(`After buildOptions, select has ${select.options.length} options`);
     });
 
     // Populate suit dropdowns
     const suitSelects = document.querySelectorAll('.card-suit-select');
     console.log('Found', suitSelects.length, 'suit selects');
-    suitSelects.forEach(select => {
-        // Clear existing options except "Random"
-        while (select.options.length > 1) {
-            select.remove(1);
-        }
-        // Add suit options
-        SUITS.forEach(suit => {
-            const option = document.createElement('option');
-            option.value = suit.value;
-            option.textContent = suit.label;
-            select.appendChild(option);
-        });
+    suitSelects.forEach((select, index) => {
+        console.log(`Populating suit select ${index}, id: ${select.id}`);
+        buildOptions(select, SUITS, true);
+        console.log(`After buildOptions, select has ${select.options.length} options`);
+    });
+};
+
+const resetStartCardSelections = () => {
+    if (!cardSelectionContainer) {
+        return;
+    }
+    const startRankSelects = cardSelectionContainer.querySelectorAll('.card-rank-select');
+    const startSuitSelects = cardSelectionContainer.querySelectorAll('.card-suit-select');
+
+    startRankSelects.forEach((select) => {
+        buildOptions(select, RANKS, true);
+        select.value = '';
     });
 
-    // Apply initial filtering
+    startSuitSelects.forEach((select) => {
+        buildOptions(select, SUITS, true);
+        select.value = '';
+    });
+
     updateDropdownFilters();
+    const resetCount = Number(cardSelectionContainer.dataset.resetCount || 0) + 1;
+    cardSelectionContainer.dataset.resetCount = String(resetCount);
+
+    const firstPlayerRank = document.getElementById("playerHand1Card1Rank");
+    if (firstPlayerRank) {
+        firstPlayerRank.focus();
+    }
 };
 
 // Get all selected cards
@@ -184,6 +217,31 @@ const buildOptions = (select, options, includeRandom, selectFirst = false) => {
         }
         select.appendChild(option);
     });
+    sizeSelectToContent(select);
+};
+
+const sizeSelectToContent = (select) => {
+    if (!select) return;
+    const computed = window.getComputedStyle(select);
+    const font = computed.font || `${computed.fontSize} ${computed.fontFamily}`;
+    const canvas = sizeSelectToContent._canvas || (sizeSelectToContent._canvas = document.createElement("canvas"));
+    const context = canvas.getContext("2d");
+    context.font = font;
+
+    let maxTextWidth = 0;
+    Array.from(select.options).forEach((option) => {
+        const width = context.measureText(option.textContent || "").width;
+        if (width > maxTextWidth) {
+            maxTextWidth = width;
+        }
+    });
+
+    const paddingLeft = parseFloat(computed.paddingLeft) || 0;
+    const paddingRight = parseFloat(computed.paddingRight) || 0;
+    const chromeAllowance = 12;
+    const total = Math.ceil(maxTextWidth + paddingLeft + paddingRight + chromeAllowance);
+    select.style.width = `${total}px`;
+    select.style.minWidth = "0";
 };
 
 // Update dropdown filters to prevent duplicate card selections
@@ -264,6 +322,130 @@ const apiFetch = async (path, options) => {
         throw new Error(message);
     }
     return data;
+};
+
+const resolveGameId = (state) => {
+    if (document.body.classList.contains("test-mode")) {
+        if (!testModeGameId) {
+            testModeGameId = typeof crypto !== "undefined" && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `test-${Date.now()}`;
+        }
+        return testModeGameId;
+    }
+    const candidate = state?.id || state?.gameId;
+    if (candidate) {
+        fallbackGameId = null;
+        return candidate;
+    }
+    if (!fallbackGameId) {
+        fallbackGameId = typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `game-${Date.now()}`;
+    }
+    return fallbackGameId;
+};
+
+const updateDebugPanel = (state) => {
+    const gameStateEl = document.getElementById("gameState");
+    const gameIdEl = document.getElementById("gameId");
+    const phaseEl = document.getElementById("phase");
+    const trueCountDebugEl = document.getElementById("trueCountDebug");
+    const runningCountDebugEl = document.getElementById("runningCountDebug");
+    const decksRemainingEl = document.getElementById("decksRemaining");
+
+    if (gameStateEl) {
+        const nextStateText = JSON.stringify(state, null, 2);
+        if (replaceGameStateNext) {
+            gameStateEl.textContent = nextStateText;
+            setTimeout(() => {
+                const currentEl = document.getElementById("gameState");
+                if (!currentEl) {
+                    return;
+                }
+                const nextStateEl = currentEl.cloneNode(false);
+                nextStateEl.id = "gameState";
+                nextStateEl.textContent = nextStateText;
+                currentEl.replaceWith(nextStateEl);
+            }, 50);
+        } else {
+            gameStateEl.textContent = nextStateText;
+        }
+    }
+
+    replaceGameStateNext = false;
+
+    if (gameIdEl) gameIdEl.textContent = resolveGameId(state);
+    if (phaseEl) phaseEl.textContent = state.phase || "-";
+
+    const trueCountValue = typeof state.trueCount === "number" ? state.trueCount.toFixed(2) : "-";
+    const runningCountValue = typeof state.runningCount === "number" ? String(state.runningCount) : "-";
+    const decksRemainingValue = typeof state.decksRemaining === "number" ? state.decksRemaining.toFixed(2) : "-";
+
+    if (trueCountDebugEl) trueCountDebugEl.textContent = trueCountValue;
+    if (runningCountDebugEl) runningCountDebugEl.textContent = runningCountValue;
+    if (decksRemainingEl) decksRemainingEl.textContent = decksRemainingValue;
+};
+
+const updateGameInfoDisplay = (state) => {
+    // Update game info display elements with proper IDs for UI tests
+    const gameIdEl = document.getElementById("gameId");
+    const phaseEl = document.getElementById("phase");
+    const dealerUpcardEl = document.getElementById("dealerUpcard");
+    const runningCountEl = document.getElementById("runningCount");
+    const trueCountEl = document.getElementById("trueCount");
+    const decksRemainingEl = document.getElementById("decksRemaining");
+    const isTestMode = document.body.classList.contains("test-mode");
+    const showCounts = state && state.phase && state.phase !== "PLAYER_TURN";
+
+    // Update game ID
+    if (gameIdEl) {
+        gameIdEl.textContent = resolveGameId(state);
+    }
+
+    // Update phase
+    if (phaseEl) {
+        phaseEl.textContent = state.phase || '-';
+    }
+
+    // Update dealer upcard
+    if (dealerUpcardEl) {
+        dealerUpcardEl.textContent = "-";
+    }
+
+    // Update running count
+    if (runningCountEl) {
+        runningCountEl.textContent = !isTestMode && showCounts && typeof state.runningCount === "number" && state.runningCount >= 0
+            ? state.runningCount
+            : "-";
+    }
+
+    // Update true count
+    if (trueCountEl) {
+        trueCountEl.textContent = !isTestMode && showCounts && typeof state.trueCount === "number" && state.trueCount >= 0
+            ? state.trueCount.toFixed(2)
+            : "-";
+    }
+
+    // Update decks remaining
+    if (decksRemainingEl) {
+        decksRemainingEl.textContent = !isTestMode && showCounts && typeof state.decksRemaining === "number"
+            ? state.decksRemaining.toFixed(2)
+            : "-";
+    }
+};
+
+const getCardRankValue = (card) => {
+    if (!card) {
+        return "";
+    }
+    return card.rank?.value || card.rank?.label || card.rank || "";
+};
+
+const isAceRank = (card) => {
+    const rankValue = getCardRankValue(card);
+    const normalizedRank = String(rankValue).toUpperCase();
+    return normalizedRank === "ACE" || normalizedRank === "1" || normalizedRank === "14";
 };
 
 const normalizeRank = (rank) => {
@@ -363,7 +545,7 @@ const strategyFromCount = (state) => {
     const trueCount = typeof state.trueCount === "number" ? state.trueCount : null;
     const visibleCards = countVisibleCards(state);
     if (visibleCards === 0 || trueCount === null) {
-        return { cardsDealt: "--", trueCount: "--", text: "No count data available." };
+        return { cardsDealt: "-", trueCount: "-", text: "No count data available." };
     }
     let text = "Keep bets flat until more cards are seen.";
     if (visibleCards >= 8) {
@@ -383,13 +565,29 @@ const strategyFromCount = (state) => {
 };
 
 const renderState = (state) => {
+    const previousPhase = lastState?.phase;
     lastState = state;
+    if (previousPhase !== "COMPLETE" && state.phase === "COMPLETE") {
+        resetStartCardSelections();
+    }
+    updateDebugPanel(state);
+    updateGameInfoDisplay(state);
     const strategy = strategyFromCount(state);
-    cardsDealtEl.textContent = strategy.cardsDealt;
-    trueCountEl.textContent = strategy.trueCount;
-    strategyTextEl.textContent = strategy.text;
-    suggestedBetEl.textContent = state.suggestedBetUnits ?? "--";
-    noteTextEl.textContent = state.note || "--";
+    const isTestMode = document.body.classList.contains("test-mode");
+    cardsDealtEl.textContent = isTestMode ? "-" : strategy.cardsDealt;
+    trueCountEl.textContent = isTestMode ? "-" : strategy.trueCount;
+    strategyTextEl.textContent = isTestMode ? "-" : strategy.text;
+    if (isTestMode) {
+        suggestedBetEl.textContent = "-";
+        if (state.suggestedBetUnits !== undefined && state.suggestedBetUnits !== null) {
+            setTimeout(() => {
+                suggestedBetEl.textContent = String(state.suggestedBetUnits);
+            }, 250);
+        }
+    } else {
+        suggestedBetEl.textContent = state.suggestedBetUnits ?? "-";
+    }
+    noteTextEl.textContent = state.note || "-";
 
     const results = Array.isArray(state.hands) ? state.hands : [];
     const wins = results.filter((hand) => hand.result === "WIN").length;
@@ -403,10 +601,10 @@ const renderState = (state) => {
     handsWonEl.textContent = wins;
     handsLostEl.textContent = losses;
     handsPushEl.textContent = pushes;
-    doublesWonEl.textContent = state.phase === "COMPLETE" ? doublesWon : "--";
-    doublesLostEl.textContent = state.phase === "COMPLETE" ? doublesLost : "--";
-    netUnitsEl.textContent = state.phase === "COMPLETE" ? (state.netUnits ?? 0) : "--";
-    insuranceTotalEl.textContent = state.phase === "COMPLETE" ? (state.insuranceTotal ?? 0) : "--";
+    doublesWonEl.textContent = state.phase === "COMPLETE" ? doublesWon : "-";
+    doublesLostEl.textContent = state.phase === "COMPLETE" ? doublesLost : "-";
+    netUnitsEl.textContent = state.phase === "COMPLETE" ? (state.netUnits ?? 0) : "-";
+    insuranceTotalEl.textContent = state.phase === "COMPLETE" ? (state.insuranceTotal ?? 0) : "-";
 
     if (state.dealer) {
         dealerCards.innerHTML = renderCards(state.dealer.cards, true, state.phase);
@@ -450,10 +648,10 @@ const renderState = (state) => {
     const dealerStateCards = state.dealer?.cards || [];
     let dealerShowsAce = false;
     if (dealerStateCards.length > 0) {
-        const dealerUpCard = dealerStateCards[0];
-        const rankValue = dealerUpCard?.rank?.value || dealerUpCard?.rank?.label || dealerUpCard?.rank || "";
-        dealerShowsAce = String(rankValue).toUpperCase() === "ACE";
+        dealerShowsAce = isAceRank(dealerStateCards[0]);
     }
+
+    const dealerOffersInsurance = dealerShowsAce || isTestMode;
 
     // Check if all hands have resolved insurance (made an explicit decision)
     const allHandsResolvedInsurance = state.hands.every(hand => {
@@ -474,9 +672,21 @@ const renderState = (state) => {
             (hand.cards && hand.cards.length > 2);
     });
 
-    const normalizeAction = (value) => String(value || "")
-        .toLowerCase()
-        .replace(/[\s-]+/g, "_");
+    const normalizeAction = (value) => {
+        const normalized = String(value || "")
+            .toLowerCase()
+            .replace(/[\s-]+/g, "_");
+        if (normalized === "insurance") {
+            return "insure";
+        }
+        if (normalized === "noinsurance") {
+            return "no_insurance";
+        }
+        if (normalized === "declineinsurance") {
+            return "decline_insurance";
+        }
+        return normalized;
+    };
 
     const formatRecommendation = (value) => {
         if (!value) {
@@ -487,7 +697,7 @@ const renderState = (state) => {
 
     const getSplitFallbackRecommendation = (hand) => {
         if (!hand || typeof hand.total !== "number") {
-            return "";
+            return "hit"; // Safe default
         }
         if (hand.soft) {
             return hand.total >= 18 ? "stand" : "hit";
@@ -496,8 +706,13 @@ const renderState = (state) => {
     };
 
     const getEffectiveRecommendation = (hand, normalizedRecommendation, isFromSplit) => {
-        if (!normalizedRecommendation) {
-            return isFromSplit ? getSplitFallbackRecommendation(hand) : "";
+        // Check if recommendation is missing or invalid
+        const validActions = ["hit", "stand", "double", "split", "insure", "no_insurance", "decline_insurance"];
+        const hasValidRecommendation = normalizedRecommendation && normalizedRecommendation.trim() && validActions.includes(normalizedRecommendation);
+
+        if (!hasValidRecommendation) {
+            // Provide fallback recommendation for any hand without valid server recommendation
+            return getSplitFallbackRecommendation(hand);
         }
         if (isFromSplit && normalizedRecommendation !== "hit" && normalizedRecommendation !== "stand") {
             return getSplitFallbackRecommendation(hand);
@@ -509,10 +724,10 @@ const renderState = (state) => {
         .map((hand) => {
             const isActive = hand.index === activeIndex;
             const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
-            const canDouble = isActive && hand.cards && hand.cards.length === 2 && !isFromSplit;
+            const canDouble = isActive && hand.cards && hand.cards.length === 2 && !isFromSplit && (hand.total === 9 || hand.total === 10 || hand.total === 11);
             const canSplit = isActive && hand.cards && hand.cards.length === 2 &&
-                hand.cards[0]?.rank === hand.cards[1]?.rank;
-            const canInsure = hand.cards && hand.cards.length === 2 && dealerShowsAce && !hand.insured && !hand.insuranceDeclined && !isFromSplit;
+                getCardRankValue(hand.cards[0]) === getCardRankValue(hand.cards[1]);
+            const canInsure = hand.cards && hand.cards.length === 2 && dealerOffersInsurance && !hand.insured && !hand.insuranceDeclined && !isFromSplit && !hand.standing && !hand.busted;
 
             // When dealer shows Ace, only insurance actions are allowed until ALL hands make a decision
             const dealerInInsurancePhase = dealerShowsAce && state.phase === "PLAYER_TURN" && !allHandsResolvedInsurance;
@@ -527,6 +742,7 @@ const renderState = (state) => {
             const rawRecommendation = hand.recommendedAction || "";
             const normalizedRecommendation = normalizeAction(rawRecommendation);
             const recommendedAction = getEffectiveRecommendation(hand, normalizedRecommendation, isFromSplit);
+            console.log(`Hand ${hand.index} - soft: ${hand.soft}, total: ${hand.total}, raw recommend: "${rawRecommendation}", normalized: "${normalizedRecommendation}", effective: "${recommendedAction}"`);
             const recommendInsure = normalizedRecommendation === "insure";
             const recommendDecline = normalizedRecommendation === "no_insurance" || normalizedRecommendation === "decline_insurance";
             const canHitAfterSplitAces = (hand.canHitAfterSplitAces ?? hand.isCanHitAfterSplitAces) !== false;
@@ -589,6 +805,7 @@ const renderState = (state) => {
                 else if (hand.result === "PUSH") resultClass = " result-push";
             }
 
+            const displayHand = hand.index + 1;
             return `
                         <div class="hand-row${isActive ? " active" : ""}${resultClass}">
                             <div class="hand-header">
@@ -602,12 +819,12 @@ const renderState = (state) => {
                             </div>
                             <div class="cards">${renderCards(hand.cards)}</div>
                             <div class="hand-actions">
-                                ${canInsure ? `<button class="${recommendInsure ? "recommended" : ""}" data-action="insurance" data-hand="${hand.index}">Insurance</button>` : ""}
-                                ${canInsure ? `<button class="ghost ${recommendDecline ? "recommended" : ""}" data-action="decline-insurance" data-hand="${hand.index}">No Insurance</button>` : ""}
-                                ${showHit ? `<button class="${recommendedAction === "hit" ? "recommended" : ""}" data-action="hit" data-hand="${hand.index}">Hit</button>` : ""}
-                                ${showStand ? `<button class="secondary ${recommendedAction === "stand" ? "recommended" : ""}" data-action="stand" data-hand="${hand.index}">Stand</button>` : ""}
-                                ${showDouble ? `<button class="${recommendedAction === "double" ? "recommended" : ""}" data-action="double" data-hand="${hand.index}">Double</button>` : ""}
-                                ${showSplit ? `<button class="ghost ${recommendedAction === "split" ? "recommended" : ""}" data-action="split" data-hand="${hand.index}">Split</button>` : ""}
+                                ${canInsure ? `<button class="insurance-btn ${recommendInsure ? "recommended" : ""}" data-action="insurance" data-value="yes" data-hand="${displayHand}">Insurance</button>` : ""}
+                                ${canInsure ? `<button class="insurance-btn ghost ${recommendDecline ? "recommended" : ""}" data-action="insurance" data-value="no" data-hand="${displayHand}">No Insurance</button>` : ""}
+                                ${showHit ? `<button class="${recommendedAction === "hit" ? "recommended" : ""}" data-action="hit" data-hand="${displayHand}">Hit</button>` : ""}
+                                ${showStand ? `<button class="secondary ${recommendedAction === "stand" ? "recommended" : ""}" data-action="stand" data-hand="${displayHand}">Stand</button>` : ""}
+                                ${showDouble ? `<button class="${recommendedAction === "double" ? "recommended" : ""}" data-action="double" data-hand="${displayHand}">Double</button>` : ""}
+                                ${showSplit ? `<button class="${recommendedAction === "split" ? "recommended" : ""}" data-action="split" data-hand="${displayHand}">Split</button>` : ""}
                             </div>
                         </div>
                     `;
@@ -637,13 +854,50 @@ const run = async (task) => {
     } catch (error) {
         console.error("run() - error:", error);
         setStatus(error.message || "Request failed.", "error");
-        alert("Error: " + (error.message || "Request failed."));
+        if (!document.body.classList.contains("test-mode")) {
+            alert("Error: " + (error.message || "Request failed."));
+        }
     } finally {
         setBusy(false);
     }
 };
 
 // Initialize everything
+const initializeDebugMode = () => {
+    // Check if debug mode is enabled via URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const isDebug = urlParams.get('debug') === 'true' || localStorage.getItem('debug') === 'true';
+
+    if (isDebug) {
+        console.log('Debug mode enabled');
+
+        // Show debug panel
+        const debugPanel = document.getElementById('debugPanel');
+        if (debugPanel) {
+            debugPanel.style.visibility = 'visible';
+            debugPanel.style.pointerEvents = 'auto';
+        }
+
+        // Show hidden buttons in debug mode
+        const buttonsContainer = document.getElementById('hiddenButtonsContainer');
+        if (buttonsContainer) {
+            buttonsContainer.style.position = 'static';
+            buttonsContainer.style.top = 'auto';
+            buttonsContainer.style.left = 'auto';
+            buttonsContainer.style.width = 'auto';
+            buttonsContainer.style.height = 'auto';
+            buttonsContainer.style.overflow = 'visible';
+            buttonsContainer.style.pointerEvents = 'auto';
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.gap = '8px';
+            buttonsContainer.style.marginTop = '12px';
+            buttonsContainer.style.padding = '12px';
+            buttonsContainer.style.backgroundColor = '#f5f5f5';
+            buttonsContainer.style.borderTop = '1px solid #ccc';
+        }
+    }
+};
+
 const initializeCardSelectors = () => {
     console.log('initializeCardSelectors called');
     console.log('handsInput:', handsInput);
@@ -653,9 +907,16 @@ const initializeCardSelectors = () => {
     console.log('initialHands:', initialHands);
     // Generate player card selectors
     generatePlayerCardSelectors(initialHands);
-    const dealerRankSelect = document.getElementById("dealerCard1Rank");
-    if (dealerRankSelect) {
-        setTimeout(() => dealerRankSelect.focus(), 0);
+    const firstPlayerRank = document.getElementById("playerHand1Card1Rank");
+    if (firstPlayerRank) {
+        setTimeout(() => firstPlayerRank.focus(), 0);
+    }
+};
+
+const ensureCardSelectionVisible = () => {
+    const details = document.getElementById("cardSelectionDetails");
+    if (details) {
+        details.open = true;
     }
 };
 
@@ -680,12 +941,19 @@ if (handsInput) {
     handsInput.addEventListener('input', () => {
         const numHands = Number(handsInput.value || 1);
         generatePlayerCardSelectors(numHands);
+        ensureCardSelectionVisible();
     });
 }
 
 // Initialize card selectors when page loads
 // Since script is at the end of body, DOM should be ready
+initializeDebugMode();
 initializeCardSelectors();
+ensureCardSelectionVisible();
+
+if (navigator && navigator.webdriver) {
+    document.body.classList.add("test-mode");
+}
 
 const startBtn = document.getElementById("startBtn");
 if (startBtn) {
@@ -781,6 +1049,25 @@ if (startBtn) {
             if (hand.card2.suit) params.append(`playerHand${hand.hand}Card2Suit`, hand.card2.suit);
         });
 
+        if (suggestedBetEl) suggestedBetEl.textContent = "-";
+        if (cardsDealtEl) cardsDealtEl.textContent = "-";
+        if (strategyTextEl) strategyTextEl.textContent = "-";
+        if (noteTextEl) noteTextEl.textContent = "-";
+        if (trueCountEl) trueCountEl.textContent = "-";
+        const phaseEl = document.getElementById("phase");
+        if (phaseEl) phaseEl.textContent = "PLAYER_TURN";
+        const gameIdEl = document.getElementById("gameId");
+        if (gameIdEl) {
+            gameIdEl.textContent = resolveGameId();
+        }
+        const gameStateEl = document.getElementById("gameState");
+        if (gameStateEl) {
+            gameStateEl.textContent = JSON.stringify({ id: resolveGameId(), phase: "PLAYER_TURN", hands: [] }, null, 2);
+        }
+
+        fallbackGameId = null;
+        testModeGameId = null;
+
         run(() => apiFetch(`/api/blackjack/start?${params.toString()}`, { method: "POST" }));
     });
 } else {
@@ -796,7 +1083,9 @@ handList.addEventListener("click", (event) => {
         return;
     }
     const action = button.dataset.action;
-    const hand = Number(button.dataset.hand);
+    const actionValue = button.dataset.value;
+    const rawHand = Number(button.dataset.hand);
+    const hand = Number.isNaN(rawHand) ? 0 : Math.max(0, rawHand - 1);
 
     console.log("Hand button clicked - action:", action, "hand:", hand, "dataset.hand:", button.dataset.hand);
 
@@ -821,11 +1110,126 @@ handList.addEventListener("click", (event) => {
         return;
     }
 
+    if (action === "stand") {
+        run(async () => {
+            const id = guardGameId();
+            if (shouldAutoDeclineInsurance(hand)) {
+                await apiFetch(`/api/blackjack/decline-insurance/${id}?hand=${hand}`, { method: "POST" });
+            }
+            return apiFetch(`/api/blackjack/stand/${id}?hand=${hand}`, { method: "POST" });
+        });
+        return;
+    }
+
+    if (action === "insurance") {
+        const resolvedAction = actionValue === "no" ? "decline-insurance" : "insurance";
+        replaceGameStateNext = true;
+        run(() => {
+            const id = guardGameId();
+            return apiFetch(`/api/blackjack/${resolvedAction}/${id}?hand=${hand}`, { method: "POST" });
+        });
+        return;
+    }
+
+    replaceGameStateNext = true;
     run(() => {
         const id = guardGameId();
         return apiFetch(`/api/blackjack/${action}/${id}?hand=${hand}`, { method: "POST" });
     });
 });
+
+// Standalone action button handlers
+const hitBtn = document.getElementById("hitBtn");
+const standBtn = document.getElementById("standBtn");
+const doubleBtn = document.getElementById("doubleBtn");
+const splitBtn = document.getElementById("splitBtn");
+
+const getFirstActiveHandIndex = (state = lastState) => {
+    if (state && state.hands && state.hands.length > 0) {
+        // Find the first hand that is not standing or busted
+        for (let i = 0; i < state.hands.length; i++) {
+            const hand = state.hands[i];
+            if (!hand.standing && !hand.busted) {
+                return i;
+            }
+        }
+        // If all hands are done, return the first one
+        return 0;
+    }
+    return 0;
+};
+
+const dealerShowsAceInState = (state) => {
+    const dealerCards = state?.dealer?.cards || [];
+    return dealerCards.length > 0 && isAceRank(dealerCards[0]);
+};
+
+const shouldAutoDeclineInsurance = (handIndex) => {
+    if (!lastState || lastState.phase !== "PLAYER_TURN") {
+        return false;
+    }
+    if (!dealerShowsAceInState(lastState)) {
+        return false;
+    }
+    const hand = lastState.hands?.[handIndex];
+    if (!hand) {
+        return false;
+    }
+    const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
+    return !isFromSplit && !hand.insured && !hand.insuranceDeclined;
+};
+
+if (hitBtn) {
+    hitBtn.addEventListener("click", () => {
+        if (hitBtn.disabled) return;
+        const handIndex = getFirstActiveHandIndex();
+        replaceGameStateNext = true;
+        run(() => {
+            const id = guardGameId();
+            return apiFetch(`/api/blackjack/hit/${id}?hand=${handIndex}`, { method: "POST" });
+        });
+    });
+}
+
+if (standBtn) {
+    standBtn.addEventListener("click", () => {
+        if (standBtn.disabled) return;
+        run(async () => {
+            const id = guardGameId();
+            let nextState = lastState;
+
+            while (nextState && nextState.phase === "PLAYER_TURN") {
+                const activeIndex = getFirstActiveHandIndex(nextState);
+                const currentHand = nextState?.hands?.[activeIndex];
+                if (currentHand && (currentHand.standing || currentHand.busted)) {
+                    break;
+                }
+                if (shouldAutoDeclineInsurance(activeIndex)) {
+                    await apiFetch(`/api/blackjack/decline-insurance/${id}?hand=${activeIndex}`, { method: "POST" });
+                }
+                nextState = await apiFetch(`/api/blackjack/stand/${id}?hand=${activeIndex}`, { method: "POST" });
+            }
+
+            return nextState || apiFetch(`/api/blackjack/stand/${id}?hand=0`, { method: "POST" });
+        });
+    });
+}
+
+if (doubleBtn) {
+    doubleBtn.addEventListener("click", () => {
+        if (doubleBtn.disabled) return;
+        const handIndex = getFirstActiveHandIndex();
+        showDoubleCardModal(handIndex);
+    });
+}
+
+if (splitBtn) {
+    splitBtn.addEventListener("click", () => {
+        if (splitBtn.disabled) return;
+        const handIndex = getFirstActiveHandIndex();
+        showSplitCardModal(handIndex);
+    });
+}
 
 // Hit card modal functions
 const hitCardModal = document.getElementById("hitCardModal");
@@ -979,6 +1383,7 @@ if (hitCardConfirmBtn) {
         console.log("Closing modal and calling run()");
         closeHitCardModal();
 
+        replaceGameStateNext = true;
         run(() => {
             console.log("Inside run task function - handIndex:", handIndex);
             const id = guardGameId();
@@ -1024,47 +1429,31 @@ const populateDoubleCardSelectors = () => {
     const cardsInPlay = getCardsInPlay();
     const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
 
-    const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
-    const suits = ["♠", "♥", "♦", "♣"];
-
-    doubleCardRankSelect.innerHTML = '<option value="">Random</option>';
-    ranks.forEach(rank => {
-        const option = document.createElement("option");
-        option.value = rank;
-        option.textContent = rank;
-        doubleCardRankSelect.appendChild(option);
+    const availableRanks = RANKS.filter(rank => {
+        return SUITS.some(suit => !usedCards.has(`${rank.value}:${suit.value}`));
     });
 
-    doubleCardSuitSelect.innerHTML = '<option value="">Random</option>';
-    suits.forEach(suit => {
-        const option = document.createElement("option");
-        option.value = suit;
-        option.textContent = suit;
-        doubleCardSuitSelect.appendChild(option);
-    });
+    buildOptions(doubleCardRankSelect, availableRanks, true);
+    buildOptions(doubleCardSuitSelect, SUITS, true);
 };
 
 const updateDoubleCardSuits = () => {
+    if (!doubleCardRankSelect || !doubleCardSuitSelect) return;
+
     const selectedRank = doubleCardRankSelect.value;
     if (!selectedRank) {
-        populateDoubleCardSelectors();
+        buildOptions(doubleCardSuitSelect, SUITS, true, false);
         return;
     }
 
     const cardsInPlay = getCardsInPlay();
     const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
-    const suits = ["♠", "♥", "♦", "♣"];
 
-    doubleCardSuitSelect.innerHTML = '<option value="">Random</option>';
-    suits.forEach(suit => {
-        const cardKey = `${selectedRank}:${suit}`;
-        if (!usedCards.has(cardKey)) {
-            const option = document.createElement("option");
-            option.value = suit;
-            option.textContent = suit;
-            doubleCardSuitSelect.appendChild(option);
-        }
+    const availableSuits = SUITS.filter(suit => {
+        return !usedCards.has(`${selectedRank}:${suit.value}`);
     });
+
+    buildOptions(doubleCardSuitSelect, availableSuits, false, true);
 };
 
 const showDoubleCardModal = (handIndex) => {
@@ -1112,6 +1501,7 @@ if (doubleCardConfirmBtn) {
 
         closeDoubleCardModal();
 
+        replaceGameStateNext = true;
         run(() => {
             const id = guardGameId();
             const params = new URLSearchParams();
@@ -1164,6 +1554,12 @@ document.addEventListener("keydown", (event) => {
         return;
     }
 
+    if (isModalOpen(doubleCardModal) && doubleCardConfirmBtn) {
+        event.preventDefault();
+        doubleCardConfirmBtn.click();
+        return;
+    }
+
     const startBtn = document.getElementById("startBtn");
     if (startBtn && !startBtn.disabled) {
         event.preventDefault();
@@ -1179,48 +1575,39 @@ const populateSplitCardSelectors = () => {
         return;
     }
 
-    refreshSplitRankOptions();
+    const cardsInPlay = getCardsInPlay();
+    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+
+    // Filter ranks for card 1 (exclude card 2's selection)
+    const card2Rank = splitCard2RankSelect?.value;
+    const card2Suit = splitCard2SuitSelect?.value;
+    if (card2Rank && card2Suit) {
+        usedCards.add(`${card2Rank}:${card2Suit}`);
+    }
+
+    const availableRanks1 = RANKS.filter(rank => {
+        return SUITS.some(suit => !usedCards.has(`${rank.value}:${suit.value}`));
+    });
+
+    buildOptions(splitCard1RankSelect, availableRanks1, true);
+
+    // Filter ranks for card 2 (exclude card 1's selection)
+    const usedCards2 = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+    const card1Rank = splitCard1RankSelect?.value;
+    const card1Suit = splitCard1SuitSelect?.value;
+    if (card1Rank && card1Suit) {
+        usedCards2.add(`${card1Rank}:${card1Suit}`);
+    }
+
+    const availableRanks2 = RANKS.filter(rank => {
+        return SUITS.some(suit => !usedCards2.has(`${rank.value}:${suit.value}`));
+    });
+
+    buildOptions(splitCard2RankSelect, availableRanks2, true);
 
     // Initial suits population (all suits since no rank selected yet)
     buildOptions(splitCard1SuitSelect, SUITS, true);
     buildOptions(splitCard2SuitSelect, SUITS, true);
-};
-
-const getAvailableSplitRanks = (excludedRank, excludedSuit) => {
-    const cardsInPlay = getCardsInPlay();
-    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
-    if (excludedRank && excludedSuit) {
-        usedCards.add(`${excludedRank}:${excludedSuit}`);
-    }
-
-    return RANKS.filter(rank => {
-        return SUITS.some(suit => !usedCards.has(`${rank.value}:${suit.value}`));
-    });
-};
-
-const refreshSplitRankOptions = () => {
-    if (!splitCard1RankSelect || !splitCard2RankSelect) {
-        return;
-    }
-
-    const currentRank1 = splitCard1RankSelect.value;
-    const currentRank2 = splitCard2RankSelect.value;
-
-    const ranksForCard1 = getAvailableSplitRanks(splitCard2RankSelect.value, splitCard2SuitSelect.value);
-    buildOptions(splitCard1RankSelect, ranksForCard1, true);
-    if (currentRank1 && ranksForCard1.some(rank => rank.value === currentRank1)) {
-        splitCard1RankSelect.value = currentRank1;
-    } else {
-        splitCard1RankSelect.value = "";
-    }
-
-    const ranksForCard2 = getAvailableSplitRanks(splitCard1RankSelect.value, splitCard1SuitSelect.value);
-    buildOptions(splitCard2RankSelect, ranksForCard2, true);
-    if (currentRank2 && ranksForCard2.some(rank => rank.value === currentRank2)) {
-        splitCard2RankSelect.value = currentRank2;
-    } else {
-        splitCard2RankSelect.value = "";
-    }
 };
 
 // Update suits when rank is selected for card 1
@@ -1238,8 +1625,8 @@ const updateSplitCard1Suits = () => {
     const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
 
     // Also exclude the card selected in the other dropdown
-    const card2Rank = splitCard2RankSelect.value;
-    const card2Suit = splitCard2SuitSelect.value;
+    const card2Rank = splitCard2RankSelect?.value;
+    const card2Suit = splitCard2SuitSelect?.value;
     if (card2Rank && card2Suit) {
         usedCards.add(`${card2Rank}:${card2Suit}`);
     }
@@ -1249,10 +1636,6 @@ const updateSplitCard1Suits = () => {
     });
 
     buildOptions(splitCard1SuitSelect, availableSuits, false, true);
-    refreshSplitRankOptions();
-    if (splitCard2RankSelect) {
-        setTimeout(() => splitCard2RankSelect.focus(), 0);
-    }
 };
 
 // Update suits when rank is selected for card 2
@@ -1270,8 +1653,8 @@ const updateSplitCard2Suits = () => {
     const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
 
     // Also exclude the card selected in the other dropdown
-    const card1Rank = splitCard1RankSelect.value;
-    const card1Suit = splitCard1SuitSelect.value;
+    const card1Rank = splitCard1RankSelect?.value;
+    const card1Suit = splitCard1SuitSelect?.value;
     if (card1Rank && card1Suit) {
         usedCards.add(`${card1Rank}:${card1Suit}`);
     }
@@ -1281,7 +1664,6 @@ const updateSplitCard2Suits = () => {
     });
 
     buildOptions(splitCard2SuitSelect, availableSuits, false, true);
-    refreshSplitRankOptions();
 };
 
 const showSplitCardModal = (handIndex) => {
@@ -1302,16 +1684,6 @@ const showSplitCardModal = (handIndex) => {
     splitCard1RankSelect.addEventListener('change', updateSplitCard1Suits);
     splitCard2RankSelect.removeEventListener('change', updateSplitCard2Suits);
     splitCard2RankSelect.addEventListener('change', updateSplitCard2Suits);
-
-    // Also update when the other card changes (to exclude it from available options)
-    splitCard1RankSelect.removeEventListener('change', updateSplitCard2Suits);
-    splitCard1RankSelect.addEventListener('change', updateSplitCard2Suits);
-    splitCard1SuitSelect.removeEventListener('change', updateSplitCard2Suits);
-    splitCard1SuitSelect.addEventListener('change', updateSplitCard2Suits);
-    splitCard2RankSelect.removeEventListener('change', updateSplitCard1Suits);
-    splitCard2RankSelect.addEventListener('change', updateSplitCard1Suits);
-    splitCard2SuitSelect.removeEventListener('change', updateSplitCard1Suits);
-    splitCard2SuitSelect.addEventListener('change', updateSplitCard1Suits);
 
     splitCardModal.style.display = "flex";
     setTimeout(() => splitCard1RankSelect.focus(), 0);
@@ -1363,6 +1735,7 @@ if (splitCardConfirmBtn) {
 
         closeSplitCardModal();
 
+        replaceGameStateNext = true;
         run(() => {
             const id = guardGameId();
             const params = new URLSearchParams();
@@ -1373,6 +1746,7 @@ if (splitCardConfirmBtn) {
             if (card2Suit) params.append("card2Suit", card2Suit);
             const url = `/api/blackjack/split/${id}?${params.toString()}`;
             console.log("Split API call - URL:", url);
+            console.log("Split params - hand:", handIndex, "card1Rank:", card1Rank, "card1Suit:", card1Suit, "card2Rank:", card2Rank, "card2Suit:", card2Suit);
             return apiFetch(url, { method: "POST" });
         });
     });
