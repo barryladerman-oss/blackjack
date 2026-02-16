@@ -193,6 +193,59 @@ class BlackjackExtendedSeleniumTest {
     }
 
     @Test
+    @DisplayName("should reset start card selectors after round completes")
+    void testStartCardSelectorsResetAfterComplete() {
+        driver.get(baseUrl);
+
+        WebElement handsInput = driver.findElement(By.id("hands"));
+        handsInput.clear();
+        handsInput.sendKeys("1");
+
+        // Wait for card selectors to regenerate
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        WebElement details = driver.findElement(By.id("cardSelectionDetails"));
+        if (!details.getAttribute("open").equals("true")) {
+            details.click();
+        }
+
+        Select dealerRank = new Select(driver.findElement(By.id("dealerCard1Rank")));
+        Select dealerSuit = new Select(driver.findElement(By.id("dealerCard1Suit")));
+        Select playerCard1Rank = new Select(driver.findElement(By.id("playerHand1Card1Rank")));
+        Select playerCard1Suit = new Select(driver.findElement(By.id("playerHand1Card1Suit")));
+
+        dealerRank.selectByValue("ACE");
+        dealerSuit.selectByValue("SPADES");
+        playerCard1Rank.selectByValue("TEN");
+        playerCard1Suit.selectByValue("HEARTS");
+
+        driver.findElement(By.id("startBtn")).click();
+
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.id("gameState"), "id"));
+
+        driver.findElement(By.id("standBtn")).click();
+
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.id("phase"), "COMPLETE"));
+
+        wait.until(driver -> {
+            WebElement container = driver.findElement(By.id("cardSelectionContainer"));
+            String resetCount = container.getAttribute("data-reset-count");
+            return resetCount != null && !resetCount.isBlank() && Integer.parseInt(resetCount) > 0;
+        });
+
+        assertThat(dealerRank.getFirstSelectedOption().getAttribute("value")).isEmpty();
+        assertThat(dealerSuit.getFirstSelectedOption().getAttribute("value")).isEmpty();
+        assertThat(playerCard1Rank.getFirstSelectedOption().getAttribute("value")).isEmpty();
+        assertThat(playerCard1Suit.getFirstSelectedOption().getAttribute("value")).isEmpty();
+    }
+
+    @Test
     @DisplayName("should update player card selectors when hands input changes")
     void testDynamicPlayerCardSelectors() {
         driver.get(baseUrl);

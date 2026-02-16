@@ -107,6 +107,19 @@ public class BlackjackRestApiTest {
         ApiAssertions.assertSuccess(startResponse);
         String gameId = startResponse.getData().getId();
 
+        // Check if insurance needs to be resolved first
+        GameState state = startResponse.getData();
+        if (state.getDealer() != null && state.getDealer().getCards() != null
+                && !state.getDealer().getCards().isEmpty()) {
+            var firstCard = state.getDealer().getCards().get(0);
+            boolean dealerShowsAce = firstCard.getRank().name().equals("ACE");
+
+            if (dealerShowsAce) {
+                // Decline insurance before attempting stand
+                client.declineInsurance(gameId, 0);
+            }
+        }
+
         ApiResponse<GameState> standResponse = client.stand(gameId, 0);
 
         ApiAssertions.assertSuccess(standResponse);
@@ -131,13 +144,27 @@ public class BlackjackRestApiTest {
         ApiAssertions.assertSuccess(startResponse);
         String gameId = startResponse.getData().getId();
 
+        // Check if insurance needs to be resolved first
+        GameState state = startResponse.getData();
+        if (state.getDealer() != null && state.getDealer().getCards() != null
+                && !state.getDealer().getCards().isEmpty()) {
+            var firstCard = state.getDealer().getCards().get(0);
+            boolean dealerShowsAce = firstCard.getRank().name().equals("ACE");
+
+            if (dealerShowsAce) {
+                // Decline insurance before attempting split
+                client.declineInsurance(gameId, 0);
+            }
+        }
+
         // Attempt split (may fail if hand can't be split, but should not error)
         ApiResponse<GameState> splitResponse = client.split(gameId, 0);
 
-        // Either success or a valid error (409 conflict)
+        // Either success, conflict (can't split), or bad request (not a pair)
         org.junit.jupiter.api.Assertions.assertTrue(
-                splitResponse.isSuccess() || splitResponse.getStatusCode() == 409,
-                "Expected success or CONFLICT status, got: " + splitResponse.getStatusCode());
+                splitResponse.isSuccess() || splitResponse.getStatusCode() == 409
+                        || splitResponse.getStatusCode() == 400,
+                "Expected success, CONFLICT, or BAD_REQUEST status, got: " + splitResponse.getStatusCode());
     }
 
     @Test
@@ -161,9 +188,40 @@ public class BlackjackRestApiTest {
         GameState initial = startResponse.getData();
         String gameId = initial.getId();
 
+        // Check if insurance needs to be resolved first
+        if (initial.getDealer() != null && initial.getDealer().getCards() != null
+                && !initial.getDealer().getCards().isEmpty()) {
+            var firstCard = initial.getDealer().getCards().get(0);
+            boolean dealerShowsAce = firstCard.getRank().name().equals("ACE");
+
+            if (dealerShowsAce) {
+                // Decline insurance before hit
+                client.declineInsurance(gameId, 0);
+            }
+        }
+
         // Hit
         ApiResponse<GameState> hitResponse = client.hit(gameId, 0);
         ApiAssertions.assertSuccess(hitResponse);
+
+        // Check again if insurance needs to be resolved after hit (in case state
+        // changed)
+        GameState afterHit = hitResponse.getData();
+        if (afterHit.getDealer() != null && afterHit.getDealer().getCards() != null
+                && !afterHit.getDealer().getCards().isEmpty() && afterHit.getHands() != null) {
+            var firstCard = afterHit.getDealer().getCards().get(0);
+            boolean dealerShowsAce = firstCard.getRank().name().equals("ACE");
+
+            if (dealerShowsAce) {
+                // Check if any hands still need insurance decision
+                for (int i = 0; i < afterHit.getHands().size(); i++) {
+                    var hand = afterHit.getHands().get(i);
+                    if (hand.getCards().size() == 2 && !hand.isInsured() && !hand.isInsuranceDeclined()) {
+                        client.declineInsurance(gameId, i);
+                    }
+                }
+            }
+        }
 
         // Stand
         ApiResponse<GameState> standResponse = client.stand(gameId, 0);

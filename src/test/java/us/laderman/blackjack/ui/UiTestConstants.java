@@ -42,7 +42,7 @@ public final class UiTestConstants {
     public static final String PHASE_COMPLETE = "COMPLETE";
 
     // Default values
-    public static final String DEFAULT_HANDS = "3";
+    public static final String DEFAULT_HANDS = "5";
     public static final String SINGLE_HAND = "1";
     public static final String EMPTY_VALUE = "-";
 

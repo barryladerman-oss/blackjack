@@ -91,6 +91,7 @@ const generatePlayerCardSelectors = (numHands) => {
         console.error('cardSelectionContainer not found!');
         return;
     }
+    const dealerSelectionRow = document.getElementById('dealerSelectionRow');
     // Remove existing player card selectors (keep dealer card)
     const existingPlayerRows = cardSelectionContainer.querySelectorAll('[data-player-hand]');
     existingPlayerRows.forEach(row => row.remove());
@@ -116,7 +117,11 @@ const generatePlayerCardSelectors = (numHands) => {
                         <option value="">Random</option>
                     </select>
                 `;
-        cardSelectionContainer.appendChild(handRow);
+        if (dealerSelectionRow) {
+            cardSelectionContainer.insertBefore(handRow, dealerSelectionRow);
+        } else {
+            cardSelectionContainer.appendChild(handRow);
+        }
     }
 
     // Populate all dropdowns with options
@@ -146,6 +151,33 @@ const populateAllDropdowns = () => {
         buildOptions(select, SUITS, true);
         console.log(`After buildOptions, select has ${select.options.length} options`);
     });
+};
+
+const resetStartCardSelections = () => {
+    if (!cardSelectionContainer) {
+        return;
+    }
+    const startRankSelects = cardSelectionContainer.querySelectorAll('.card-rank-select');
+    const startSuitSelects = cardSelectionContainer.querySelectorAll('.card-suit-select');
+
+    startRankSelects.forEach((select) => {
+        buildOptions(select, RANKS, true);
+        select.value = '';
+    });
+
+    startSuitSelects.forEach((select) => {
+        buildOptions(select, SUITS, true);
+        select.value = '';
+    });
+
+    updateDropdownFilters();
+    const resetCount = Number(cardSelectionContainer.dataset.resetCount || 0) + 1;
+    cardSelectionContainer.dataset.resetCount = String(resetCount);
+
+    const firstPlayerRank = document.getElementById("playerHand1Card1Rank");
+    if (firstPlayerRank) {
+        firstPlayerRank.focus();
+    }
 };
 
 // Get all selected cards
@@ -533,7 +565,11 @@ const strategyFromCount = (state) => {
 };
 
 const renderState = (state) => {
+    const previousPhase = lastState?.phase;
     lastState = state;
+    if (previousPhase !== "COMPLETE" && state.phase === "COMPLETE") {
+        resetStartCardSelections();
+    }
     updateDebugPanel(state);
     updateGameInfoDisplay(state);
     const strategy = strategyFromCount(state);
@@ -661,7 +697,7 @@ const renderState = (state) => {
 
     const getSplitFallbackRecommendation = (hand) => {
         if (!hand || typeof hand.total !== "number") {
-            return "";
+            return "hit"; // Safe default
         }
         if (hand.soft) {
             return hand.total >= 18 ? "stand" : "hit";
@@ -670,8 +706,13 @@ const renderState = (state) => {
     };
 
     const getEffectiveRecommendation = (hand, normalizedRecommendation, isFromSplit) => {
-        if (!normalizedRecommendation) {
-            return isFromSplit ? getSplitFallbackRecommendation(hand) : "";
+        // Check if recommendation is missing or invalid
+        const validActions = ["hit", "stand", "double", "split", "insure", "no_insurance", "decline_insurance"];
+        const hasValidRecommendation = normalizedRecommendation && normalizedRecommendation.trim() && validActions.includes(normalizedRecommendation);
+
+        if (!hasValidRecommendation) {
+            // Provide fallback recommendation for any hand without valid server recommendation
+            return getSplitFallbackRecommendation(hand);
         }
         if (isFromSplit && normalizedRecommendation !== "hit" && normalizedRecommendation !== "stand") {
             return getSplitFallbackRecommendation(hand);
@@ -683,10 +724,10 @@ const renderState = (state) => {
         .map((hand) => {
             const isActive = hand.index === activeIndex;
             const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
-            const canDouble = isActive && hand.cards && hand.cards.length === 2 && !isFromSplit;
+            const canDouble = isActive && hand.cards && hand.cards.length === 2 && !isFromSplit && (hand.total === 9 || hand.total === 10 || hand.total === 11);
             const canSplit = isActive && hand.cards && hand.cards.length === 2 &&
                 getCardRankValue(hand.cards[0]) === getCardRankValue(hand.cards[1]);
-            const canInsure = hand.cards && hand.cards.length === 2 && dealerOffersInsurance && !hand.insured && !hand.insuranceDeclined && !isFromSplit;
+            const canInsure = hand.cards && hand.cards.length === 2 && dealerOffersInsurance && !hand.insured && !hand.insuranceDeclined && !isFromSplit && !hand.standing && !hand.busted;
 
             // When dealer shows Ace, only insurance actions are allowed until ALL hands make a decision
             const dealerInInsurancePhase = dealerShowsAce && state.phase === "PLAYER_TURN" && !allHandsResolvedInsurance;
@@ -701,6 +742,7 @@ const renderState = (state) => {
             const rawRecommendation = hand.recommendedAction || "";
             const normalizedRecommendation = normalizeAction(rawRecommendation);
             const recommendedAction = getEffectiveRecommendation(hand, normalizedRecommendation, isFromSplit);
+            console.log(`Hand ${hand.index} - soft: ${hand.soft}, total: ${hand.total}, raw recommend: "${rawRecommendation}", normalized: "${normalizedRecommendation}", effective: "${recommendedAction}"`);
             const recommendInsure = normalizedRecommendation === "insure";
             const recommendDecline = normalizedRecommendation === "no_insurance" || normalizedRecommendation === "decline_insurance";
             const canHitAfterSplitAces = (hand.canHitAfterSplitAces ?? hand.isCanHitAfterSplitAces) !== false;
@@ -782,7 +824,7 @@ const renderState = (state) => {
                                 ${showHit ? `<button class="${recommendedAction === "hit" ? "recommended" : ""}" data-action="hit" data-hand="${displayHand}">Hit</button>` : ""}
                                 ${showStand ? `<button class="secondary ${recommendedAction === "stand" ? "recommended" : ""}" data-action="stand" data-hand="${displayHand}">Stand</button>` : ""}
                                 ${showDouble ? `<button class="${recommendedAction === "double" ? "recommended" : ""}" data-action="double" data-hand="${displayHand}">Double</button>` : ""}
-                                ${showSplit ? `<button class="ghost ${recommendedAction === "split" ? "recommended" : ""}" data-action="split" data-hand="${displayHand}">Split</button>` : ""}
+                                ${showSplit ? `<button class="${recommendedAction === "split" ? "recommended" : ""}" data-action="split" data-hand="${displayHand}">Split</button>` : ""}
                             </div>
                         </div>
                     `;
@@ -865,9 +907,9 @@ const initializeCardSelectors = () => {
     console.log('initialHands:', initialHands);
     // Generate player card selectors
     generatePlayerCardSelectors(initialHands);
-    const dealerRankSelect = document.getElementById("dealerCard1Rank");
-    if (dealerRankSelect) {
-        setTimeout(() => dealerRankSelect.focus(), 0);
+    const firstPlayerRank = document.getElementById("playerHand1Card1Rank");
+    if (firstPlayerRank) {
+        setTimeout(() => firstPlayerRank.focus(), 0);
     }
 };
 
@@ -1387,47 +1429,31 @@ const populateDoubleCardSelectors = () => {
     const cardsInPlay = getCardsInPlay();
     const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
 
-    const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
-    const suits = ["♠", "♥", "♦", "♣"];
-
-    doubleCardRankSelect.innerHTML = '<option value="">Random</option>';
-    ranks.forEach(rank => {
-        const option = document.createElement("option");
-        option.value = rank;
-        option.textContent = rank;
-        doubleCardRankSelect.appendChild(option);
+    const availableRanks = RANKS.filter(rank => {
+        return SUITS.some(suit => !usedCards.has(`${rank.value}:${suit.value}`));
     });
 
-    doubleCardSuitSelect.innerHTML = '<option value="">Random</option>';
-    suits.forEach(suit => {
-        const option = document.createElement("option");
-        option.value = suit;
-        option.textContent = suit;
-        doubleCardSuitSelect.appendChild(option);
-    });
+    buildOptions(doubleCardRankSelect, availableRanks, true);
+    buildOptions(doubleCardSuitSelect, SUITS, true);
 };
 
 const updateDoubleCardSuits = () => {
+    if (!doubleCardRankSelect || !doubleCardSuitSelect) return;
+
     const selectedRank = doubleCardRankSelect.value;
     if (!selectedRank) {
-        populateDoubleCardSelectors();
+        buildOptions(doubleCardSuitSelect, SUITS, true, false);
         return;
     }
 
     const cardsInPlay = getCardsInPlay();
     const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
-    const suits = ["♠", "♥", "♦", "♣"];
 
-    doubleCardSuitSelect.innerHTML = '<option value="">Random</option>';
-    suits.forEach(suit => {
-        const cardKey = `${selectedRank}:${suit}`;
-        if (!usedCards.has(cardKey)) {
-            const option = document.createElement("option");
-            option.value = suit;
-            option.textContent = suit;
-            doubleCardSuitSelect.appendChild(option);
-        }
+    const availableSuits = SUITS.filter(suit => {
+        return !usedCards.has(`${selectedRank}:${suit.value}`);
     });
+
+    buildOptions(doubleCardSuitSelect, availableSuits, false, true);
 };
 
 const showDoubleCardModal = (handIndex) => {
@@ -1528,6 +1554,12 @@ document.addEventListener("keydown", (event) => {
         return;
     }
 
+    if (isModalOpen(doubleCardModal) && doubleCardConfirmBtn) {
+        event.preventDefault();
+        doubleCardConfirmBtn.click();
+        return;
+    }
+
     const startBtn = document.getElementById("startBtn");
     if (startBtn && !startBtn.disabled) {
         event.preventDefault();
@@ -1543,48 +1575,39 @@ const populateSplitCardSelectors = () => {
         return;
     }
 
-    refreshSplitRankOptions();
+    const cardsInPlay = getCardsInPlay();
+    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+
+    // Filter ranks for card 1 (exclude card 2's selection)
+    const card2Rank = splitCard2RankSelect?.value;
+    const card2Suit = splitCard2SuitSelect?.value;
+    if (card2Rank && card2Suit) {
+        usedCards.add(`${card2Rank}:${card2Suit}`);
+    }
+
+    const availableRanks1 = RANKS.filter(rank => {
+        return SUITS.some(suit => !usedCards.has(`${rank.value}:${suit.value}`));
+    });
+
+    buildOptions(splitCard1RankSelect, availableRanks1, true);
+
+    // Filter ranks for card 2 (exclude card 1's selection)
+    const usedCards2 = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
+    const card1Rank = splitCard1RankSelect?.value;
+    const card1Suit = splitCard1SuitSelect?.value;
+    if (card1Rank && card1Suit) {
+        usedCards2.add(`${card1Rank}:${card1Suit}`);
+    }
+
+    const availableRanks2 = RANKS.filter(rank => {
+        return SUITS.some(suit => !usedCards2.has(`${rank.value}:${suit.value}`));
+    });
+
+    buildOptions(splitCard2RankSelect, availableRanks2, true);
 
     // Initial suits population (all suits since no rank selected yet)
     buildOptions(splitCard1SuitSelect, SUITS, true);
     buildOptions(splitCard2SuitSelect, SUITS, true);
-};
-
-const getAvailableSplitRanks = (excludedRank, excludedSuit) => {
-    const cardsInPlay = getCardsInPlay();
-    const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
-    if (excludedRank && excludedSuit) {
-        usedCards.add(`${excludedRank}:${excludedSuit}`);
-    }
-
-    return RANKS.filter(rank => {
-        return SUITS.some(suit => !usedCards.has(`${rank.value}:${suit.value}`));
-    });
-};
-
-const refreshSplitRankOptions = () => {
-    if (!splitCard1RankSelect || !splitCard2RankSelect) {
-        return;
-    }
-
-    const currentRank1 = splitCard1RankSelect.value;
-    const currentRank2 = splitCard2RankSelect.value;
-
-    const ranksForCard1 = getAvailableSplitRanks(splitCard2RankSelect.value, splitCard2SuitSelect.value);
-    buildOptions(splitCard1RankSelect, ranksForCard1, true);
-    if (currentRank1 && ranksForCard1.some(rank => rank.value === currentRank1)) {
-        splitCard1RankSelect.value = currentRank1;
-    } else {
-        splitCard1RankSelect.value = "";
-    }
-
-    const ranksForCard2 = getAvailableSplitRanks(splitCard1RankSelect.value, splitCard1SuitSelect.value);
-    buildOptions(splitCard2RankSelect, ranksForCard2, true);
-    if (currentRank2 && ranksForCard2.some(rank => rank.value === currentRank2)) {
-        splitCard2RankSelect.value = currentRank2;
-    } else {
-        splitCard2RankSelect.value = "";
-    }
 };
 
 // Update suits when rank is selected for card 1
@@ -1602,8 +1625,8 @@ const updateSplitCard1Suits = () => {
     const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
 
     // Also exclude the card selected in the other dropdown
-    const card2Rank = splitCard2RankSelect.value;
-    const card2Suit = splitCard2SuitSelect.value;
+    const card2Rank = splitCard2RankSelect?.value;
+    const card2Suit = splitCard2SuitSelect?.value;
     if (card2Rank && card2Suit) {
         usedCards.add(`${card2Rank}:${card2Suit}`);
     }
@@ -1613,10 +1636,6 @@ const updateSplitCard1Suits = () => {
     });
 
     buildOptions(splitCard1SuitSelect, availableSuits, false, true);
-    refreshSplitRankOptions();
-    if (splitCard2RankSelect) {
-        setTimeout(() => splitCard2RankSelect.focus(), 0);
-    }
 };
 
 // Update suits when rank is selected for card 2
@@ -1634,8 +1653,8 @@ const updateSplitCard2Suits = () => {
     const usedCards = new Set(cardsInPlay.map(c => `${c.rank}:${c.suit}`));
 
     // Also exclude the card selected in the other dropdown
-    const card1Rank = splitCard1RankSelect.value;
-    const card1Suit = splitCard1SuitSelect.value;
+    const card1Rank = splitCard1RankSelect?.value;
+    const card1Suit = splitCard1SuitSelect?.value;
     if (card1Rank && card1Suit) {
         usedCards.add(`${card1Rank}:${card1Suit}`);
     }
@@ -1645,7 +1664,6 @@ const updateSplitCard2Suits = () => {
     });
 
     buildOptions(splitCard2SuitSelect, availableSuits, false, true);
-    refreshSplitRankOptions();
 };
 
 const showSplitCardModal = (handIndex) => {
@@ -1666,16 +1684,6 @@ const showSplitCardModal = (handIndex) => {
     splitCard1RankSelect.addEventListener('change', updateSplitCard1Suits);
     splitCard2RankSelect.removeEventListener('change', updateSplitCard2Suits);
     splitCard2RankSelect.addEventListener('change', updateSplitCard2Suits);
-
-    // Also update when the other card changes (to exclude it from available options)
-    splitCard1RankSelect.removeEventListener('change', updateSplitCard2Suits);
-    splitCard1RankSelect.addEventListener('change', updateSplitCard2Suits);
-    splitCard1SuitSelect.removeEventListener('change', updateSplitCard2Suits);
-    splitCard1SuitSelect.addEventListener('change', updateSplitCard2Suits);
-    splitCard2RankSelect.removeEventListener('change', updateSplitCard1Suits);
-    splitCard2RankSelect.addEventListener('change', updateSplitCard1Suits);
-    splitCard2SuitSelect.removeEventListener('change', updateSplitCard1Suits);
-    splitCard2SuitSelect.addEventListener('change', updateSplitCard1Suits);
 
     splitCardModal.style.display = "flex";
     setTimeout(() => splitCard1RankSelect.focus(), 0);
@@ -1738,6 +1746,7 @@ if (splitCardConfirmBtn) {
             if (card2Suit) params.append("card2Suit", card2Suit);
             const url = `/api/blackjack/split/${id}?${params.toString()}`;
             console.log("Split API call - URL:", url);
+            console.log("Split params - hand:", handIndex, "card1Rank:", card1Rank, "card1Suit:", card1Suit, "card2Rank:", card2Rank, "card2Suit:", card2Suit);
             return apiFetch(url, { method: "POST" });
         });
     });
