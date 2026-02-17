@@ -1,5 +1,8 @@
 package us.laderman.blackjack.model;
 
+/**
+ * Enum representing card ranks in Blackjack.
+ */
 public enum Rank {
     TWO("2", 2),
     THREE("3", 3),
@@ -23,14 +26,29 @@ public enum Rank {
         this.value = value;
     }
 
+    /**
+     * Gets the label for the rank (e.g., "A", "K").
+     * 
+     * @return rank label
+     */
     public String getLabel() {
         return label;
     }
 
+    /**
+     * Gets the value of the rank for Blackjack scoring.
+     * 
+     * @return rank value
+     */
     public int getValue() {
         return value;
     }
 
+    /**
+     * Returns the string representation of the rank.
+     * 
+     * @return rank label as string
+     */
     @Override
     public String toString() {
         return label;

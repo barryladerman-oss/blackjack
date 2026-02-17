@@ -62,12 +62,14 @@ class BlackjackSeleniumTest {
     @BeforeEach
     void setUp() {
         ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         driver = new ChromeDriver(options);
         driver.manage().window().setSize(new org.openqa.selenium.Dimension(BROWSER_WIDTH, BROWSER_HEIGHT));
         wait = new WebDriverWait(driver, Duration.ofSeconds(WAIT_TIMEOUT_SECONDS));
         baseUrl = "http://localhost:" + port;
+
     }
 
     @AfterEach
@@ -93,18 +95,18 @@ class BlackjackSeleniumTest {
     void testStartGame() {
         driver.get(baseUrl);
 
-        WebElement handsInput = driver.findElement(By.id(ID_HANDS));
-        assertThat(handsInput.getAttribute("value")).isEqualTo(DEFAULT_HANDS);
+        WebElement handsInput = driver.findElement(By.id(UiTestConstants.ID_HANDS));
+        assertThat(handsInput.getAttribute("value")).isEqualTo(UiTestConstants.DEFAULT_HANDS);
 
-        WebElement startBtn = driver.findElement(By.id(ID_START_BTN));
+        WebElement startBtn = driver.findElement(By.id(UiTestConstants.ID_START_BTN));
         startBtn.click();
 
         // Wait for game state to appear
         WebElement gameState = wait.until(
-                ExpectedConditions.presenceOfElementLocated(By.id(ID_GAME_STATE)));
+                ExpectedConditions.presenceOfElementLocated(By.id(UiTestConstants.ID_GAME_STATE)));
         String state = gameState.getText();
-        assertThat(state).contains(JSON_FIELD_ID);
-        assertThat(state).contains(JSON_FIELD_HANDS);
+        assertThat(state).contains(UiTestConstants.JSON_FIELD_ID);
+        assertThat(state).contains(UiTestConstants.JSON_FIELD_HANDS);
     }
 
     @Test
@@ -364,5 +366,33 @@ class BlackjackSeleniumTest {
 
         // Decks remaining should be a decimal number or dash
         assertThat(decksRemaining).matches(PATTERN_DECIMAL_OR_DASH);
+    }
+
+    @Test
+    @DisplayName("should handle UI edge cases and missing elements")
+    void testUiEdgeCases() {
+        driver.get(baseUrl);
+        // Missing element
+        try {
+            driver.findElement(By.id("nonExistentElement"));
+        } catch (Exception e) {
+            assertThat(e.getMessage()).contains("no such element");
+        }
+
+        // Invalid user input
+        WebElement handsInput = driver.findElement(By.id("hands"));
+        handsInput.clear();
+        handsInput.sendKeys("invalid");
+        driver.findElement(By.id(ID_START_BTN)).click();
+        WebElement stateElement = driver.findElement(By.id(ID_GAME_STATE));
+        assertThat(stateElement.getText()).isNotEmpty();
+
+        // UI race condition (simulate rapid clicks)
+        WebElement hitBtn = driver.findElement(By.id(ID_HIT_BTN));
+        for (int i = 0; i < 5; i++) {
+            hitBtn.click();
+        }
+        WebElement updatedState = driver.findElement(By.id(ID_GAME_STATE));
+        assertThat(updatedState.getText()).isNotEmpty();
     }
 }

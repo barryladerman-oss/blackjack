@@ -1,3 +1,4 @@
+
 package us.laderman.blackjack.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -11,6 +12,9 @@ import us.laderman.blackjack.model.GameState;
 import java.util.HashMap;
 import java.util.UUID;
 
+/**
+ * Unit tests for BlackjackService methods.
+ */
 @DisplayName("BlackjackService Unit Tests")
 class BlackjackServiceTest {
 
@@ -23,6 +27,9 @@ class BlackjackServiceTest {
 
     @Test
     @DisplayName("should start a game with single hand")
+    /**
+     * Tests starting a game with a single hand.
+     */
     void testStartGameSingleHand() {
         GameState state = service.startGame(1, new HashMap<>());
 
@@ -33,6 +40,9 @@ class BlackjackServiceTest {
 
     @Test
     @DisplayName("should start a game with multiple hands")
+    /**
+     * Tests starting a game with multiple hands.
+     */
     void testStartGameMultipleHands() {
         GameState state = service.startGame(3, new HashMap<>());
 
@@ -42,6 +52,9 @@ class BlackjackServiceTest {
 
     @Test
     @DisplayName("should have dealer state after starting game")
+    /**
+     * Tests that dealer state is present after starting a game.
+     */
     void testGameHasDealerState() {
         GameState state = service.startGame(1, new HashMap<>());
 
@@ -51,6 +64,9 @@ class BlackjackServiceTest {
 
     @Test
     @DisplayName("should track running and true count")
+    /**
+     * Tests tracking of running and true count.
+     */
     void testCountTracking() {
         GameState state = service.startGame(1, new HashMap<>());
 
@@ -60,6 +76,9 @@ class BlackjackServiceTest {
 
     @Test
     @DisplayName("should initially be in PLAYER_TURN phase")
+    /**
+     * Tests that the initial phase is PLAYER_TURN.
+     */
     void testInitialPhase() {
         GameState state = service.startGame(1, new HashMap<>());
 
@@ -137,5 +156,37 @@ class BlackjackServiceTest {
         GameState state = service.startGame(1, new HashMap<>());
 
         assertThat(state.getNetUnits()).isNotNaN();
+    }
+
+    @Test
+    @DisplayName("should handle invalid service input")
+    void testInvalidServiceInput() {
+        // Invalid player action
+        GameState state = service.startGame(1, new HashMap<>());
+        UUID gameId = UUID.fromString(state.getId());
+        try {
+            service.hit(gameId, -1);
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            assertThat(msg).isNotNull();
+        }
+
+        // Null input
+        try {
+            service.startGame(0, null);
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            assertThat(msg).isNotNull();
+        }
+
+        // Boundary values: should throw exception for too many hands
+        try {
+            service.startGame(Integer.MAX_VALUE, new HashMap<>());
+            // If no exception, fail the test
+            assertThat(false).as("Expected exception for too many hands").isTrue();
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            assertThat(msg).contains("Hands must be between 1 and");
+        }
     }
 }

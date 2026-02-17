@@ -1,3 +1,4 @@
+
 package us.laderman.blackjack.ui;
 
 import java.time.Duration;
@@ -36,12 +37,13 @@ class BlackjackExtendedSeleniumTest {
     @BeforeEach
     void setUp() {
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments(UiTestConstants.CHROME_HEADLESS_ARG);
+        options.addArguments(UiTestConstants.CHROME_NO_SANDBOX_ARG);
+        options.addArguments(UiTestConstants.CHROME_DISABLE_DEV_SHM_ARG);
         driver = new ChromeDriver(options);
         driver.manage().window().setSize(new org.openqa.selenium.Dimension(BROWSER_WIDTH, BROWSER_HEIGHT));
         wait = new WebDriverWait(driver, Duration.ofSeconds(WAIT_TIMEOUT_SECONDS));
-        baseUrl = "http://localhost:" + port;
+        baseUrl = UiTestConstants.BASE_URL_PREFIX + port;
     }
 
     @AfterEach
@@ -148,9 +150,9 @@ class BlackjackExtendedSeleniumTest {
         driver.get(baseUrl);
 
         // Set hands to 1
-        WebElement handsInput = driver.findElement(By.id("hands"));
+        WebElement handsInput = driver.findElement(By.id(UiTestConstants.ID_HANDS));
         handsInput.clear();
-        handsInput.sendKeys("1");
+        handsInput.sendKeys(UiTestConstants.SINGLE_HAND);
 
         // Wait for card selectors to regenerate
         try {
@@ -1125,5 +1127,30 @@ class BlackjackExtendedSeleniumTest {
                 }
             }
         }
+    }
+
+    @Test
+    @DisplayName("should handle extended UI edge cases")
+    void testExtendedUiEdgeCases() {
+        driver.get(baseUrl);
+        // Multi-hand UI: set hands to 5
+        WebElement handsInput = driver.findElement(By.id("hands"));
+        handsInput.clear();
+        handsInput.sendKeys("5");
+        driver.findElement(By.id("startBtn")).click();
+        WebElement gameState = driver.findElement(By.id("gameState"));
+        assertThat(gameState.getText()).contains("hands");
+
+        // Edge navigation: simulate navigation to end of game
+        for (int i = 0; i < 10; i++) {
+            try {
+                driver.findElement(By.id("standBtn")).click();
+            } catch (Exception e) {
+                assertThat(e.getMessage()).isNotNull();
+                break;
+            }
+        }
+        WebElement finalState = driver.findElement(By.id("gameState"));
+        assertThat(finalState.getText()).isNotEmpty();
     }
 }

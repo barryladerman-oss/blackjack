@@ -1,15 +1,28 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Java Debug: Maven Compile",
-            "type": "shell",
-            "command": "mvn",
-            "args": [
-                "compile"
-            ],
-            "group": "build",
-            "problemMatcher": []
-        }
-    ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Java Debug: Maven Compile",
+			"type": "shell",
+			"command": "mvn",
+			"args": [
+				"compile"
+			],
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run All Tests",
+			"type": "shell",
+			"command": "mvn",
+			"args": [
+				"test"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$maven"
+			],
+			"group": "test"
+		}
+	]
 }

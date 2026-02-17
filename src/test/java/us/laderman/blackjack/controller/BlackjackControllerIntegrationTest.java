@@ -23,6 +23,9 @@ import us.laderman.blackjack.service.BlackjackService;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Integration tests for BlackjackController API endpoints.
+ */
 @DisplayName("BlackjackController REST API Tests")
 class BlackjackControllerTest {
 
@@ -37,6 +40,9 @@ class BlackjackControllerTest {
 
     @Test
     @DisplayName("should handle start game endpoint")
+    /**
+     * Tests the start game endpoint for correct game creation and service call.
+     */
     void testStartGameEndpoint() {
         // Arrange
         GameState mockState = createMockGameState();
@@ -53,6 +59,9 @@ class BlackjackControllerTest {
 
     @Test
     @DisplayName("should handle state retrieval endpoint")
+    /**
+     * Tests the state retrieval endpoint for correct game state and service call.
+     */
     void testGetStateEndpoint() {
         // Arrange
         String gameId = UUID.randomUUID().toString();
@@ -69,6 +78,9 @@ class BlackjackControllerTest {
 
     @Test
     @DisplayName("should handle hit endpoint")
+    /**
+     * Tests the hit endpoint for correct game state and service call.
+     */
     void testHitEndpoint() {
         // Arrange
         String gameId = UUID.randomUUID().toString();
@@ -85,6 +97,9 @@ class BlackjackControllerTest {
 
     @Test
     @DisplayName("should handle stand endpoint")
+    /**
+     * Tests the stand endpoint for correct game state and service call.
+     */
     void testStandEndpoint() {
         // Arrange
         String gameId = UUID.randomUUID().toString();
@@ -101,6 +116,9 @@ class BlackjackControllerTest {
 
     @Test
     @DisplayName("should handle double down endpoint")
+    /**
+     * Tests the double down endpoint for correct game state and service call.
+     */
     void testDoubleDownEndpoint() {
         // Arrange
         String gameId = UUID.randomUUID().toString();

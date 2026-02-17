@@ -4,6 +4,11 @@ package us.laderman.blackjack.ui;
  * Shared constants for UI Selenium tests.
  */
 public final class UiTestConstants {
+    // ChromeOptions arguments
+    public static final String CHROME_HEADLESS_ARG = "--headless=new";
+    public static final String CHROME_NO_SANDBOX_ARG = "--no-sandbox";
+    public static final String CHROME_DISABLE_DEV_SHM_ARG = "--disable-dev-shm-usage";
+    public static final String BASE_URL_PREFIX = "http://localhost:";
 
     private UiTestConstants() {
         // Prevent instantiation

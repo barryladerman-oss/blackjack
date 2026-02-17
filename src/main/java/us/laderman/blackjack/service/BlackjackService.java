@@ -13,6 +13,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+/**
+ * Service layer for managing Blackjack game logic and state transitions.
+ */
 public class BlackjackService {
     private static final int DEFAULT_DECKS = 1;
     private static final int MAX_HANDS = 5;
@@ -21,6 +24,14 @@ public class BlackjackService {
 
     private final Map<UUID, GameEntry> games = new ConcurrentHashMap<>();
 
+    /**
+     * Starts a new Blackjack game with the specified number of hands and
+     * parameters.
+     * 
+     * @param hands     number of player hands
+     * @param allParams additional parameters for game setup
+     * @return the initial game state
+     */
     public GameState startGame(int hands, Map<String, String> allParams) {
         if (hands < 1 || hands > MAX_HANDS) {
             throw new IllegalArgumentException("Hands must be between 1 and " + MAX_HANDS);
@@ -93,6 +104,12 @@ public class BlackjackService {
         }
     }
 
+    /**
+     * Validates that no duplicate cards are present in the provided array.
+     * 
+     * @param cards array of cards to check
+     * @throws IllegalArgumentException if a duplicate card is found
+     */
     private void validateNoDuplicates(Card... cards) {
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (Card card : cards) {
@@ -108,6 +125,14 @@ public class BlackjackService {
         }
     }
 
+    /**
+     * Parses a card from rank and suit strings.
+     * 
+     * @param rankStr rank string
+     * @param suitStr suit string
+     * @return Card object or null if input is invalid
+     * @throws IllegalArgumentException if the card is invalid
+     */
     private Card parseCard(String rankStr, String suitStr) {
         if (rankStr == null || rankStr.isEmpty() || suitStr == null || suitStr.isEmpty()) {
             return null;
@@ -121,28 +146,78 @@ public class BlackjackService {
         }
     }
 
+    /**
+     * Performs a hit action for the specified hand in the game.
+     * 
+     * @param gameId    unique game identifier
+     * @param handIndex index of the hand to hit
+     * @return the updated game state
+     */
     public GameState hit(UUID gameId, int handIndex) {
         return getGame(gameId).hit(handIndex, null);
     }
 
+    /**
+     * Performs a hit action with a specific card for the specified hand.
+     * 
+     * @param gameId    unique game identifier
+     * @param handIndex index of the hand to hit
+     * @param rankStr   rank of the card (optional)
+     * @param suitStr   suit of the card (optional)
+     * @return the updated game state
+     */
     public GameState hit(UUID gameId, int handIndex, String rankStr, String suitStr) {
         Card selectedCard = parseCard(rankStr, suitStr);
         return getGame(gameId).hit(handIndex, selectedCard);
     }
 
+    /**
+     * Performs a stand action for the specified hand in the game.
+     * 
+     * @param gameId    unique game identifier
+     * @param handIndex index of the hand to stand
+     * @return the updated game state
+     */
     public GameState stand(UUID gameId, int handIndex) {
         return getGame(gameId).stand(handIndex);
     }
 
+    /**
+     * Performs a double down action for the specified hand in the game.
+     * 
+     * @param gameId    unique game identifier
+     * @param handIndex index of the hand to double down
+     * @param rank      rank of the card (optional)
+     * @param suit      suit of the card (optional)
+     * @return the updated game state
+     */
     public GameState doubleDown(UUID gameId, int handIndex, String rank, String suit) {
         Card selectedCard = parseCard(rank, suit);
         return getGame(gameId).doubleDown(handIndex, selectedCard);
     }
 
+    /**
+     * Splits the specified hand into two hands in the game.
+     * 
+     * @param gameId    unique game identifier
+     * @param handIndex index of the hand to split
+     * @return the updated game state
+     */
     public GameState split(UUID gameId, int handIndex) {
         return getGame(gameId).split(handIndex, null, null);
     }
 
+    /**
+     * Splits the specified hand with specific cards in the game.
+     * 
+     * @param gameId    unique game identifier
+     * @param handIndex index of the hand to split
+     * @param card1Rank rank of the first card (optional)
+     * @param card1Suit suit of the first card (optional)
+     * @param card2Rank rank of the second card (optional)
+     * @param card2Suit suit of the second card (optional)
+     * @return the updated game state
+     */
     public GameState split(UUID gameId, int handIndex, String card1Rank, String card1Suit,
             String card2Rank, String card2Suit) {
         System.out.println("DEBUG: split called with card1Rank=" + card1Rank + ", card1Suit=" + card1Suit
@@ -180,18 +255,45 @@ public class BlackjackService {
         return getGame(gameId).split(handIndex, selectedCard1, selectedCard2, rank1, rank2);
     }
 
+    /**
+     * Performs an insurance action for the specified hand in the game.
+     * 
+     * @param gameId    unique game identifier
+     * @param handIndex index of the hand for insurance
+     * @return the updated game state
+     */
     public GameState insurance(UUID gameId, int handIndex) {
         return getGame(gameId).insurance(handIndex);
     }
 
+    /**
+     * Declines insurance for the specified hand in the game.
+     * 
+     * @param gameId    unique game identifier
+     * @param handIndex index of the hand to decline insurance
+     * @return the updated game state
+     */
     public GameState declineInsurance(UUID gameId, int handIndex) {
         return getGame(gameId).declineInsurance(handIndex);
     }
 
+    /**
+     * Gets the current state of the specified game.
+     * 
+     * @param gameId unique game identifier
+     * @return the current game state
+     */
     public GameState getState(UUID gameId) {
         return getGame(gameId).getState();
     }
 
+    /**
+     * Retrieves the BlackjackGame instance for the given gameId.
+     * 
+     * @param gameId unique game identifier
+     * @return BlackjackGame instance
+     * @throws IllegalArgumentException if game is not found or expired
+     */
     private BlackjackGame getGame(UUID gameId) {
         GameEntry entry = games.get(gameId);
         if (entry == null) {
@@ -206,6 +308,9 @@ public class BlackjackService {
         return entry.game;
     }
 
+    /**
+     * Cleans up expired games from the game map. Runs on a fixed schedule.
+     */
     @Scheduled(fixedDelayString = "#{T(java.time.Duration).ofMinutes(5).toMillis()}")
     public void cleanupExpiredGames() {
         long now = System.currentTimeMillis();

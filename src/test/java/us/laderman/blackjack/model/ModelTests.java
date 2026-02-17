@@ -5,11 +5,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
+/**
+ * Unit tests for Card model in Blackjack.
+ */
+/**
+ * Unit tests for Card model in Blackjack.
+ */
 @DisplayName("Card Model Tests")
 class CardModelTest {
 
     @Test
     @DisplayName("should create card with suit and rank")
+    /**
+     * Tests card creation with suit and rank.
+     */
     void testCardCreation() {
         Card card = new Card(Suit.HEARTS, Rank.ACE);
         assertThat(card.getSuit()).isEqualTo(Suit.HEARTS);
@@ -18,6 +27,9 @@ class CardModelTest {
 
     @Test
     @DisplayName("should get correct card value")
+    /**
+     * Tests correct value assignment for cards.
+     */
     void testCardValue() {
         Card ace = new Card(Suit.HEARTS, Rank.ACE);
         Card ten = new Card(Suit.DIAMONDS, Rank.TEN);
@@ -30,6 +42,9 @@ class CardModelTest {
 
     @Test
     @DisplayName("should generate card label")
+    /**
+     * Tests label generation for cards.
+     */
     void testCardLabel() {
         Card card = new Card(Suit.SPADES, Rank.KING);
         String label = card.getLabel();
@@ -40,6 +55,9 @@ class CardModelTest {
 
     @Test
     @DisplayName("should represent card as string")
+    /**
+     * Tests string representation of cards.
+     */
     void testCardString() {
         Card card = new Card(Suit.HEARTS, Rank.ACE);
         String string = card.toString();
@@ -50,6 +68,9 @@ class CardModelTest {
 
     @Test
     @DisplayName("should have all 52 unique card combinations")
+    /**
+     * Tests that all 52 card combinations are unique.
+     */
     void testAllCardsAreUnique() {
         int cardCount = 0;
         for (Suit suit : Suit.values()) {

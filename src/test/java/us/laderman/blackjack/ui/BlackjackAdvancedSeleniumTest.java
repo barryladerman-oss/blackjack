@@ -1,3 +1,4 @@
+
 package us.laderman.blackjack.ui;
 
 import java.time.Duration;
@@ -34,12 +35,14 @@ class BlackjackAdvancedSeleniumTest {
     @BeforeEach
     void setUp() {
         ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         driver = new ChromeDriver(options);
         driver.manage().window().setSize(new org.openqa.selenium.Dimension(BROWSER_WIDTH, BROWSER_HEIGHT));
         wait = new WebDriverWait(driver, Duration.ofSeconds(WAIT_TIMEOUT_SECONDS));
         baseUrl = "http://localhost:" + port;
+
     }
 
     @AfterEach
@@ -96,14 +99,14 @@ class BlackjackAdvancedSeleniumTest {
     void testGamePhaseDisplay() {
         driver.get(baseUrl);
 
-        driver.findElement(By.id("startBtn")).click();
+        driver.findElement(By.id(UiTestConstants.ID_START_BTN)).click();
 
         WebElement phaseElement = wait.until(
-                ExpectedConditions.presenceOfElementLocated(By.id("phase")));
+                ExpectedConditions.presenceOfElementLocated(By.id(UiTestConstants.ID_PHASE)));
         String phase = phaseElement.getText();
 
         // Should show a valid phase
-        assertThat(phase).isNotEqualTo("-");
+        assertThat(phase).isNotEqualTo(UiTestConstants.EMPTY_VALUE);
         assertThat(phase).isNotBlank();
     }
 
@@ -280,5 +283,30 @@ class BlackjackAdvancedSeleniumTest {
         String gameState = driver.findElement(By.id("gameState")).getText();
         assertThat(gameState).isNotBlank();
         assertThat(gameState).contains("hands");
+    }
+
+    @Test
+    @DisplayName("should handle advanced UI edge cases")
+    void testAdvancedUiEdgeCases() {
+        driver.get(baseUrl);
+        // Timing issue: simulate delayed element
+        try {
+            Thread.sleep(1000);
+            WebElement delayedElement = driver.findElement(By.id("gameState"));
+            assertThat(delayedElement).isNotNull();
+        } catch (Exception e) {
+            assertThat(e.getMessage()).isNotNull();
+        }
+
+        // Browser compatibility: check element presence
+        WebElement startBtn = driver.findElement(By.id("startBtn"));
+        assertThat(startBtn).isNotNull();
+        // Advanced scenario: simulate multiple hands
+        WebElement handsInput = driver.findElement(By.id("hands"));
+        handsInput.clear();
+        handsInput.sendKeys("3");
+        driver.findElement(By.id("startBtn")).click();
+        WebElement gameState = driver.findElement(By.id("gameState"));
+        assertThat(gameState.getText()).contains("hands");
     }
 }

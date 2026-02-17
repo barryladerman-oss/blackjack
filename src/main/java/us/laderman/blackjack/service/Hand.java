@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Represents a player's or dealer's hand in Blackjack.
+ */
 public class Hand {
     private final List<Card> cards = new ArrayList<>();
     private boolean standing;
@@ -19,6 +22,11 @@ public class Hand {
     private Rank splitFromRank = null;
     private boolean canHitAfterSplitAces = true;
 
+    /**
+     * Adds a card to the hand and updates bust status.
+     * 
+     * @param card card to add
+     */
     public void addCard(Card card) {
         cards.add(card);
         HandValue value = getValue();
@@ -27,10 +35,20 @@ public class Hand {
         }
     }
 
+    /**
+     * Gets the list of cards in the hand.
+     * 
+     * @return unmodifiable list of cards
+     */
     public List<Card> getCards() {
         return Collections.unmodifiableList(cards);
     }
 
+    /**
+     * Checks if the hand is standing.
+     * 
+     * @return true if standing, false otherwise
+     */
     public boolean isStanding() {
         return standing;
     }

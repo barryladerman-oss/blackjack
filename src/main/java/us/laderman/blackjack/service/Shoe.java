@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Represents the shoe containing multiple decks of cards for Blackjack.
+ */
 public class Shoe {
     private final List<Card> cards;
     private final Random random = new Random();
@@ -25,6 +28,12 @@ public class Shoe {
         Collections.shuffle(cards, random);
     }
 
+    /**
+     * Draws a card from the shoe.
+     * 
+     * @return the drawn card
+     * @throws IllegalStateException if the shoe is empty
+     */
     public Card draw() {
         if (cards.isEmpty()) {
             throw new IllegalStateException("Shoe is empty");
@@ -32,6 +41,12 @@ public class Shoe {
         return cards.remove(cards.size() - 1);
     }
 
+    /**
+     * Removes a specific card from the shoe.
+     * 
+     * @param targetCard the card to remove
+     * @return true if the card was removed, false otherwise
+     */
     public boolean removeSpecificCard(Card targetCard) {
         for (int i = 0; i < cards.size(); i++) {
             Card card = cards.get(i);

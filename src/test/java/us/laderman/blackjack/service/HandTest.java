@@ -1,3 +1,4 @@
+
 package us.laderman.blackjack.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,6 +11,12 @@ import us.laderman.blackjack.model.Card;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Suit;
 
+/**
+ * Unit tests for Hand class logic in Blackjack.
+ */
+/**
+ * Unit tests for Hand class logic in Blackjack.
+ */
 @DisplayName("Hand Unit Tests")
 class HandTest {
 
@@ -32,6 +39,9 @@ class HandTest {
 
     @Test
     @DisplayName("should calculate hand value correctly")
+    /**
+     * Tests correct calculation of hand value.
+     */
     void testHandValue() {
         hand.addCard(new Card(Suit.HEARTS, Rank.KING));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.FIVE));
@@ -43,6 +53,9 @@ class HandTest {
 
     @Test
     @DisplayName("should handle soft ace (11)")
+    /**
+     * Tests handling of soft ace (value 11).
+     */
     void testSoftAceValue() {
         hand.addCard(new Card(Suit.HEARTS, Rank.ACE));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.FIVE));
@@ -55,6 +68,9 @@ class HandTest {
 
     @Test
     @DisplayName("should convert soft ace to hard (1) when bust would occur")
+    /**
+     * Tests conversion of soft ace to hard when bust would occur.
+     */
     void testSoftAceConversion() {
         hand.addCard(new Card(Suit.HEARTS, Rank.ACE));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.NINE));
@@ -68,6 +84,9 @@ class HandTest {
 
     @Test
     @DisplayName("should detect bust")
+    /**
+     * Tests detection of bust state in hand.
+     */
     void testBustDetection() {
         hand.addCard(new Card(Suit.HEARTS, Rank.KING));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.QUEEN));
@@ -78,6 +97,9 @@ class HandTest {
 
     @Test
     @DisplayName("should set standing state")
+    /**
+     * Tests setting and checking standing state.
+     */
     void testStandingState() {
         hand.addCard(new Card(Suit.HEARTS, Rank.TEN));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.FIVE));
@@ -187,5 +209,30 @@ class HandTest {
         HandValue value = hand.getValue();
 
         assertThat(value.getTotal()).isEqualTo(21);
+    }
+
+    @Test
+    @DisplayName("should handle edge cases and invalid input")
+    void testEdgeCases() {
+        // Empty hand
+        Hand emptyHand = new Hand();
+        assertThat(emptyHand.getCards()).isEmpty();
+        assertThat(emptyHand.getValue().getTotal()).isEqualTo(0);
+
+        // Duplicate cards
+        Card card = new Card(Suit.HEARTS, Rank.TEN);
+        hand.addCard(card);
+        hand.addCard(card);
+        assertThat(hand.getCards()).hasSize(2);
+        // Overflow (simulate adding many cards)
+        Hand overflowHand = new Hand();
+        for (int i = 0; i < 20; i++) {
+            overflowHand.addCard(new Card(Suit.CLUBS, Rank.TWO));
+        }
+        assertThat(overflowHand.getCards()).hasSize(20);
+        assertThat(overflowHand.getValue().getTotal()).isGreaterThan(21);
+        // Invalid card values (simulate with null)
+        overflowHand.addCard(null);
+        assertThat(overflowHand.getCards()).containsNull();
     }
 }

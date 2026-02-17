@@ -2,6 +2,10 @@ package us.laderman.blackjack.model;
 
 import java.util.List;
 
+/**
+ * Represents the state of a Blackjack game, including player and dealer hands,
+ * game phase, and outcome.
+ */
 public class GameState {
     private final String id;
     private final String phase;
@@ -39,50 +43,108 @@ public class GameState {
         this.note = note;
     }
 
+    /**
+     * Gets the unique game identifier.
+     * 
+     * @return game id
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Gets the current game phase.
+     * 
+     * @return game phase
+     */
     public String getPhase() {
         return phase;
     }
 
+    /**
+     * Gets the dealer's state.
+     * 
+     * @return dealer state
+     */
     public DealerState getDealer() {
         return dealer;
     }
 
+    /**
+     * Gets the list of player hands.
+     * 
+     * @return list of player hand states
+     */
     public List<PlayerHandState> getHands() {
         return hands;
     }
 
+    /**
+     * Gets the running count for card counting.
+     * 
+     * @return running count
+     */
     public int getRunningCount() {
         return runningCount;
     }
 
+    /**
+     * Gets the true count for card counting.
+     * 
+     * @return true count
+     */
     public double getTrueCount() {
         return trueCount;
     }
 
+    /**
+     * Gets the number of decks remaining in the shoe.
+     * 
+     * @return decks remaining
+     */
     public double getDecksRemaining() {
         return decksRemaining;
     }
 
+    /**
+     * Gets the net units won or lost.
+     * 
+     * @return net units
+     */
     public double getNetUnits() {
         return netUnits;
     }
 
+    /**
+     * Gets the total insurance bet amount.
+     * 
+     * @return insurance total
+     */
     public double getInsuranceTotal() {
         return insuranceTotal;
     }
 
+    /**
+     * Gets the suggested bet units for the next round.
+     * 
+     * @return suggested bet units
+     */
     public int getSuggestedBetUnits() {
         return suggestedBetUnits;
     }
 
+    /**
+     * Gets the note or message for the game state.
+     * 
+     * @return note
+     */
     public String getNote() {
         return note;
     }
 
+    /**
+     * Represents the dealer's state in a Blackjack game.
+     */
     public static class DealerState {
         private final List<Card> cards;
         private final int total;
@@ -98,18 +160,38 @@ public class GameState {
             this.standing = standing;
         }
 
+        /**
+         * Gets the dealer's cards.
+         * 
+         * @return list of dealer cards
+         */
         public List<Card> getCards() {
             return cards;
         }
 
+        /**
+         * Gets the dealer's hand total value.
+         * 
+         * @return dealer hand total
+         */
         public int getTotal() {
             return total;
         }
 
+        /**
+         * Checks if the dealer's hand is soft (contains an Ace counted as 11).
+         * 
+         * @return true if soft, false otherwise
+         */
         public boolean isSoft() {
             return soft;
         }
 
+        /**
+         * Checks if the dealer's hand is busted.
+         * 
+         * @return true if busted, false otherwise
+         */
         public boolean isBusted() {
             return busted;
         }
