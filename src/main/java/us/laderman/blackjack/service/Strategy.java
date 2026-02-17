@@ -3,10 +3,7 @@ package us.laderman.blackjack.service;
 import us.laderman.blackjack.model.Rank;
 
 /**
- * Implements optimal blackjack strategy based on:
- * - Basic strategy matrix (mathematically proven to minimize house edge)
- * - True count deviations (card counting adjustments)
- * - Index plays (adjustments based on true count)
+ * Defines player strategies for Blackjack decisions.
  */
 public class Strategy {
 
@@ -14,6 +11,9 @@ public class Strategy {
     // Rows: player total 5-20, Columns: dealer up card 2-11 (index 2-11, where 10
     // includes T,J,Q,K)
     // Values: 0=HIT, 1=STAND, 2=DOUBLE
+    /**
+     * Basic strategy table for hard hands.
+     */
     private static final int[][] HARD_STRATEGY = {
             // Player 5: always hit
             { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -53,6 +53,9 @@ public class Strategy {
     // Rows: soft hand total 12-20 (where ace counts as 11)
     // Columns: dealer up card 2-11
     // Values: 0=HIT, 1=STAND, 2=DOUBLE
+    /**
+     * Basic strategy table for soft hands.
+     */
     private static final int[][] SOFT_STRATEGY = {
             // Soft 12 (A+1): always hit
             { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -77,6 +80,9 @@ public class Strategy {
     // Split strategy: Rows represent each card pair (2,3,4,5,6,7,8,9,10/T,A)
     // Columns: dealer up card 2-11
     // Values: 0=NO, 1=YES
+    /**
+     * Basic strategy table for split hands.
+     */
     private static final int[][] SPLIT_STRATEGY = {
             // Pair of 2s: split on 3-7, hit 2, hit 8-A
             { 0, 1, 1, 1, 1, 1, 0, 0, 0, 0 },
@@ -101,7 +107,20 @@ public class Strategy {
     };
 
     /**
-     * Gets the recommended action based on basic strategy
+     * Gets the recommended action based on basic strategy for hard hands.
+     * 
+     * @param playerTotal  the player's hand total
+     * @param dealerUpCard the dealer's up card value
+     * @return strategy action (0=HIT, 1=STAND, 2=DOUBLE)
+     */
+    /**
+     * Returns the recommended action for a given hand, dealer up card, and split
+     * option.
+     *
+     * @param hand         The player's hand
+     * @param dealerUpCard The dealer's up card value
+     * @param canSplit     Whether the hand can be split
+     * @return Recommended action as a String
      */
     public static String getRecommendedAction(Hand hand, int dealerUpCard, boolean canSplit) {
         if (hand.isBusted()) {
@@ -145,6 +164,15 @@ public class Strategy {
     /**
      * Gets strategy adjustment based on true count for specific situations
      */
+    /**
+     * Applies count-based deviations to the basic strategy recommendation.
+     *
+     * @param basicStrategy The basic strategy action
+     * @param hand          The player's hand
+     * @param dealerUpCard  The dealer's up card value
+     * @param trueCount     The current true count
+     * @return Adjusted action as a String
+     */
     public static String applyCountDeviation(String basicStrategy, Hand hand,
             int dealerUpCard, double trueCount) {
         if (hand.isBusted() || hand.getCards().size() > 2) {
@@ -155,39 +183,65 @@ public class Strategy {
         int total = value.getTotal();
         boolean soft = value.isSoft();
 
-        // Key index plays for 16 vs 10
+        // Hard hand deviations
         if (!soft && total == 16 && dealerUpCard == 10 && trueCount >= 0.0) {
             return "STAND";
         }
-
-        // 15 vs 10
         if (!soft && total == 15 && dealerUpCard == 10 && trueCount >= 4.0) {
             return "STAND";
         }
-
-        // 10 vs 10
         if (!soft && total == 10 && dealerUpCard == 10 && trueCount <= -4.0) {
             return "HIT";
         }
-
-        // 12 vs 3
         if (!soft && total == 12 && dealerUpCard == 3 && trueCount <= -1.0) {
             return "HIT";
         }
-
-        // 12 vs 4
         if (!soft && total == 12 && dealerUpCard == 4 && trueCount <= -1.0) {
             return "HIT";
         }
-
-        // 13 vs 2
         if (!soft && total == 13 && dealerUpCard == 2 && trueCount <= -1.0) {
             return "HIT";
+        }
+
+        // Soft hand deviations (Hi-Lo count system, common plays)
+        // Soft 18 (A+7) vs 2: Double at TC >= +1, otherwise Stand
+        if (soft && total == 18 && dealerUpCard == 2 && trueCount >= 1.0) {
+            return "DOUBLE";
+        }
+        // Soft 18 (A+7) vs 8: Stand at TC >= +1, otherwise Hit
+        if (soft && total == 18 && dealerUpCard == 8 && trueCount >= 1.0) {
+            return "STAND";
+        }
+        // Soft 19 (A+8) vs 6: Double at TC >= +1, otherwise Stand
+        if (soft && total == 19 && dealerUpCard == 6 && trueCount >= 1.0) {
+            return "DOUBLE";
+        }
+        // Soft 19 (A+8) vs 5: Double at TC >= +1, otherwise Stand
+        if (soft && total == 19 && dealerUpCard == 5 && trueCount >= 1.0) {
+            return "DOUBLE";
+        }
+        // Soft 13/14 (A+2/A+3) vs 4: Double at TC >= +1, otherwise Hit
+        if (soft && (total == 13 || total == 14) && dealerUpCard == 4 && trueCount >= 1.0) {
+            return "DOUBLE";
+        }
+        // Soft 13/14 (A+2/A+3) vs 5: Double at TC >= 0, otherwise Hit
+        if (soft && (total == 13 || total == 14) && dealerUpCard == 5 && trueCount >= 0.0) {
+            return "DOUBLE";
+        }
+        // Soft 13/14 (A+2/A+3) vs 6: Double at TC >= -1, otherwise Hit
+        if (soft && (total == 13 || total == 14) && dealerUpCard == 6 && trueCount >= -1.0) {
+            return "DOUBLE";
         }
 
         return basicStrategy;
     }
 
+    /**
+     * Maps dealer up card value to strategy table index.
+     *
+     * @param dealerUpCard The dealer's up card value
+     * @return Index in strategy table
+     */
     private static int getDealerIndex(int dealerUpCard) {
         // Convert dealer card value to index (2-11 -> 0-9, with 10 for T,J,Q,K,A)
         if (dealerUpCard == 11) {
@@ -199,6 +253,12 @@ public class Strategy {
         return Math.max(0, Math.min(7, dealerUpCard - 2)); // 2-9 -> 0-7
     }
 
+    /**
+     * Maps pair rank to split strategy table index.
+     *
+     * @param rank The rank of the pair
+     * @return Index in split strategy table
+     */
     private static int getPairIndex(Rank rank) {
         return switch (rank) {
             case TWO -> 0;
@@ -214,6 +274,13 @@ public class Strategy {
         };
     }
 
+    /**
+     * Gets recommended action for hard hand from strategy table.
+     *
+     * @param total       Hand total value
+     * @param dealerIndex Dealer up card index
+     * @return Action code
+     */
     private static int getHardHandAction(int total, int dealerIndex) {
         if (total < 5 || total > 20) {
             return 0; // Invalid, hit
@@ -221,6 +288,13 @@ public class Strategy {
         return HARD_STRATEGY[total - 5][dealerIndex];
     }
 
+    /**
+     * Gets recommended action for soft hand from strategy table.
+     *
+     * @param total       Hand total value
+     * @param dealerIndex Dealer up card index
+     * @return Action as String
+     */
     private static String getSoftHandAction(int total, int dealerIndex) {
         int action = getSoftHandActionValue(total, dealerIndex);
         if (action == 2) {
@@ -229,6 +303,13 @@ public class Strategy {
         return action == 1 ? "STAND" : "HIT";
     }
 
+    /**
+     * Gets action value for soft hand from strategy table.
+     *
+     * @param total       Hand total value
+     * @param dealerIndex Dealer up card index
+     * @return Action code
+     */
     private static int getSoftHandActionValue(int total, int dealerIndex) {
         if (total < 12 || total > 20) {
             return 0; // Invalid, hit
