@@ -82,7 +82,8 @@ class BlackjackServiceTest {
     void testInitialPhase() {
         GameState state = service.startGame(1, new HashMap<>());
 
-        assertThat(state.getPhase()).isEqualTo("PLAYER_TURN");
+        // Allow phase to be COMPLETE if the initial hand is a blackjack
+        assertThat(state.getPhase()).isIn("PLAYER_TURN", "COMPLETE");
     }
 
     @Test
@@ -144,9 +145,10 @@ class BlackjackServiceTest {
             assertThat(standState).isNotNull();
             assertThat(standState.getPhase()).isNotNull();
         } catch (IllegalStateException e) {
-            // Hand was auto-stood (e.g., blackjack), so standing again fails - this is
-            // acceptable
-            assertThat(e.getMessage()).contains("Player actions are closed");
+            // Hand was auto-stood (e.g., blackjack), or insurance not resolved, so standing
+            // again fails - this is acceptable
+            assertThat(e.getMessage()).containsAnyOf("Player actions are closed",
+                    "All hands must make an insurance decision first");
         }
     }
 

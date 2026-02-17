@@ -688,11 +688,20 @@ public class BlackjackGame {
                     hand.getBetUnits()));
         }
 
-        String note = phase == GamePhase.COMPLETE
-                ? "Round complete" + (insuranceTotal != 0 ? " | Insurance: " + roundToTwo(insuranceTotal) : "")
-                : getDealerUpCard() != null && getDealerUpCard().getRank() == Rank.ACE
-                        ? "Insurance available on dealer ace"
-                        : "Dealer up card used for recommendations";
+        String note;
+        if (phase == GamePhase.COMPLETE) {
+            if (insuranceTotal != 0) {
+                note = "Round complete | Insurance: " + roundToTwo(insuranceTotal);
+            } else if (getDealerUpCard() != null && getDealerUpCard().getRank() == Rank.ACE) {
+                note = "Round complete | insurance declined or not taken";
+            } else {
+                note = "Round complete";
+            }
+        } else if (getDealerUpCard() != null && getDealerUpCard().getRank() == Rank.ACE) {
+            note = "Insurance available on dealer ace";
+        } else {
+            note = "Dealer up card used for recommendations";
+        }
 
         return new GameState(
                 id.toString(),
@@ -810,10 +819,7 @@ public class BlackjackGame {
         if (!isActiveHand(handIndex)) {
             return "NONE";
         }
-        // No recommendation on first player hand if soft
-        if (handIndex == 0 && value.isSoft()) {
-            return "NONE";
-        }
+        // ...restriction removed...
         // Check for insurance opportunity first
         if (phase == GamePhase.PLAYER_TURN && !hand.isFromSplit() && dealerUpCard != null
                 && dealerUpCard.getRank() == Rank.ACE) {

@@ -135,6 +135,8 @@ public class Hand {
         int total = 0;
         int aces = 0;
         for (Card card : cards) {
+            if (card == null)
+                continue;
             total += card.getRank().getValue();
             if (card.getRank() == Rank.ACE) {
                 aces++;
