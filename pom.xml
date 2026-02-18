@@ -43,7 +43,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
     <build>
         <pluginManagement>
             <plugins>
@@ -110,6 +109,18 @@
                 </executions>
             </plugin>
             -->
-        </plugins>
+        <!-- OpenRewrite plugin for Java migration -->
+        <plugin>
+            <groupId>org.openrewrite.maven</groupId>
+            <artifactId>rewrite-maven-plugin</artifactId>
+            <version>5.47.3</version>
+            <configuration>
+                <activeRecipes>
+                    <recipe>org.openrewrite.java.migrate.UpgradeToJava21</recipe>
+                </activeRecipes>
+                <configFile>${project.basedir}/rewrite.yml</configFile>
+            </configuration>
+        </plugin>
+    </plugins>
     </build>
 </project>
