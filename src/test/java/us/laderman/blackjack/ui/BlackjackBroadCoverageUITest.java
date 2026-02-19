@@ -85,6 +85,23 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
     }
 
     @Test
+    @DisplayName("Full game flow: player blackjack")
+    void testPlayerBlackjack() {
+        try {
+            setNumHands(1);
+            setDealerUpCard("FIVE");
+            setPlayerCard(1, 1, "ACE");
+            setPlayerCard(1, 2, "JACK");
+            clickBtn(ID_START_BTN);
+
+            String phase = driver.findElement(By.id(UiTestConstants.ID_PHASE)).getText();
+            assertThat(phase).contains("COMPLETE");
+        } catch (Exception e) {
+            assert (e.getMessage().isBlank());
+        }
+    }
+
+    @Test
     @DisplayName("Full game flow: split")
     void testSplit() {
         try {
@@ -122,30 +139,6 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
         } catch (Exception e) {
             assert (e.getMessage().isBlank());
         }
-    }
-
-    @Test
-    @DisplayName("Full game flow: dealerHasAce")
-    void testDealerHasAce() {
-        /*
-         * driver.get(baseUrl);
-         * clickBtn(UiTestConstants.ID_START_BTN);
-         * // Try insurance if enabled
-         * WebElement insuranceBtn =
-         * driver.findElement(By.id(UiTestConstants.ID_INSURANCE_BTN));
-         * if (!insuranceBtn.getAttribute("disabled").equals("true")) {
-         * clickBtn(UiTestConstants.ID_INSURANCE_BTN);
-         * }
-         * WebElement declineBtn =
-         * driver.findElement(By.id(UiTestConstants.ID_DECLINE_INSURANCE_BTN));
-         * if (!declineBtn.getAttribute("disabled").equals("true")) {
-         * clickBtn(UiTestConstants.ID_DECLINE_INSURANCE_BTN);
-         * }
-         * // Assert insurance state in game JSON
-         * String gameState =
-         * driver.findElement(By.id(UiTestConstants.ID_GAME_STATE)).getText();
-         * assertThat(gameState).contains("insurance");
-         */
     }
 
     @Test

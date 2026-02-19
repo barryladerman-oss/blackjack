@@ -41,8 +41,7 @@ public final class UiTestConstants {
     public static final String ID_DOUBLE_ANCEL_BTN = "doubleCardCancelBtn";
     public static final String ID_DOUBLE_CONFIRM_BTN = "doubleCardConfirmBtn";
 
-    public static final String ID_INSURANCE_BTN = "insuranceBtn";
-    public static final String ID_DECLINE_INSURANCE_BTN = "declineInsuranceBtn";
+    public static final String ID_INSURANCE_BTN = "insurance";
 
     // Game phases
     public static final String PHASE_PLAYER_TURN = "PLAYER_TURN";
