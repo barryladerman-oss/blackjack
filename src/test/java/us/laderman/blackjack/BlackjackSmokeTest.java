@@ -1,7 +1,10 @@
 package us.laderman.blackjack;
 
 import us.laderman.blackjack.model.GameState;
+import us.laderman.blackjack.ui.BaseSeleniumTest;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -12,7 +15,7 @@ import java.util.Objects;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class BlackjackSmokeTest {
+class BlackjackSmokeTest extends BaseSeleniumTest {
     @Autowired
     private TestRestTemplate restTemplate;
 

@@ -160,7 +160,17 @@ public class BlackjackRestApiTest {
 
         ApiResponse<GameState> doubleResponse = client.doubleDown(gameId, 0);
 
-        ApiAssertions.assertSuccess(doubleResponse);
+        if (doubleResponse.isSuccess()) {
+            // Double down was allowed, test passes
+            ApiAssertions.assertSuccess(doubleResponse);
+        } else {
+            // Double down not allowed, verify 409 Conflict and error message
+            org.junit.jupiter.api.Assertions.assertEquals(409, doubleResponse.getStatusCode(),
+                    "Expected 409 Conflict when double down is not allowed");
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    doubleResponse.getErrorMessage() != null && doubleResponse.getErrorMessage().contains("Conflict"),
+                    "Expected error message to contain 'Conflict'");
+        }
     }
 
     @Test

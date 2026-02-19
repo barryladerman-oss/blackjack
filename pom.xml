@@ -39,10 +39,23 @@
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
-            <version>4.15.0</version>
+            <version>4.19.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>5.7.0</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- selenium-devtools-v145 dependency removed: not available in Maven Central -->
     </dependencies>
+    <repositories>
+        <repository>
+            <id>seleniumhq-repo</id>
+            <url>https://oss.sonatype.org/content/repositories/seleniumhq/</url>
+        </repository>
+    </repositories>
     <build>
         <pluginManagement>
             <plugins>
@@ -109,18 +122,18 @@
                 </executions>
             </plugin>
             -->
-        <!-- OpenRewrite plugin for Java migration -->
-        <plugin>
-            <groupId>org.openrewrite.maven</groupId>
-            <artifactId>rewrite-maven-plugin</artifactId>
-            <version>5.47.3</version>
-            <configuration>
-                <activeRecipes>
-                    <recipe>org.openrewrite.java.migrate.UpgradeToJava21</recipe>
-                </activeRecipes>
-                <configFile>${project.basedir}/rewrite.yml</configFile>
-            </configuration>
-        </plugin>
-    </plugins>
+            <!-- OpenRewrite plugin for Java migration -->
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <version>5.47.3</version>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>org.openrewrite.java.migrate.UpgradeToJava21</recipe>
+                    </activeRecipes>
+                    <configFile>${project.basedir}/rewrite.yml</configFile>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>

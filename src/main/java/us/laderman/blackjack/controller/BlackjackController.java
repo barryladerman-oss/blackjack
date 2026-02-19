@@ -174,9 +174,9 @@ public class BlackjackController {
             HttpStatus status = ex.getMessage() != null && ex.getMessage().contains("not found")
                     ? HttpStatus.NOT_FOUND
                     : HttpStatus.BAD_REQUEST;
-            throw new ResponseStatusException(status, ex.getMessage(), ex);
+            throw new ResponseStatusException(status, "Double down failed: " + ex.getMessage(), ex);
         } catch (IllegalStateException ex) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Double down not allowed: " + ex.getMessage(), ex);
         }
     }
 

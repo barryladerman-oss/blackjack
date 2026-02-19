@@ -816,7 +816,12 @@ public class BlackjackGame {
      * @return Recommended action string
      */
     private String recommendAction(int handIndex, Hand hand, HandValue value, Card dealerUpCard, double trueCount) {
-        if (!isActiveHand(handIndex)) {
+        // Allow insurance recommendation for all eligible hands when dealer shows Ace
+        boolean dealerShowsAce = phase == GamePhase.PLAYER_TURN && dealerUpCard != null
+                && dealerUpCard.getRank() == Rank.ACE;
+        boolean eligibleForInsurance = dealerShowsAce && !hand.isFromSplit() && hand.getCards().size() == 2
+                && !hand.isInsured() && !hand.isInsuranceDeclined() && !hand.isStanding() && !hand.isBusted();
+        if (!isActiveHand(handIndex) && !eligibleForInsurance) {
             return "NONE";
         }
         // ...restriction removed...
