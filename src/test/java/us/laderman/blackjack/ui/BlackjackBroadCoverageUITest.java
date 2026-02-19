@@ -4,6 +4,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static us.laderman.blackjack.ui.UiTestConstants.ID_STAND_BTN;
@@ -43,6 +45,7 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             setPlayerCard(1, 2, "TEN");
             clickBtn(ID_START_BTN);
 
+            closeModalIfOpen();
             WebElement standBtn = getActionButton(1, ID_STAND_BTN);
             standBtn.click();
         } catch (Exception e) {
@@ -55,12 +58,12 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
     void testHit() {
         try {
             setNumHands(1);
-            setDealerUpCard("TWO");
+            setDealerUpCard("NINE");
             setPlayerCard(1, 1, "2");
             setPlayerCard(1, 2, "SIX");
             clickBtn(ID_START_BTN);
 
-            clickBtn(ID_HIT_CONFIRM_BTN);
+            clickModalBtn(ID_HIT_CONFIRM_BTN);
             assert (Boolean.TRUE);
         } catch (Exception e) {
             assert (e.getMessage().isBlank());
@@ -77,7 +80,7 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             setPlayerCard(1, 2, "FIVE");
             clickBtn(ID_START_BTN);
 
-            clickBtn(ID_HIT_CONFIRM_BTN);
+            clickModalBtn(ID_HIT_CONFIRM_BTN);
             assert (Boolean.TRUE);
         } catch (Exception e) {
             assert (e.getMessage().isBlank());
@@ -111,10 +114,16 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             setPlayerCard(1, 2, "EIGHT");
             setPlayerCard(2, 1, "JACK");
             setPlayerCard(2, 2, "NINE");
-
             clickBtn(ID_START_BTN);
 
-            clickBtn(ID_SPLIT_CONFIRM_BTN);
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("splitCard1Rank")));
+            WebElement splitCardRank1 = driver.findElement(By.id("splitCard1Rank"));
+            WebElement splitCardRank2 = driver.findElement(By.id("splitCard2Rank"));
+            new Select(splitCardRank1).selectByValue("TEN");
+            new Select(splitCardRank2).selectByValue("TEN");
+            clickModalBtn(ID_SPLIT_CONFIRM_BTN);
+            Thread.sleep(100);
+
             getActionButton(1, ID_STAND_BTN).click();
             getActionButton(2, ID_STAND_BTN).click();
             getActionButton(3, ID_STAND_BTN).click();
@@ -134,7 +143,7 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             setPlayerCard(1, 2, "SIX");
             clickBtn(ID_START_BTN);
 
-            clickBtn(ID_DOUBLE_CONFIRM_BTN);
+            clickModalBtn(ID_DOUBLE_CONFIRM_BTN);
             assert (Boolean.TRUE);
         } catch (Exception e) {
             assert (e.getMessage().isBlank());

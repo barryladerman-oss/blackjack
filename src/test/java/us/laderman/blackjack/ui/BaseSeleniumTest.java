@@ -111,54 +111,20 @@ public abstract class BaseSeleniumTest {
         }
     }
 
-    // Helper to close the hitCardModal if it is open
     protected void closeModalIfOpen() {
-        // Helper to robustly close a modal by id
         java.util.function.Consumer<String> closeModalById = (modalId) -> {
-            for (int attempt = 0; attempt < 3; attempt++) {
-                try {
-                    WebElement modal = driver.findElement(By.id(modalId));
-                    if (modal.isDisplayed()) {
-                        try {
-                            WebElement cancelBtn = modal.findElement(By.cssSelector(
-                                    "button[id*='cancel'],button[class*='cancel'],button[class*='close'],button[id*='close']"));
-                            cancelBtn.click();
-                        } catch (Exception e) {
-                            // Always wait for modal to be invisible
-                            try {
-                                wait.until(ExpectedConditions.invisibilityOf(modal));
-                            } catch (Exception e2) {
-                                // If still visible, retry
-                            }
-                            // If modal is still visible, retry up to 3 times
-                            if (!modal.isDisplayed())
-                                break;
-                        }
-                    } else {
-                        break;
-                    }
-                } catch (org.openqa.selenium.NoSuchElementException ignored) {
-                    break;
-                }
-            }
+            WebElement modal = driver.findElement(By.id(modalId));
+            if (!modal.isDisplayed())
+                return;
+
+            WebElement cancelBtn = modal.findElement(By.cssSelector(
+                    "button[id*='cancel'],button[class*='cancel'],button[class*='close'],button[id*='close']"));
+            cancelBtn.click();
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(modalId)));
         };
         closeModalById.accept(UiTestConstants.ID_HIT_CARD_MODAL);
         closeModalById.accept(UiTestConstants.ID_SPLIT_CARD_MODAL);
         closeModalById.accept(UiTestConstants.ID_DOUBLE_CARD_MODAL);
-
-        // Wait for all modals to be gone before returning
-        try {
-            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(UiTestConstants.ID_HIT_CARD_MODAL)));
-        } catch (Exception ignored) {
-        }
-        try {
-            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(UiTestConstants.ID_SPLIT_CARD_MODAL)));
-        } catch (Exception ignored) {
-        }
-        try {
-            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(UiTestConstants.ID_DOUBLE_CARD_MODAL)));
-        } catch (Exception ignored) {
-        }
     }
 
     void testRunningCountAfterEachHit() {
@@ -188,26 +154,15 @@ public abstract class BaseSeleniumTest {
         // Always wait for all modals to be closed before clicking
         waitForNoModalsOpen();
 
-        WebElement btn = null;
-        int attempts = 0;
-        while (attempts < 3) {
-            try {
-                btn = driver.findElement(By.id(buttonID));
-                btn.click();
-                break;
-            } catch (Exception e) {
-                attempts++;
-                if (attempts >= 3) {
-                    System.err
-                            .println("[WARN] Button '" + buttonID + "' not clickable after waiting: " + e.getMessage());
-                } else {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException ignored) {
-                    }
-                }
-            }
-        }
+        WebElement btn = driver.findElement(By.id(buttonID));
+        btn.click();
+    }
+
+    void clickModalBtn(String buttonID) {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(buttonID)));
+
+        driver.findElement(By.id(buttonID)).click();
+        waitForNoModalsOpen();
     }
 
     // Wait for all modals to be closed
@@ -256,14 +211,5 @@ public abstract class BaseSeleniumTest {
         } catch (Exception e) {
 
         }
-    }
-
-    void testPlayerHitDialog() {
-    }
-
-    void testPlayerDoubleDialog() {
-    }
-
-    void testPlayerSplitDialog() {
     }
 }
