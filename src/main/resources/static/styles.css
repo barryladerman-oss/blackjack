@@ -1,3 +1,25 @@
+.tag.recommended,
+span.tag.recommended,
+.hand-actions .tag.recommended {
+    color: var(--mint) !important;
+    background: rgba(26, 107, 96, 0.13) !important;
+    border: 1.5px solid var(--mint) !important;
+    font-weight: bold !important;
+    box-shadow: 0 0 0 1px var(--mint) inset !important;
+}
+
+.strategy-recommendation {
+    color: var(--mint) !important;
+    background: rgba(26, 107, 96, 0.13) !important;
+    border: 1.5px solid var(--mint) !important;
+    font-weight: bold !important;
+    box-shadow: 0 0 0 1px var(--mint) inset !important;
+    border-radius: 999px !important;
+    padding: 2px 8px !important;
+    display: inline-block;
+    font-size: 1em;
+}
+
 :root {
     --ink: #231f1b;
     --muted: rgba(35, 31, 27, 0.62);

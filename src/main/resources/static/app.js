@@ -50,7 +50,34 @@ let testModeGameId = null;
 let isBusy = false;
 
 let lastState = null;
+
+// Handles async actions and updates UI state
+const run = async (fn) => {
+    setBusy(true);
+    try {
+        const result = await fn();
+        if (result && typeof result === 'object') {
+            renderState(result);
+        }
+    } catch (err) {
+        console.error("Error in run():", err);
+        alert(err.message || "An error occurred.");
+    } finally {
+        setBusy(false);
+    }
+};
+
 let replaceGameStateNext = false;
+
+// Returns the current gameId, using lastState or fallback
+function guardGameId() {
+    // Try to get gameId from lastState
+    if (lastState && (lastState.id || lastState.gameId)) {
+        return lastState.id || lastState.gameId;
+    }
+    // Fallback to resolveGameId (which will generate or reuse fallbackGameId)
+    return resolveGameId(lastState);
+}
 
 const setBusy = (busy) => {
     isBusy = busy;
@@ -550,15 +577,22 @@ const renderState = (state) => {
         // Find the active hand (not busted or standing)
         const activeHand = state.hands.find((hand) => !hand.busted && !hand.standing);
         if (activeHand) {
-            // If the hand is soft, include 'soft' in the recommendation
             let rec = activeHand.recommendedAction || "-";
+            // If the hand is soft, include 'soft' in the recommendation
             if (activeHand.soft && !rec.toLowerCase().includes("soft")) {
                 rec = `soft ${rec}`;
             }
-            strategyText = rec;
+            // Show insurance recommendation if phase is insurance
+            const normalizedRec = String(rec).toLowerCase().replace(/\s|-+/g, "_");
+            if (normalizedRec === "insure" || normalizedRec === "insurance" || normalizedRec === "no_insurance" || normalizedRec === "decline_insurance") {
+                strategyText = `<span class='strategy-recommendation'>${rec}</span>`;
+            } else if (state.phase === "PLAYER_TURN") {
+                // After insurance resolved, show next recommended action
+                strategyText = `<span class='strategy-recommendation'>${rec}</span>`;
+            }
         }
     }
-    strategyTextEl.textContent = strategyText;
+    strategyTextEl.innerHTML = strategyText;
     if (isTestMode) {
         suggestedBetEl.textContent = "-";
         if (state.suggestedBetUnits !== undefined && state.suggestedBetUnits !== null) {
@@ -674,46 +708,6 @@ const renderState = (state) => {
             const canSplit = isActive && hand.cards && hand.cards.length === 2 &&
                 getCardRankValue(hand.cards[0]) === getCardRankValue(hand.cards[1]);
             const canInsure = hand.cards && hand.cards.length === 2 && dealerOffersInsurance && !hand.insured && !hand.insuranceDeclined && !isFromSplit && !hand.standing && !hand.busted;
-            // Auto-open dialog for recommended action for the active hand
-            // If dealer shows ace, wait for insurance resolution; otherwise, auto-open immediately
-            if (state.phase === "PLAYER_TURN" && state.hands && state.hands.length > 0) {
-                const dealerCards = state.dealer?.cards || [];
-                const dealerShowsAce = dealerCards.length > 0 && isAceRank(dealerCards[0]);
-                const allHandsResolvedInsurance = state.hands.every(hand => {
-                    const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
-                    if (isFromSplit) return true;
-                    return hand.insured || hand.insuranceDeclined || hand.standing || hand.busted || (hand.cards && hand.cards.length > 2);
-                });
-                const activeIndex = state.hands.findIndex((hand) => !hand.busted && !hand.standing);
-                if (activeIndex >= 0) {
-                    const hand = state.hands[activeIndex];
-                    const rawRecommendation = hand.recommendedAction || "";
-                    const normalizedRecommendation = String(rawRecommendation).toLowerCase().replace(/\s|-+/g, "_");
-                    // If dealer shows ace, only auto-open after insurance resolved; otherwise, auto-open immediately
-                    if ((!dealerShowsAce || allHandsResolvedInsurance)) {
-                        if (normalizedRecommendation === "hit") {
-                            setTimeout(() => showHitCardModal(activeIndex), 250);
-                        } else if (normalizedRecommendation === "double") {
-                            setTimeout(() => showDoubleCardModal(activeIndex), 250);
-                        } else if (normalizedRecommendation === "split") {
-                            setTimeout(() => showSplitCardModal(activeIndex), 250);
-                        }
-                    }
-                }
-            }
-
-            // When dealer shows Ace, only insurance actions are allowed until ALL hands make a decision
-            const dealerInInsurancePhase = dealerShowsAce && state.phase === "PLAYER_TURN" && !allHandsResolvedInsurance;
-
-            // Enable regular actions only if:
-            // 1. Dealer doesn't show an Ace, OR
-            // 2. Phase is COMPLETE (round over), OR
-            // 3. All hands have resolved their insurance decisions
-            const regularActionsEnabled = isActive && (!dealerShowsAce || state.phase === "COMPLETE" || allHandsResolvedInsurance);
-
-            console.log('Insurance check:', { isActive, hasCards: !!hand.cards, cardCount: hand.cards?.length, dealerShowsAce, alreadyInsured: hand.insured, canInsure, dealerInInsurancePhase, regularActionsEnabled, allHandsResolvedInsurance });
-
-            // Declare these variables before they're used
             const canHitAfterSplitAces = (hand.canHitAfterSplitAces ?? hand.isCanHitAfterSplitAces) !== false;
             const handPlayable = !hand.standing && !hand.busted;
 
@@ -723,11 +717,7 @@ const renderState = (state) => {
                 ? normalizedRecommendation
                 : "";
 
-            console.log(`Hand ${hand.index} - soft: ${hand.soft}, total: ${hand.total}, raw recommend: "${rawRecommendation}", normalized: "${normalizedRecommendation}", effective: "${recommendedAction}", playable: ${handPlayable}`);
             // Highlight insurance recommendations for all hands, not just active
-            // Only apply recommended class to the correct insurance button
-            // Always show both insurance buttons, one green (recommended), one red (default)
-            // For each hand, exactly one insurance button is green (.recommended)
             let insuranceBtnClass = "insurance-btn";
             let noInsuranceBtnClass = "insurance-btn ghost";
             if (canInsure) {
@@ -738,52 +728,29 @@ const renderState = (state) => {
                 }
             }
 
-            // If neither is recommended, both are default (red)
-            // If one is recommended, it gets .recommended (green), the other stays default (red)
-
             // For split aces with no hit allowed, the hand is complete - no actions available
             const isSplitAceComplete = isFromSplit && !canHitAfterSplitAces;
 
-            // Log split ace hands
-            if (isFromSplit && hand.cards?.length <= 2 && hand.cards?.[0]?.rank?.value === 1) {
-                console.log('SPLIT ACE HAND STATE:', {
-                    handIndex: hand.index,
-                    isFromSplit,
-                    canHitAfterSplitAces,
-                    standing: hand.standing,
-                    busted: hand.busted,
-                    handPlayable,
-                    isSplitAceComplete,
-                    phase: state.phase
-                });
-            }
-
-            const showHit = !isSplitAceComplete && regularActionsEnabled && handPlayable && canHitAfterSplitAces;
-            const showStand = !isSplitAceComplete && regularActionsEnabled && handPlayable;
-            const showDouble = !isSplitAceComplete && regularActionsEnabled && handPlayable && canDouble;
-            const showSplit = !isSplitAceComplete && regularActionsEnabled && handPlayable && canSplit && !isFromSplit;
-
-            if (isFromSplit && hand.getCards?.length === 2 && hand.cards?.[0]?.rank === 'ACE') {
-                console.log('SPLIT ACE DEBUG:', { handIndex: hand.index, standing: hand.standing, busted: hand.busted, handPlayable, showHit, showStand, regularActionsEnabled, isActive, activeIndex, phase: state.phase });
-            }
+            const showHit = !isSplitAceComplete && handPlayable && canHitAfterSplitAces;
+            const showStand = !isSplitAceComplete && handPlayable;
+            const showDouble = !isSplitAceComplete && handPlayable && canDouble;
+            const showSplit = !isSplitAceComplete && handPlayable && canSplit && !isFromSplit;
 
             // Calculate result display with bet units
             let resultDisplay = "";
             if (hand.result && hand.result !== "IN_PROGRESS") {
                 const betUnits = hand.betUnits || 1;
-                console.log('Result display:', { handIndex: hand.index, result: hand.result, betUnits: hand.betUnits, calculated: betUnits });
                 if (hand.result === "WIN") {
-                    resultDisplay = `<span class="tag">WIN +${betUnits}</span>`;
+                    resultDisplay = `<span class=\"tag\">WIN +${betUnits}</span>`;
                 } else if (hand.result === "LOSE") {
-                    resultDisplay = `<span class="tag">LOSE -${betUnits}</span>`;
+                    resultDisplay = `<span class=\"tag\">LOSE -${betUnits}</span>`;
                 } else if (hand.result === "PUSH") {
-                    resultDisplay = `<span class="tag">PUSH</span>`;
+                    resultDisplay = `<span class=\"tag\">PUSH</span>`;
                 }
             }
             const result = resultDisplay;
-            const doubled = (hand.betUnits === 2) ? `<span class="tag">DOUBLED</span>` : "";
-            const hint = recommendedAction ? `<span class="tag">${formatRecommendation(recommendedAction)}</span>` : "";
-            const insuranceDecision = "";
+            const doubled = (hand.betUnits === 2) ? `<span class=\"tag\">DOUBLED</span>` : "";
+            const hint = recommendedAction ? `<span class=\"tag recommended\">${formatRecommendation(recommendedAction)}</span>` : "";
             const handStatus = [
                 `${hand.total}`,
                 hand.soft ? "(soft)" : null,
@@ -798,59 +765,50 @@ const renderState = (state) => {
                 else if (hand.result === "PUSH") resultClass = " result-push";
             }
 
-            const displayHand = hand.index + 1;
-            return `
-                <div class="hand-row${isActive ? " active" : ""}${resultClass}">
-                    <div class="hand-header">
-                        <div class="row-title">Hand ${hand.index + 1}</div>
-                        <div class="meta-line">
-                            <span>${handStatus}</span>
-                            ${result}
-                            ${doubled}
-                            ${hint}
-                        </div>
-                    </div>
-                    <div class="cards">${renderCards(hand.cards)}</div>
-                    <div class="hand-actions">
-                        ${canInsure ? `<button class="${insuranceBtnClass}" data-action="insurance" data-value="yes" data-hand="${displayHand}">Insurance</button>` : ""}
-                        ${canInsure ? `<button class="${noInsuranceBtnClass}" data-action="insurance" data-value="no" data-hand="${displayHand}">No Insurance</button>` : ""}
-                        ${showHit ? `<button class="${recommendedAction === "hit" ? "recommended" : ""}" data-action="hit" data-hand="${displayHand}">Hit</button>` : ""}
-                        ${showStand ? `<button class="secondary ${recommendedAction === "stand" ? "recommended" : ""}" data-action="stand" data-hand="${displayHand}">Stand</button>` : ""}
-                        ${showDouble ? `<button class="${recommendedAction === "double" ? "recommended" : ""}" data-action="double" data-hand="${displayHand}">Double</button>` : ""}
-                        ${showSplit ? `<button class="${recommendedAction === "split" ? "recommended" : ""}" data-action="split" data-hand="${displayHand}">Split</button>` : ""}
-                    </div>
-                </div>
-            `;
+            // Action buttons for the active hand
+            let actionsHtml = '';
+            if (isActive && handPlayable && state.phase === "PLAYER_TURN") {
+                // Determine which action is recommended for this hand
+                const recommended = recommendedAction;
+                actionsHtml = `<div class="hand-actions">`
+                    + (showHit ? `<button data-action="hit" data-hand="${hand.index + 1}"${recommended === "hit" ? ' class="recommended"' : ''}>Hit</button>` : '')
+                    + (showStand ? `<button data-action="stand" data-hand="${hand.index + 1}"${recommended === "stand" ? ' class="recommended"' : ''}>Stand</button>` : '')
+                    + (showDouble ? `<button data-action="double" data-hand="${hand.index + 1}"${recommended === "double" ? ' class="recommended"' : ''}>Double</button>` : '')
+                    + (showSplit ? `<button data-action="split" data-hand="${hand.index + 1}"${recommended === "split" ? ' class="recommended"' : ''}>Split</button>` : '')
+                    + `</div>`;
+            }
+
+            return `<div class=\"row hand-row${isActive ? " active" : ""}${resultClass}\">\n                    <div class=\"row-title\">Hand ${hand.index + 1}</div>\n                    <div class=\"cards\">${renderCards(hand.cards)}</div>\n                    <div class=\"hand-meta\">\n                        <span class=\"hand-status\">${handStatus}</span>\n                        ${result}\n                        ${doubled}\n                        ${hint}\n                    </div>\n                    ${actionsHtml}\n                </div>`;
         })
         .join("");
-
-    setBusy(isBusy);
-};
-
-const guardGameId = () => {
-    const id = lastState?.id || "";
-    if (!id) {
-        throw new Error("Start a game first.");
-    }
-    return id;
-};
-
-const run = async (task) => {
-    try {
-        setBusy(true);
-        console.log("run() - executing task...");
-        const data = await task();
-        console.log("run() - received data:", data);
-        renderState(data);
-    } catch (error) {
-        console.error("run() - error:", error);
-        if (!document.body.classList.contains("test-mode")) {
-            alert("Error: " + (error.message || "Request failed."));
+    // After rendering hands, auto-open the hit/double/split modal if needed
+    if (state.phase === "PLAYER_TURN" && state.hands && state.hands.length > 0) {
+        const dealerCards = state.dealer?.cards || [];
+        const dealerShowsAce = dealerCards.length > 0 && isAceRank(dealerCards[0]);
+        const allHandsResolvedInsurance = state.hands.every(hand => {
+            const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
+            if (isFromSplit) return true;
+            return hand.insured || hand.insuranceDeclined || hand.standing || hand.busted || (hand.cards && hand.cards.length > 2);
+        });
+        const activeIndex = state.hands.findIndex((hand) => !hand.busted && !hand.standing);
+        if (activeIndex >= 0) {
+            const hand = state.hands[activeIndex];
+            const rawRecommendation = hand.recommendedAction || "";
+            const normalizedRecommendation = String(rawRecommendation).toLowerCase().replace(/\s|-+/g, "_");
+            // If dealer shows ace, only auto-open after insurance resolved; otherwise, auto-open immediately
+            if ((!dealerShowsAce || allHandsResolvedInsurance)) {
+                if (normalizedRecommendation === "hit") {
+                    setTimeout(() => showHitCardModal(activeIndex), 250);
+                } else if (normalizedRecommendation === "double") {
+                    setTimeout(() => showDoubleCardModal(activeIndex), 250);
+                } else if (normalizedRecommendation === "split") {
+                    setTimeout(() => showSplitCardModal(activeIndex), 250);
+                }
+            }
         }
-    } finally {
-        setBusy(false);
     }
-};
+    setBusy(false);
+}
 
 // Initialize everything
 const initializeDebugMode = () => {
@@ -949,54 +907,38 @@ const startBtn = document.getElementById("startBtn");
 if (startBtn) {
     startBtn.addEventListener("click", () => {
         const hands = Number(handsInput.value || 1);
-
-        // Collect optional card selections
         const params = new URLSearchParams();
         params.append('hands', hands);
-
-        // Collect dealer card
         const d1r = document.getElementById("dealerCard1Rank").value;
         const d1s = document.getElementById("dealerCard1Suit").value;
-
-        // Validate dealer card
         let dealerCard1Rank = d1r;
         let dealerCard1Suit = d1s;
-        // If neither is selected, treat as random
         if (!d1r && !d1s) {
             dealerCard1Rank = '';
             dealerCard1Suit = '';
         } else if ((d1r && !d1s) || (!d1r && d1s)) {
-            // If only one is selected, treat as random
             dealerCard1Rank = '';
             dealerCard1Suit = '';
         }
-
-        // Collect all player hand cards
         const playerCards = [];
         for (let handNum = 1; handNum <= hands; handNum++) {
             const c1r = document.getElementById(`playerHand${handNum}Card1Rank`);
             const c1s = document.getElementById(`playerHand${handNum}Card1Suit`);
             const c2r = document.getElementById(`playerHand${handNum}Card2Rank`);
             const c2s = document.getElementById(`playerHand${handNum}Card2Suit`);
-
             if (!c1r || !c1s || !c2r || !c2s) continue;
-
             const card1Rank = c1r.value;
             const card1Suit = c1s.value;
             const card2Rank = c2r.value;
             const card2Suit = c2s.value;
-
-            // Validate rank and suit pairs
             let card1RankFinal = card1Rank;
             let card1SuitFinal = card1Suit;
             let card2RankFinal = card2Rank;
             let card2SuitFinal = card2Suit;
-            // If neither is selected, treat as random
             if (!card1Rank && !card1Suit) {
                 card1RankFinal = '';
                 card1SuitFinal = '';
             } else if ((card1Rank && !card1Suit) || (!card1Rank && card1Suit)) {
-                // If only one is selected, treat as random
                 card1RankFinal = '';
                 card1SuitFinal = '';
             }
@@ -1004,22 +946,17 @@ if (startBtn) {
                 card2RankFinal = '';
                 card2SuitFinal = '';
             } else if ((card2Rank && !card2Suit) || (!card2Rank && card2Suit)) {
-                // If only one is selected, treat as random
                 card2RankFinal = '';
                 card2SuitFinal = '';
             }
-
             playerCards.push({
                 hand: handNum,
                 card1: { rank: card1RankFinal, suit: card1SuitFinal },
                 card2: { rank: card2RankFinal, suit: card2SuitFinal }
             });
         }
-
-        // Check for duplicate cards
         const allSelectedCards = [];
         if (d1r && d1s) allSelectedCards.push({ rank: d1r, suit: d1s, name: "Dealer Up Card" });
-
         playerCards.forEach(hand => {
             if (hand.card1.rank && hand.card1.suit) {
                 allSelectedCards.push({
@@ -1036,7 +973,6 @@ if (startBtn) {
                 });
             }
         });
-
         for (let i = 0; i < allSelectedCards.length; i++) {
             for (let j = i + 1; j < allSelectedCards.length; j++) {
                 if (allSelectedCards[i].rank === allSelectedCards[j].rank &&
@@ -1046,19 +982,14 @@ if (startBtn) {
                 }
             }
         }
-
-        // Add dealer card to params
         if (dealerCard1Rank) params.append('dealerCard1Rank', dealerCard1Rank);
         if (dealerCard1Suit) params.append('dealerCard1Suit', dealerCard1Suit);
-
-        // Add all player hand cards to params
         playerCards.forEach(hand => {
             if (hand.card1.rank) params.append(`playerHand${hand.hand}Card1Rank`, hand.card1.rank);
             if (hand.card1.suit) params.append(`playerHand${hand.hand}Card1Suit`, hand.card1.suit);
             if (hand.card2.rank) params.append(`playerHand${hand.hand}Card2Rank`, hand.card2.rank);
             if (hand.card2.suit) params.append(`playerHand${hand.hand}Card2Suit`, hand.card2.suit);
         });
-
         if (suggestedBetEl) suggestedBetEl.textContent = "-";
         if (cardsDealtEl) cardsDealtEl.textContent = "-";
         if (strategyTextEl) strategyTextEl.textContent = "-";
@@ -1074,11 +1005,14 @@ if (startBtn) {
         if (gameStateEl) {
             gameStateEl.textContent = JSON.stringify({ id: resolveGameId(), phase: "PLAYER_TURN", hands: [] }, null, 2);
         }
-
         fallbackGameId = null;
         testModeGameId = null;
-
-        run(() => apiFetch(`/api/blackjack/start?${params.toString()}`, { method: "POST" }));
+        run(async () => {
+            const result = await apiFetch(`/api/blackjack/start?${params.toString()}`, { method: "POST" });
+            // Force update of strategy panel after start
+            renderState(result);
+            return result;
+        });
     });
 } else {
     console.error("Start button not found!");
@@ -1219,6 +1153,7 @@ const hitCardConfirmBtn = document.getElementById("hitCardConfirmBtn");
 const hitCardCancelBtn = document.getElementById("hitCardCancelBtn");
 
 let currentHitHandIndex = null;
+let hitModalFallbackTimeout = null;
 
 // Get all cards currently in play from game state
 const getCardsInPlay = () => {
@@ -1306,6 +1241,11 @@ const updateHitCardSuits = () => {
 };
 
 const showHitCardModal = (handIndex) => {
+    // Clear any previous fallback timeout to prevent unwanted auto-close
+    if (hitModalFallbackTimeout) {
+        clearTimeout(hitModalFallbackTimeout);
+        hitModalFallbackTimeout = null;
+    }
     console.log("showHitCardModal called with handIndex:", handIndex, "type:", typeof handIndex);
     if (!hitCardModal || !hitCardRankSelect || !hitCardSuitSelect) {
         console.error("Hit card modal elements not found!");
@@ -1316,6 +1256,21 @@ const showHitCardModal = (handIndex) => {
     populateHitCardSelectors();
     hitCardRankSelect.value = "";
     hitCardSuitSelect.value = "";
+
+    // Show hand value in modal
+    const hand = lastState && lastState.hands && lastState.hands[handIndex];
+    let valueText = "";
+    if (hand) {
+        valueText = `Hand Value: <strong>${hand.total}</strong> ${hand.soft ? '(soft)' : ''} ${hand.busted ? '(bust)' : ''}`;
+    }
+    let valueDiv = hitCardModal.querySelector('.hand-value-info');
+    if (!valueDiv) {
+        valueDiv = document.createElement('div');
+        valueDiv.className = 'hand-value-info';
+        valueDiv.style = 'font-size:13px;color:var(--muted);margin-bottom:8px;';
+        hitCardModal.querySelector('.modal-content').insertBefore(valueDiv, hitCardModal.querySelector('.modal-content').children[1]);
+    }
+    valueDiv.innerHTML = valueText;
 
     // Add event listener for rank changes
     hitCardRankSelect.removeEventListener('change', updateHitCardSuits);
@@ -1360,19 +1315,22 @@ if (hitCardConfirmBtn) {
             return;
         }
 
-        console.log("Closing modal and calling run()");
+        // Always close modal before async call
         closeHitCardModal();
-
-        // Fallback: forcibly close modal after 1s if still open
-        setTimeout(() => {
+        // Fallback: after 1s, if modal is still open, log warning (should be rare)
+        if (hitModalFallbackTimeout) {
+            clearTimeout(hitModalFallbackTimeout);
+        }
+        hitModalFallbackTimeout = setTimeout(() => {
             if (hitCardModal && hitCardModal.style.display !== "none") {
                 console.warn("[Auto-close fallback] Forcibly closing hitCardModal");
                 closeHitCardModal();
             }
+            hitModalFallbackTimeout = null;
         }, 1000);
 
         replaceGameStateNext = true;
-        run(() => {
+        run(async () => {
             console.log("Inside run task function - handIndex:", handIndex);
             const id = guardGameId();
             console.log("Game ID:", id);
@@ -1383,7 +1341,10 @@ if (hitCardConfirmBtn) {
             if (suit) params.append("suit", suit);
             const url = `/api/blackjack/hit/${id}?${params.toString()}`;
             console.log("Hit API call - URL:", url);
-            return apiFetch(url, { method: "POST" });
+            const result = await apiFetch(url, { method: "POST" });
+            // Force update of strategy panel after hit
+            renderState(result);
+            return result;
         });
     });
 } else {
@@ -1454,6 +1415,21 @@ const showDoubleCardModal = (handIndex) => {
     populateDoubleCardSelectors();
     doubleCardRankSelect.value = "";
     doubleCardSuitSelect.value = "";
+
+    // Show hand value in modal
+    const hand = lastState && lastState.hands && lastState.hands[handIndex];
+    let valueText = "";
+    if (hand) {
+        valueText = `Hand Value: <strong>${hand.total}</strong> ${hand.soft ? '(soft)' : ''} ${hand.busted ? '(bust)' : ''}`;
+    }
+    let valueDiv = doubleCardModal.querySelector('.hand-value-info');
+    if (!valueDiv) {
+        valueDiv = document.createElement('div');
+        valueDiv.className = 'hand-value-info';
+        valueDiv.style = 'font-size:13px;color:var(--muted);margin-bottom:8px;';
+        doubleCardModal.querySelector('.modal-content').insertBefore(valueDiv, doubleCardModal.querySelector('.modal-content').children[1]);
+    }
+    valueDiv.innerHTML = valueText;
 
     doubleCardRankSelect.removeEventListener('change', updateDoubleCardSuits);
     doubleCardRankSelect.addEventListener('change', updateDoubleCardSuits);
@@ -1767,7 +1743,6 @@ if (splitCardConfirmBtn) {
             if (card2Rank) params.append("card2Rank", card2Rank);
             if (card2Suit) params.append("card2Suit", card2Suit);
             const url = `/api/blackjack/split/${id}?${params.toString()}`;
-            console.log("Split API call - URL:", url);
             console.log("Split params - hand:", handIndex, "card1Rank:", card1Rank, "card1Suit:", card1Suit, "card2Rank:", card2Rank, "card2Suit:", card2Suit);
             return apiFetch(url, { method: "POST" });
         });
