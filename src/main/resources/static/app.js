@@ -122,31 +122,32 @@ const generatePlayerCardSelectors = (numHands) => {
     existingPlayerRows.forEach(row => row.remove());
 
     // Generate selectors for each player hand
+    let lastInserted = dealerSelectionRow;
     for (let handNum = 1; handNum <= numHands; handNum++) {
-        // Combined row for both cards
         const handRow = document.createElement('div');
         handRow.setAttribute('data-player-hand', handNum);
         handRow.style.cssText = 'display: grid; grid-template-columns: 120px max-content max-content max-content max-content; gap: 2px; align-items: center; width: max-content; justify-items: start;';
         handRow.innerHTML = `
-                    <label>Hand ${handNum}:</label>
-                    <select id="playerHand${handNum}Card1Rank" class="card-rank-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 2px; max-width: 100%;">
-                        <option value="">Random</option>
-                    </select>
-                    <select id="playerHand${handNum}Card1Suit" class="card-suit-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 2px; max-width: 100%;">
-                        <option value="">Random</option>
-                    </select>
-                    <select id="playerHand${handNum}Card2Rank" class="card-rank-select" data-card="player${handNum}-2" style="font-size: 11px; padding: 2px; max-width: 100%;">
-                        <option value="">Random</option>
-                    </select>
-                    <select id="playerHand${handNum}Card2Suit" class="card-suit-select" data-card="player${handNum}-2" style="font-size: 11px; padding: 2px; max-width: 100%;">
-                        <option value="">Random</option>
-                    </select>
-                `;
-        if (dealerSelectionRow) {
-            cardSelectionContainer.insertBefore(handRow, dealerSelectionRow);
+            <label>Hand ${handNum}:</label>
+            <select id="playerHand${handNum}Card1Rank" class="card-rank-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 2px; max-width: 100%;">
+                <option value="">Random</option>
+            </select>
+            <select id="playerHand${handNum}Card1Suit" class="card-suit-select" data-card="player${handNum}-1" style="font-size: 11px; padding: 2px; max-width: 100%;">
+                <option value="">Random</option>
+            </select>
+            <select id="playerHand${handNum}Card2Rank" class="card-rank-select" data-card="player${handNum}-2" style="font-size: 11px; padding: 2px; max-width: 100%;">
+                <option value="">Random</option>
+            </select>
+            <select id="playerHand${handNum}Card2Suit" class="card-suit-select" data-card="player${handNum}-2" style="font-size: 11px; padding: 2px; max-width: 100%;">
+                <option value="">Random</option>
+            </select>
+        `;
+        if (lastInserted && lastInserted.parentNode) {
+            lastInserted.parentNode.insertBefore(handRow, lastInserted.nextSibling);
         } else {
             cardSelectionContainer.appendChild(handRow);
         }
+        lastInserted = handRow;
     }
 
     // Populate all dropdowns with options
@@ -574,22 +575,21 @@ const renderState = (state) => {
     // Show the recommendation for the active hand in the strategy panel
     let strategyText = "-";
     if (state.hands && state.hands.length > 0) {
-        // Find the active hand (not busted or standing)
-        const activeHand = state.hands.find((hand) => !hand.busted && !hand.standing);
-        if (activeHand) {
-            let rec = activeHand.recommendedAction || "-";
-            // If the hand is soft, include 'soft' in the recommendation
-            if (activeHand.soft && !rec.toLowerCase().includes("soft")) {
-                rec = `soft ${rec}`;
-            }
-            // Show insurance recommendation if phase is insurance
-            const normalizedRec = String(rec).toLowerCase().replace(/\s|-+/g, "_");
-            if (normalizedRec === "insure" || normalizedRec === "insurance" || normalizedRec === "no_insurance" || normalizedRec === "decline_insurance") {
-                strategyText = `<span class='strategy-recommendation'>${rec}</span>`;
-            } else if (state.phase === "PLAYER_TURN") {
-                // After insurance resolved, show next recommended action
-                strategyText = `<span class='strategy-recommendation'>${rec}</span>`;
-            }
+        // Find the next actionable hand (not busted, not standing, not completed)
+        const actionableHand = state.hands.find((hand) => !hand.busted && !hand.standing && hand.result !== "WIN" && hand.result !== "LOSE" && hand.result !== "PUSH");
+        let rec = actionableHand ? actionableHand.recommendedAction : null;
+        if (actionableHand && actionableHand.soft && rec && !rec.toLowerCase().includes("soft")) {
+            rec = `soft ${rec}`;
+        }
+        const normalizedRec = String(rec || "").toLowerCase().replace(/\s|-+/g, "_");
+        if (normalizedRec === "insure" || normalizedRec === "insurance" || normalizedRec === "no_insurance" || normalizedRec === "decline_insurance") {
+            strategyText = `<span class='strategy-recommendation'>${rec}</span>`;
+        } else if (rec && state.phase === "PLAYER_TURN") {
+            strategyText = `<span class='strategy-recommendation'>${rec}</span>`;
+        } else if (state.phase === "COMPLETE") {
+            strategyText = `<span class='strategy-recommendation'>Game complete</span>`;
+        } else {
+            strategyText = "-";
         }
     }
     strategyTextEl.innerHTML = strategyText;
@@ -767,10 +767,19 @@ const renderState = (state) => {
 
             // Action buttons for the active hand
             let actionsHtml = '';
-            if (isActive && handPlayable && state.phase === "PLAYER_TURN") {
+            if (canInsure && state.phase === "PLAYER_TURN") {
+                // Highlight the recommended insurance action
+                const isInsureRecommended = normalizedRecommendation === "insure";
+                const isDeclineRecommended = normalizedRecommendation === "no_insurance" || normalizedRecommendation === "decline_insurance";
+                actionsHtml += `<div class="hand-actions">
+                    <button data-action="insure" data-hand="${hand.index + 1}" class="insurance-btn${isInsureRecommended ? ' recommended' : ''}">Accept Insurance</button>
+                    <button data-action="decline_insurance" data-hand="${hand.index + 1}" class="insurance-btn ghost${isDeclineRecommended ? ' recommended' : ''}">Decline Insurance</button>
+                </div>`;
+            }
+            if (isActive && handPlayable && state.phase === "PLAYER_TURN" && !canInsure) {
                 // Determine which action is recommended for this hand
                 const recommended = recommendedAction;
-                actionsHtml = `<div class="hand-actions">`
+                actionsHtml += `<div class="hand-actions">`
                     + (showHit ? `<button data-action="hit" data-hand="${hand.index + 1}"${recommended === "hit" ? ' class="recommended"' : ''}>Hit</button>` : '')
                     + (showStand ? `<button data-action="stand" data-hand="${hand.index + 1}"${recommended === "stand" ? ' class="recommended"' : ''}>Stand</button>` : '')
                     + (showDouble ? `<button data-action="double" data-hand="${hand.index + 1}"${recommended === "double" ? ' class="recommended"' : ''}>Double</button>` : '')
@@ -847,17 +856,13 @@ const initializeDebugMode = () => {
 };
 
 const initializeCardSelectors = () => {
-    console.log('initializeCardSelectors called');
-    console.log('handsInput:', handsInput);
-    console.log('cardSelectionContainer:', cardSelectionContainer);
     // Get initial hands value from input
     const initialHands = Number(handsInput?.value || 3);
-    console.log('initialHands:', initialHands);
     // Generate player card selectors
     generatePlayerCardSelectors(initialHands);
-    const firstPlayerRank = document.getElementById("playerHand1Card1Rank");
-    if (firstPlayerRank) {
-        setTimeout(() => firstPlayerRank.focus(), 0);
+    const dealerRank = document.getElementById("dealerCard1Rank");
+    if (dealerRank) {
+        setTimeout(() => dealerRank.focus(), 0);
     }
 };
 
@@ -873,6 +878,14 @@ document.addEventListener('change', (e) => {
     if (e.target.classList.contains('card-rank-select') ||
         e.target.classList.contains('card-suit-select')) {
         updateDropdownFilters();
+    }
+    // If dealer rank was selected, move focus to first player card rank
+    if (e.target.id === 'dealerCard1Rank') {
+        const firstPlayerRank = document.getElementById('playerHand1Card1Rank');
+        if (firstPlayerRank) {
+            setTimeout(() => firstPlayerRank.focus(), 0);
+        }
+        return;
     }
     if (e.target.classList.contains('card-rank-select') && cardSelectionContainer) {
         const rankSelects = Array.from(cardSelectionContainer.querySelectorAll('.card-rank-select'));
@@ -1062,12 +1075,20 @@ handList.addEventListener("click", (event) => {
         return;
     }
 
-    if (action === "insurance") {
-        const resolvedAction = actionValue === "no" ? "decline-insurance" : "insurance";
+    // Insurance accept/decline button handling
+    if (action === "insure" || action === "insurance") {
         replaceGameStateNext = true;
         run(() => {
             const id = guardGameId();
-            return apiFetch(`/api/blackjack/${resolvedAction}/${id}?hand=${hand}`, { method: "POST" });
+            return apiFetch(`/api/blackjack/insurance/${id}?hand=${hand}`, { method: "POST" });
+        });
+        return;
+    }
+    if (action === "decline_insurance" || action === "decline-insurance") {
+        replaceGameStateNext = true;
+        run(() => {
+            const id = guardGameId();
+            return apiFetch(`/api/blackjack/decline-insurance/${id}?hand=${hand}`, { method: "POST" });
         });
         return;
     }
