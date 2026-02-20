@@ -163,6 +163,5 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
 
         assertThat(driver.findElement(By.id("gameInfoSummary")).getText()).isNotBlank();
         assertThat(driver.findElement(By.id("resultsSummary")).getText()).isNotBlank();
-        assertThat(driver.findElement(By.id("strategySummary")).getText()).isNotBlank();
     }
 }

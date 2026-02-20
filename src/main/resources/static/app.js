@@ -574,8 +574,8 @@ const renderState = (state) => {
     }
     updateDebugPanel(state);
     updateGameInfoDisplay(state);
-    cardsDealtEl.textContent = "-";
-    trueCountEl.textContent = (typeof state.trueCount === "number" ? state.trueCount.toFixed(2) : "-");
+    if (cardsDealtEl) cardsDealtEl.textContent = "-";
+    if (trueCountEl) trueCountEl.textContent = (typeof state.trueCount === "number" ? state.trueCount.toFixed(2) : "-");
     // Show the recommendation for the active hand in the strategy panel
     let strategyText = "-";
     if (state.hands && state.hands.length > 0) {
@@ -596,9 +596,9 @@ const renderState = (state) => {
             strategyText = "-";
         }
     }
-    strategyTextEl.innerHTML = strategyText;
-    suggestedBetEl.textContent = state.suggestedBetUnits ?? "-";
-    noteTextEl.textContent = state.note || "-";
+    if (strategyTextEl) strategyTextEl.innerHTML = strategyText;
+    if (suggestedBetEl) suggestedBetEl.textContent = state.suggestedBetUnits ?? "-";
+    if (noteTextEl) noteTextEl.textContent = state.note || "-";
 
     const results = Array.isArray(state.hands) ? state.hands : [];
     const wins = results.filter((hand) => hand.result === "WIN").length;
