@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.checkerframework.checker.units.qual.t;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.openqa.selenium.By;
@@ -53,7 +54,9 @@ public abstract class BaseSeleniumTest {
         driver = new ChromeDriver(options);
 
         baseUrl = BASE_URL + ":" + environment.getProperty("local.server.port");
-        driver.get(baseUrl);
+        // Add test mode URL parameter for UI tests
+        String testModeUrl = baseUrl + "?test=true";
+        driver.get(testModeUrl);
         wait = new WebDriverWait(driver, Duration.ofSeconds(WAIT_TIMEOUT_SECONDS));
     }
 
@@ -127,6 +130,17 @@ public abstract class BaseSeleniumTest {
         closeModalById.accept(UiTestConstants.ID_DOUBLE_CARD_MODAL);
     }
 
+    public void testComplete() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        String phase = driver.findElement(By.id(UiTestConstants.ID_PHASE)).getText();
+        assertThat(phase).contains("COMPLETE");
+    }
+
     void testRunningCountAfterEachHit() {
         driver.findElement(By.id(ID_START_BTN)).click();
         wait.until(ExpectedConditions.textToBePresentInElementLocated(By.id(ID_PHASE), PHASE_PLAYER_TURN));
@@ -142,43 +156,31 @@ public abstract class BaseSeleniumTest {
         assertThat(updatedState).contains(JSON_FIELD_CARDS);
     }
 
+    void clickActionBtn(int handIndex, String btnAction) {
+        getActionButton(handIndex, btnAction).click();
+    }
+
     WebElement getActionButton(int handIndex, String btnAction) {
         String cssHand = "[data-hand='" + handIndex + "']";
         String cssAction = "[data-action='" + btnAction + "']";
 
         WebElement webElement = driver.findElement(By.cssSelector(cssHand + cssAction));
+        wait.until(ExpectedConditions.visibilityOf(webElement));
         return webElement;
     }
 
     void clickBtn(String buttonID) {
-        // Always wait for all modals to be closed before clicking
-        waitForNoModalsOpen();
+        WebElement webElement = driver.findElement(By.id(buttonID));
 
-        WebElement btn = driver.findElement(By.id(buttonID));
-        btn.click();
+        wait.until(ExpectedConditions.visibilityOf(webElement));
+        webElement.click();
     }
 
     void clickModalBtn(String buttonID) {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(buttonID)));
+        WebElement webElement = driver.findElement(By.id(buttonID));
 
-        driver.findElement(By.id(buttonID)).click();
-        waitForNoModalsOpen();
-    }
-
-    // Wait for all modals to be closed
-    protected void waitForNoModalsOpen() {
-        try {
-            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(UiTestConstants.ID_HIT_CARD_MODAL)));
-        } catch (Exception ignored) {
-        }
-        try {
-            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(UiTestConstants.ID_SPLIT_CARD_MODAL)));
-        } catch (Exception ignored) {
-        }
-        try {
-            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(UiTestConstants.ID_DOUBLE_CARD_MODAL)));
-        } catch (Exception ignored) {
-        }
+        wait.until(ExpectedConditions.visibilityOf(webElement));
+        webElement.click();
     }
 
     void setNumHands(int numHands) {

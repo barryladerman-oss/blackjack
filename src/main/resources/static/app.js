@@ -45,7 +45,6 @@ const buttons = [
 
 // Declare gameId variables for resolveGameId
 let fallbackGameId = null;
-let testModeGameId = null;
 
 let isBusy = false;
 
@@ -97,13 +96,11 @@ const updateButtonStates = () => {
     const doubleBtn = document.getElementById("doubleBtn");
     const splitBtn = document.getElementById("splitBtn");
 
-    const canAct = lastState && lastState.phase === "PLAYER_TURN" && !isBusy;
-
+    let canAct = lastState && lastState.phase === "PLAYER_TURN" && !isBusy;
     if (hitBtn) hitBtn.disabled = !canAct;
     if (standBtn) standBtn.disabled = !canAct;
     if (doubleBtn) doubleBtn.disabled = !canAct;
     if (splitBtn) splitBtn.disabled = !canAct;
-
     document.querySelectorAll(".hand-actions button").forEach((button) => {
         button.disabled = isBusy;
     });
@@ -369,14 +366,7 @@ const apiFetch = async (path, options) => {
 };
 
 const resolveGameId = (state) => {
-    if (document.body.classList.contains("test-mode")) {
-        if (!testModeGameId) {
-            testModeGameId = typeof crypto !== "undefined" && crypto.randomUUID
-                ? crypto.randomUUID()
-                : `test-${Date.now()}`;
-        }
-        return testModeGameId;
-    }
+    // No test mode logic
     const candidate = state?.id || state?.gameId;
     if (candidate) {
         fallbackGameId = null;
@@ -439,7 +429,6 @@ const updateGameInfoDisplay = (state) => {
     const runningCountEl = document.getElementById("runningCount");
     const trueCountEl = document.getElementById("trueCount");
     const decksRemainingEl = document.getElementById("decksRemaining");
-    const isTestMode = document.body.classList.contains("test-mode");
     const showCounts = state && state.phase && state.phase !== "PLAYER_TURN";
 
     // Update game ID
@@ -459,21 +448,17 @@ const updateGameInfoDisplay = (state) => {
 
     // Update running count
     if (runningCountEl) {
-        runningCountEl.textContent = !isTestMode && showCounts && typeof state.runningCount === "number" && state.runningCount >= 0
+        runningCountEl.textContent = showCounts && typeof state.runningCount === "number" && state.runningCount >= 0
             ? state.runningCount
             : "-";
     }
-
-    // Update true count
     if (trueCountEl) {
-        trueCountEl.textContent = !isTestMode && showCounts && typeof state.trueCount === "number" && state.trueCount >= 0
+        trueCountEl.textContent = showCounts && typeof state.trueCount === "number" && state.trueCount >= 0
             ? state.trueCount.toFixed(2)
             : "-";
     }
-
-    // Update decks remaining
     if (decksRemainingEl) {
-        decksRemainingEl.textContent = !isTestMode && showCounts && typeof state.decksRemaining === "number"
+        decksRemainingEl.textContent = showCounts && typeof state.decksRemaining === "number"
             ? state.decksRemaining.toFixed(2)
             : "-";
     }
@@ -589,11 +574,8 @@ const renderState = (state) => {
     }
     updateDebugPanel(state);
     updateGameInfoDisplay(state);
-    const isTestMode = document.body.classList.contains("test-mode");
     cardsDealtEl.textContent = "-";
-    trueCountEl.textContent = isTestMode
-        ? "-"
-        : (typeof state.trueCount === "number" ? state.trueCount.toFixed(2) : "-");
+    trueCountEl.textContent = (typeof state.trueCount === "number" ? state.trueCount.toFixed(2) : "-");
     // Show the recommendation for the active hand in the strategy panel
     let strategyText = "-";
     if (state.hands && state.hands.length > 0) {
@@ -615,16 +597,7 @@ const renderState = (state) => {
         }
     }
     strategyTextEl.innerHTML = strategyText;
-    if (isTestMode) {
-        suggestedBetEl.textContent = "-";
-        if (state.suggestedBetUnits !== undefined && state.suggestedBetUnits !== null) {
-            setTimeout(() => {
-                suggestedBetEl.textContent = String(state.suggestedBetUnits);
-            }, 250);
-        }
-    } else {
-        suggestedBetEl.textContent = state.suggestedBetUnits ?? "-";
-    }
+    suggestedBetEl.textContent = state.suggestedBetUnits ?? "-";
     noteTextEl.textContent = state.note || "-";
 
     const results = Array.isArray(state.hands) ? state.hands : [];
@@ -676,7 +649,7 @@ const renderState = (state) => {
         dealerShowsAce = isAceRank(dealerStateCards[0]);
     }
 
-    const dealerOffersInsurance = dealerShowsAce || isTestMode;
+    const dealerOffersInsurance = dealerShowsAce;
 
     // Check if all hands have resolved insurance (made an explicit decision)
     const allHandsResolvedInsurance = state.hands.every(hand => {
@@ -753,10 +726,10 @@ const renderState = (state) => {
             // For split aces with no hit allowed, the hand is complete - no actions available
             const isSplitAceComplete = isFromSplit && !canHitAfterSplitAces;
 
-            const showHit = !isSplitAceComplete && handPlayable && canHitAfterSplitAces;
-            const showStand = !isSplitAceComplete && handPlayable;
-            const showDouble = !isSplitAceComplete && handPlayable && canDouble;
-            const showSplit = !isSplitAceComplete && handPlayable && canSplit && !isFromSplit;
+            let showHit = !isSplitAceComplete && handPlayable && canHitAfterSplitAces;
+            let showStand = !isSplitAceComplete && handPlayable;
+            let showDouble = !isSplitAceComplete && handPlayable && canDouble;
+            let showSplit = !isSplitAceComplete && handPlayable && canSplit && !isFromSplit;
 
             // Calculate result display with bet units
             let resultDisplay = "";
@@ -934,9 +907,6 @@ initializeDebugMode();
 initializeCardSelectors();
 ensureCardSelectionVisible();
 
-if (navigator && navigator.webdriver) {
-    document.body.classList.add("test-mode");
-}
 
 const startBtn = document.getElementById("startBtn");
 if (startBtn) {

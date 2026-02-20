@@ -42,6 +42,26 @@ public class BlackjackRestApiTest {
     }
 
     @Test
+    @DisplayName("Should start a game with custom deck count and validate decksRemaining")
+    public void testStartGameWithCustomDeckCount() {
+        // Start a game with 4 decks
+        java.util.Map<String, String> params = new java.util.HashMap<>();
+        params.put("decks", "4");
+        ApiResponse<GameState> response = client.startGame(1, params);
+
+        ApiAssertions.assertSuccess(response);
+        ApiAssertions.assertStatusCode(response, 200);
+        ApiAssertions.assertHasData(response);
+
+        GameState state = response.getData();
+        // Should be less than or equal to 4 (after initial deal)
+        org.junit.jupiter.api.Assertions.assertTrue(state.getDecksRemaining() <= 4.0,
+                "Expected decksRemaining to be <= 4, but was: " + state.getDecksRemaining());
+        org.junit.jupiter.api.Assertions.assertTrue(state.getDecksRemaining() > 0,
+                "Expected decksRemaining to be positive, but was: " + state.getDecksRemaining());
+    }
+
+    @Test
     @DisplayName("Should start a game with multiple hands")
     public void testStartGameMultipleHands() {
         ApiResponse<GameState> response = client.startGame(3);

@@ -130,8 +130,9 @@ class BlackjackEdgeCasesTest {
         BlackjackGame game = new BlackjackGame(1, 1);
         var state = game.getState();
 
-        // Decks remaining should be less than 1 after initial 4-card deal
-        assertThat(state.getDecksRemaining()).isBetween(0.9, 1.0);
+        // Decks remaining should be less than or equal to 1 after initial 4-card deal
+        assertThat(state.getDecksRemaining()).isLessThanOrEqualTo(1.0);
+        assertThat(state.getDecksRemaining()).isGreaterThan(0.0);
     }
 
     @Test

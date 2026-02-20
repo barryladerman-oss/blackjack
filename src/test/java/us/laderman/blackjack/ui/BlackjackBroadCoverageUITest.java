@@ -45,9 +45,9 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             setPlayerCard(1, 2, "TEN");
             clickBtn(ID_START_BTN);
 
-            closeModalIfOpen();
-            WebElement standBtn = getActionButton(1, ID_STAND_BTN);
-            standBtn.click();
+            clickActionBtn(1, ID_STAND_BTN);
+
+            testComplete();
         } catch (Exception e) {
             assert (e.getMessage().isBlank());
         }
@@ -64,7 +64,9 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             clickBtn(ID_START_BTN);
 
             clickModalBtn(ID_HIT_CONFIRM_BTN);
-            assert (Boolean.TRUE);
+            clickActionBtn(1, ID_STAND_BTN);
+
+            testComplete();
         } catch (Exception e) {
             assert (e.getMessage().isBlank());
         }
@@ -81,7 +83,9 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             clickBtn(ID_START_BTN);
 
             clickModalBtn(ID_HIT_CONFIRM_BTN);
-            assert (Boolean.TRUE);
+            clickActionBtn(1, ID_STAND_BTN);
+
+            testComplete();
         } catch (Exception e) {
             assert (e.getMessage().isBlank());
         }
@@ -97,8 +101,7 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             setPlayerCard(1, 2, "JACK");
             clickBtn(ID_START_BTN);
 
-            String phase = driver.findElement(By.id(UiTestConstants.ID_PHASE)).getText();
-            assertThat(phase).contains("COMPLETE");
+            testComplete();
         } catch (Exception e) {
             assert (e.getMessage().isBlank());
         }
@@ -122,12 +125,12 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             new Select(splitCardRank1).selectByValue("TEN");
             new Select(splitCardRank2).selectByValue("TEN");
             clickModalBtn(ID_SPLIT_CONFIRM_BTN);
-            Thread.sleep(100);
 
-            getActionButton(1, ID_STAND_BTN).click();
-            getActionButton(2, ID_STAND_BTN).click();
-            getActionButton(3, ID_STAND_BTN).click();
-            assert (Boolean.TRUE);
+            clickActionBtn(1, ID_STAND_BTN);
+            clickActionBtn(2, ID_STAND_BTN);
+            clickActionBtn(3, ID_STAND_BTN);
+
+            testComplete();
         } catch (Exception e) {
             assert (e.getMessage().isBlank());
         }
@@ -144,7 +147,9 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
             clickBtn(ID_START_BTN);
 
             clickModalBtn(ID_DOUBLE_CONFIRM_BTN);
-            assert (Boolean.TRUE);
+
+            // no actions left after doubling, so verify game is complete
+            testComplete();
         } catch (Exception e) {
             assert (e.getMessage().isBlank());
         }
@@ -155,6 +160,7 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
     void testSummaryPanels() {
         driver.get(baseUrl);
         clickBtn(UiTestConstants.ID_START_BTN);
+
         assertThat(driver.findElement(By.id("gameInfoSummary")).getText()).isNotBlank();
         assertThat(driver.findElement(By.id("resultsSummary")).getText()).isNotBlank();
         assertThat(driver.findElement(By.id("strategySummary")).getText()).isNotBlank();
