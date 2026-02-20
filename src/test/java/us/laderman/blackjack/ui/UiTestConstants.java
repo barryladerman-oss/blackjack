@@ -21,6 +21,7 @@ public final class UiTestConstants {
     // Element IDs
     public static final String ID_START_BTN = "startBtn";
     public static final String ID_HANDS = "hands";
+    public static final String ID_DECKS = "decks";
     public static final String ID_GAME_STATE = "gameState";
     public static final String ID_PHASE = "phase";
     public static final String ID_HIT_BTN = "hit";

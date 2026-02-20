@@ -356,47 +356,6 @@ const resolveGameId = (state) => {
     return fallbackGameId;
 };
 
-const updateDebugPanel = (state) => {
-    const gameStateEl = document.getElementById("gameState");
-    const gameIdEl = document.getElementById("gameId");
-    const phaseEl = document.getElementById("phase");
-    const trueCountDebugEl = document.getElementById("trueCountDebug");
-    const runningCountDebugEl = document.getElementById("runningCountDebug");
-    const decksRemainingEl = document.getElementById("decksRemaining");
-
-    if (gameStateEl) {
-        const nextStateText = JSON.stringify(state, null, 2);
-        if (replaceGameStateNext) {
-            gameStateEl.textContent = nextStateText;
-            setTimeout(() => {
-                const currentEl = document.getElementById("gameState");
-                if (!currentEl) {
-                    return;
-                }
-                const nextStateEl = currentEl.cloneNode(false);
-                nextStateEl.id = "gameState";
-                nextStateEl.textContent = nextStateText;
-                currentEl.replaceWith(nextStateEl);
-            }, 50);
-        } else {
-            gameStateEl.textContent = nextStateText;
-        }
-    }
-
-    replaceGameStateNext = false;
-
-    if (gameIdEl) gameIdEl.textContent = resolveGameId(state);
-    if (phaseEl) phaseEl.textContent = state.phase || "-";
-
-    const trueCountValue = typeof state.trueCount === "number" ? state.trueCount.toFixed(2) : "-";
-    const runningCountValue = typeof state.runningCount === "number" ? String(state.runningCount) : "-";
-    const decksRemainingValue = typeof state.decksRemaining === "number" ? state.decksRemaining.toFixed(2) : "-";
-
-    if (trueCountDebugEl) trueCountDebugEl.textContent = trueCountValue;
-    if (runningCountDebugEl) runningCountDebugEl.textContent = runningCountValue;
-    if (decksRemainingEl) decksRemainingEl.textContent = decksRemainingValue;
-};
-
 const updateGameInfoDisplay = (state) => {
     // Update game info display elements with proper IDs for UI tests
     const gameIdEl = document.getElementById("gameId");
@@ -548,7 +507,7 @@ const renderState = (state) => {
         const dealerRank = document.getElementById("dealerCard1Rank");
         setTimeout(() => dealerRank.focus(), 0);
     }
-    updateDebugPanel(state);
+
     updateGameInfoDisplay(state);
     if (cardsDealtEl) cardsDealtEl.textContent = "-";
     if (trueCountEl) trueCountEl.textContent = (typeof state.trueCount === "number" ? state.trueCount.toFixed(2) : "-");
@@ -938,14 +897,7 @@ if (startBtn) {
         if (trueCountEl) trueCountEl.textContent = "-";
         const phaseEl = document.getElementById("phase");
         if (phaseEl) phaseEl.textContent = "PLAYER_TURN";
-        const gameIdEl = document.getElementById("gameId");
-        if (gameIdEl) {
-            gameIdEl.textContent = resolveGameId();
-        }
-        const gameStateEl = document.getElementById("gameState");
-        if (gameStateEl) {
-            gameStateEl.textContent = JSON.stringify({ id: resolveGameId(), phase: "PLAYER_TURN", hands: [] }, null, 2);
-        }
+
         fallbackGameId = null;
         testModeGameId = null;
         run(async () => {
