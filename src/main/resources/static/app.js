@@ -341,30 +341,6 @@ const updateDropdownFilters = () => {
     });
 };
 
-const toJson = async (response) => {
-    const text = await response.text();
-    try {
-        return JSON.parse(text);
-    } catch (error) {
-        return { raw: text };
-    }
-};
-
-const apiFetch = async (path, options) => {
-    const fullUrl = `${window.location.origin}${path}`;
-    console.log("apiFetch - URL:", fullUrl, "options:", options);
-    const response = await fetch(fullUrl, options);
-    console.log("apiFetch - response status:", response.status, response.statusText);
-    const data = await toJson(response);
-    console.log("apiFetch - data:", data);
-    if (!response.ok) {
-        const message = data.message || data.error || response.statusText;
-        console.error("apiFetch - error:", message);
-        throw new Error(message);
-    }
-    return data;
-};
-
 const resolveGameId = (state) => {
     // No test mode logic
     const candidate = state?.id || state?.gameId;
@@ -814,42 +790,6 @@ const renderState = (state) => {
     setBusy(false);
 }
 
-// Initialize everything
-const initializeDebugMode = () => {
-    // Check if debug mode is enabled via URL parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const isDebug = urlParams.get('debug') === 'true' || localStorage.getItem('debug') === 'true';
-
-    if (isDebug) {
-        console.log('Debug mode enabled');
-
-        // Show debug panel
-        const debugPanel = document.getElementById('debugPanel');
-        if (debugPanel) {
-            debugPanel.style.visibility = 'visible';
-            debugPanel.style.pointerEvents = 'auto';
-        }
-
-        // Show hidden buttons in debug mode
-        const buttonsContainer = document.getElementById('hiddenButtonsContainer');
-        if (buttonsContainer) {
-            buttonsContainer.style.position = 'static';
-            buttonsContainer.style.top = 'auto';
-            buttonsContainer.style.left = 'auto';
-            buttonsContainer.style.width = 'auto';
-            buttonsContainer.style.height = 'auto';
-            buttonsContainer.style.overflow = 'visible';
-            buttonsContainer.style.pointerEvents = 'auto';
-            buttonsContainer.style.display = 'flex';
-            buttonsContainer.style.gap = '8px';
-            buttonsContainer.style.marginTop = '12px';
-            buttonsContainer.style.padding = '12px';
-            buttonsContainer.style.backgroundColor = '#f5f5f5';
-            buttonsContainer.style.borderTop = '1px solid #ccc';
-        }
-    }
-};
-
 const initializeCardSelectors = () => {
     // Get initial hands value from input
     const initialHands = Number(handsInput?.value || 3);
@@ -903,10 +843,8 @@ if (handsInput) {
 
 // Initialize card selectors when page loads
 // Since script is at the end of body, DOM should be ready
-initializeDebugMode();
 initializeCardSelectors();
 ensureCardSelectionVisible();
-
 
 const startBtn = document.getElementById("startBtn");
 if (startBtn) {
