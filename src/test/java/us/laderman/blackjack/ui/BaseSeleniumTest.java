@@ -5,6 +5,7 @@ import static us.laderman.blackjack.ui.UiTestConstants.BROWSER_HEIGHT;
 import static us.laderman.blackjack.ui.UiTestConstants.BASE_URL;
 import static us.laderman.blackjack.ui.UiTestConstants.WAIT_TIMEOUT_SECONDS;
 import static us.laderman.blackjack.ui.UiTestConstants.ID_HANDS;
+import static us.laderman.blackjack.ui.UiTestConstants.ID_DECKS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
@@ -165,34 +166,52 @@ public abstract class BaseSeleniumTest {
     }
 
     void setNumHands(int numHands) {
-        try {
-            WebElement webElement = driver.findElement(By.id(ID_HANDS));
-            webElement.clear();
-            webElement.sendKeys("" + numHands);
-        } catch (Exception e) {
-            assert (e.getMessage().isBlank());
-        }
+        WebElement webElement = driver.findElement(By.id(ID_HANDS));
+        webElement.clear();
+        webElement.sendKeys(Integer.toString(numHands));
+    }
+
+    void setNumDecks(int numDecks) {
+        WebElement webElement = driver.findElement(By.id(ID_DECKS));
+        webElement.clear();
+        webElement.sendKeys(Integer.toString(numDecks));
     }
 
     void setDealerUpCard(String rank) {
-        String css = "[data-card='dealer1']";
-        try {
-            WebElement webElement = driver.findElement(By.cssSelector(css));
+        setDealerUpCard(rank, null);
+    }
+
+    void setDealerUpCard(String rank, String suit) {
+        String css = "dealerCard1";
+        if (rank != null) {
+            WebElement webElement = driver.findElement(By.id(css + "Rank"));
             Select select = new Select(webElement);
             select.selectByValue(rank);
-        } catch (Exception e) {
-            assert (e.getMessage().isBlank());
+        }
+
+        if (suit != null) {
+            WebElement suitElement = driver.findElement(By.id(css + "Suit"));
+            Select suitSelect = new Select(suitElement);
+            suitSelect.selectByValue(suit);
         }
     }
 
     void setPlayerCard(int handIndex, int cardIndex, String rank) {
-        String css = "[data-card='player" + handIndex + "-" + cardIndex + "']";
-        try {
-            WebElement webElement = driver.findElement(By.cssSelector(css));
+        setPlayerCard(handIndex, cardIndex, rank, null);
+    }
+
+    void setPlayerCard(int handIndex, int cardIndex, String rank, String suit) {
+        String css = "playerHand" + handIndex + "Card" + cardIndex;
+        if (rank != null) {
+            WebElement webElement = driver.findElement(By.id(css + "Rank"));
             Select select = new Select(webElement);
             select.selectByValue(rank);
-        } catch (Exception e) {
+        }
 
+        if (suit != null) {
+            WebElement suitElement = driver.findElement(By.id(css + "Suit"));
+            Select suitSelect = new Select(suitElement);
+            suitSelect.selectByValue(suit);
         }
     }
 }

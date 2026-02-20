@@ -8,6 +8,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static us.laderman.blackjack.ui.UiTestConstants.ID_STAND_BTN;
 import static us.laderman.blackjack.ui.UiTestConstants.ID_START_BTN;
 
@@ -36,123 +37,117 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
     }
 
     @Test
+    @DisplayName("Full game flow: testAvailableSuits")
+    void testAvailableSuits() {
+        setNumHands(1);
+        setNumDecks(2);
+        setDealerUpCard("TWO", "HEARTS");
+        setPlayerCard(1, 1, "TWO", "HEARTS");
+        setPlayerCard(1, 2, "TWO");
+
+        String css = "playerHand" + 1 + "Card" + 2;
+        WebElement webElement = driver.findElement(By.id(css + "Suit"));
+        Select select = new Select(webElement);
+        select.getOptions().forEach(option -> {
+            String value = option.getAttribute("value");
+            assert (!value.toString().equals("HEARTS"));
+        });
+    }
+
+    @Test
     @DisplayName("Full game flow: stand")
     void testStand() {
-        try {
-            setNumHands(1);
-            setDealerUpCard("TWO");
-            setPlayerCard(1, 1, "TEN");
-            setPlayerCard(1, 2, "TEN");
-            clickBtn(ID_START_BTN);
+        setNumHands(1);
+        setDealerUpCard("TWO", "HEARTS");
+        setPlayerCard(1, 1, "TEN");
+        setPlayerCard(1, 2, "TEN");
+        clickBtn(ID_START_BTN);
 
-            clickActionBtn(1, ID_STAND_BTN);
+        clickActionBtn(1, ID_STAND_BTN);
 
-            testComplete();
-        } catch (Exception e) {
-            assert (e.getMessage().isBlank());
-        }
+        testComplete();
     }
 
     @Test
     @DisplayName("Full game flow: hit")
     void testHit() {
-        try {
-            setNumHands(1);
-            setDealerUpCard("NINE");
-            setPlayerCard(1, 1, "TWO");
-            setPlayerCard(1, 2, "SIX");
-            clickBtn(ID_START_BTN);
+        setNumHands(1);
+        setDealerUpCard("NINE", "HEARTS");
+        setPlayerCard(1, 1, "TWO");
+        setPlayerCard(1, 2, "SIX");
+        clickBtn(ID_START_BTN);
 
-            clickModalBtn(ID_HIT_CONFIRM_BTN);
-            clickActionBtn(1, ID_STAND_BTN);
+        clickModalBtn(ID_HIT_CONFIRM_BTN);
+        clickActionBtn(1, ID_STAND_BTN);
 
-            testComplete();
-        } catch (Exception e) {
-            assert (e.getMessage().isBlank());
-        }
+        testComplete();
     }
 
     @Test
     @DisplayName("Full game flow: softHit")
     void testSoftHit() {
-        try {
-            setNumHands(1);
-            setDealerUpCard("TWO");
-            setPlayerCard(1, 1, "ACE");
-            setPlayerCard(1, 2, "FIVE");
-            clickBtn(ID_START_BTN);
+        setNumHands(1);
+        setDealerUpCard("TWO", "HEARTS");
+        setPlayerCard(1, 1, "ACE");
+        setPlayerCard(1, 2, "FIVE");
+        clickBtn(ID_START_BTN);
 
-            clickModalBtn(ID_HIT_CONFIRM_BTN);
-            clickActionBtn(1, ID_STAND_BTN);
+        clickModalBtn(ID_HIT_CONFIRM_BTN);
+        clickActionBtn(1, ID_STAND_BTN);
 
-            testComplete();
-        } catch (Exception e) {
-            assert (e.getMessage().isBlank());
-        }
+        testComplete();
     }
 
     @Test
     @DisplayName("Full game flow: player blackjack")
     void testPlayerBlackjack() {
-        try {
-            setNumHands(1);
-            setDealerUpCard("FIVE");
-            setPlayerCard(1, 1, "ACE");
-            setPlayerCard(1, 2, "JACK");
-            clickBtn(ID_START_BTN);
+        setNumHands(1);
+        setDealerUpCard("FIVE", "HEARTS");
+        setPlayerCard(1, 1, "ACE");
+        setPlayerCard(1, 2, "JACK");
+        clickBtn(ID_START_BTN);
 
-            testComplete();
-        } catch (Exception e) {
-            assert (e.getMessage().isBlank());
-        }
+        testComplete();
     }
 
     @Test
     @DisplayName("Full game flow: split")
     void testSplit() {
-        try {
-            setNumHands(2);
-            setDealerUpCard("TWO");
-            setPlayerCard(1, 1, "EIGHT");
-            setPlayerCard(1, 2, "EIGHT");
-            setPlayerCard(2, 1, "JACK");
-            setPlayerCard(2, 2, "NINE");
-            clickBtn(ID_START_BTN);
+        setNumHands(2);
+        setDealerUpCard("TWO", "HEARTS");
+        setPlayerCard(1, 1, "EIGHT");
+        setPlayerCard(1, 2, "EIGHT");
+        setPlayerCard(2, 1, "JACK");
+        setPlayerCard(2, 2, "NINE");
+        clickBtn(ID_START_BTN);
 
-            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("splitCard1Rank")));
-            WebElement splitCardRank1 = driver.findElement(By.id("splitCard1Rank"));
-            WebElement splitCardRank2 = driver.findElement(By.id("splitCard2Rank"));
-            new Select(splitCardRank1).selectByValue("TEN");
-            new Select(splitCardRank2).selectByValue("TEN");
-            clickModalBtn(ID_SPLIT_CONFIRM_BTN);
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("splitCard1Rank")));
+        WebElement splitCardRank1 = driver.findElement(By.id("splitCard1Rank"));
+        WebElement splitCardRank2 = driver.findElement(By.id("splitCard2Rank"));
+        new Select(splitCardRank1).selectByValue("TEN");
+        new Select(splitCardRank2).selectByValue("TEN");
+        clickModalBtn(ID_SPLIT_CONFIRM_BTN);
 
-            clickActionBtn(1, ID_STAND_BTN);
-            clickActionBtn(2, ID_STAND_BTN);
-            clickActionBtn(3, ID_STAND_BTN);
+        clickActionBtn(1, ID_STAND_BTN);
+        clickActionBtn(2, ID_STAND_BTN);
+        clickActionBtn(3, ID_STAND_BTN);
 
-            testComplete();
-        } catch (Exception e) {
-            assert (e.getMessage().isBlank());
-        }
+        testComplete();
     }
 
     @Test
     @DisplayName("Full game flow: double")
     void testDouble() {
-        try {
-            setNumHands(1);
-            setDealerUpCard("TWO");
-            setPlayerCard(1, 1, "FIVE");
-            setPlayerCard(1, 2, "SIX");
-            clickBtn(ID_START_BTN);
+        setNumHands(1);
+        setDealerUpCard("TWO", "HEARTS");
+        setPlayerCard(1, 1, "FIVE");
+        setPlayerCard(1, 2, "SIX");
+        clickBtn(ID_START_BTN);
 
-            clickModalBtn(ID_DOUBLE_CONFIRM_BTN);
+        clickModalBtn(ID_DOUBLE_CONFIRM_BTN);
 
-            // no actions left after doubling, so verify game is complete
-            testComplete();
-        } catch (Exception e) {
-            assert (e.getMessage().isBlank());
-        }
+        // no actions left after doubling, so verify game is complete
+        testComplete();
     }
 
     @Test
