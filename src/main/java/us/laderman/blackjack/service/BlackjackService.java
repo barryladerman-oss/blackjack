@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Service layer for managing Blackjack game logic and state transitions.
  */
 public class BlackjackService {
-    private static final int DEFAULT_DECKS = 1;
+    private static final int DEFAULT_DECKS = 6;
     private static final int MAX_HANDS = 5;
 
     private static final Duration GAME_TTL = Duration.ofMinutes(30);
@@ -35,6 +35,15 @@ public class BlackjackService {
     public GameState startGame(int hands, Map<String, String> allParams) {
         if (hands < 1 || hands > MAX_HANDS) {
             throw new IllegalArgumentException("Hands must be between 1 and " + MAX_HANDS);
+        }
+
+        int decks = DEFAULT_DECKS;
+        if (allParams.containsKey("decks")) {
+            try {
+                decks = Integer.parseInt(allParams.get("decks"));
+            } catch (NumberFormatException e) {
+                // fallback to default
+            }
         }
 
         // Parse dealer card
@@ -69,9 +78,9 @@ public class BlackjackService {
                 allCards.add(hc.card2);
             }
         }
-        validateNoDuplicates(allCards.toArray(new Card[0]));
+        validateNoDuplicates(allCards.toArray(new Card[0]), decks);
 
-        BlackjackGame game = new BlackjackGame(hands, DEFAULT_DECKS, playerHandCards, dealerCard1, null);
+        BlackjackGame game = new BlackjackGame(hands, decks, playerHandCards, dealerCard1, null);
         games.put(game.getId(), new GameEntry(game));
         return game.getState();
     }
@@ -111,16 +120,23 @@ public class BlackjackService {
      * @throws IllegalArgumentException if a duplicate card is found
      */
     private void validateNoDuplicates(Card... cards) {
-        java.util.Set<String> seen = new java.util.HashSet<>();
+        validateNoDuplicates(cards, DEFAULT_DECKS);
+    }
+
+    // Overloaded method to validate against deck count
+    private void validateNoDuplicates(Card[] cards, int decks) {
+        java.util.Map<String, Integer> cardCounts = new java.util.HashMap<>();
         for (Card card : cards) {
             if (card != null) {
                 String key = card.getRank() + "_" + card.getSuit();
-                if (seen.contains(key)) {
+                cardCounts.put(key, cardCounts.getOrDefault(key, 0) + 1);
+                if (cardCounts.get(key) > decks) {
                     throw new IllegalArgumentException(
-                            "Duplicate card selected: " + card.getRank().getLabel() + " of "
-                                    + card.getSuit().getLabel());
+                            "Card selected too many times: " + card.getRank().getLabel() + " of "
+                                    + card.getSuit().getLabel() +
+                                    " (selected " + cardCounts.get(key) + " times, but only " + decks
+                                    + " available in the shoe)");
                 }
-                seen.add(key);
             }
         }
     }

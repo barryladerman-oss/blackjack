@@ -275,7 +275,19 @@ const updateDropdownFilters = () => {
     const selectedCards = getSelectedCards();
     console.log('updateDropdownFilters - selected cards:', selectedCards);
 
-    // For each dropdown pair, filter options
+    // Get number of decks from input
+    const decksInput = document.getElementById("decks");
+    const numDecks = decksInput ? Number(decksInput.value || 6) : 6;
+
+    // Count how many times each card is selected, but ignore empty values
+    const cardCount = {};
+    selectedCards.forEach(card => {
+        if (card.rank && card.suit) {
+            const key = `${card.rank}:${card.suit}`;
+            cardCount[key] = (cardCount[key] || 0) + 1;
+        }
+    });
+
     document.querySelectorAll('.card-rank-select').forEach(rankSelect => {
         const cardId = rankSelect.dataset.card;
         const suitSelect = document.querySelector(`.card-suit-select[data-card="${cardId}"]`);
@@ -284,19 +296,18 @@ const updateDropdownFilters = () => {
         const currentRank = rankSelect.value;
         const currentSuit = suitSelect.value;
 
-        const usedSet = new Set(
-            selectedCards
-                .filter(card => card.id !== cardId)
-                .map(card => `${card.rank}:${card.suit}`)
-        );
-
-        if (currentRank && currentSuit && usedSet.has(`${currentRank}:${currentSuit}`)) {
-            rankSelect.value = '';
-            suitSelect.value = '';
-        }
-
+        // Filter rank options: only allow ranks with at least one suit available (not over deck limit)
         const rankOptions = RANKS.filter(rank => {
-            return SUITS.some(suit => !usedSet.has(`${rank.value}:${suit.value}`));
+            return SUITS.some(suit => {
+                const key = `${rank.value}:${suit.value}`;
+                // Allow if not over deck limit or this dropdown is selecting it
+                const selectedCount = cardCount[key] || 0;
+                if (currentRank === rank.value && currentSuit === suit.value) {
+                    // Allow selection if not over deck limit
+                    return selectedCount <= numDecks;
+                }
+                return selectedCount < numDecks;
+            });
         });
 
         buildOptions(rankSelect, rankOptions, true);
@@ -306,8 +317,16 @@ const updateDropdownFilters = () => {
         }
 
         const effectiveRank = rankSelect.value;
+        // Filter suit options: only allow suits for selected rank not over deck limit
         const suitOptions = effectiveRank
-            ? SUITS.filter(suit => !usedSet.has(`${effectiveRank}:${suit.value}`))
+            ? SUITS.filter(suit => {
+                const key = `${effectiveRank}:${suit.value}`;
+                const selectedCount = cardCount[key] || 0;
+                if (currentRank === effectiveRank && currentSuit === suit.value) {
+                    return selectedCount <= numDecks;
+                }
+                return selectedCount < numDecks;
+            })
             : SUITS.slice();
 
         const includeRandomSuit = !effectiveRank;
@@ -322,7 +341,6 @@ const updateDropdownFilters = () => {
         } else if (!effectiveRank && currentSuit && suitOptions.some(suit => suit.value === currentSuit)) {
             suitSelect.value = currentSuit;
         }
-
     });
 };
 
@@ -564,6 +582,10 @@ const renderState = (state) => {
     lastState = state;
     if (previousPhase !== "COMPLETE" && state.phase === "COMPLETE") {
         resetStartCardSelections();
+
+        // Set focus to dealer up card rank select
+        const dealerRank = document.getElementById("dealerCard1Rank");
+        setTimeout(() => dealerRank.focus(), 0);
     }
     updateDebugPanel(state);
     updateGameInfoDisplay(state);
@@ -920,18 +942,18 @@ const startBtn = document.getElementById("startBtn");
 if (startBtn) {
     startBtn.addEventListener("click", () => {
         const hands = Number(handsInput.value || 1);
+        const decksInput = document.getElementById("decks");
+        const decks = decksInput ? Number(decksInput.value || 6) : 6;
         const params = new URLSearchParams();
         params.append('hands', hands);
+        params.append('decks', decks);
         const d1r = document.getElementById("dealerCard1Rank").value;
         const d1s = document.getElementById("dealerCard1Suit").value;
-        let dealerCard1Rank = d1r;
-        let dealerCard1Suit = d1s;
-        if (!d1r && !d1s) {
-            dealerCard1Rank = '';
-            dealerCard1Suit = '';
-        } else if ((d1r && !d1s) || (!d1r && d1s)) {
-            dealerCard1Rank = '';
-            dealerCard1Suit = '';
+        let dealerCard1Rank = '';
+        let dealerCard1Suit = '';
+        if (d1r && d1s) {
+            dealerCard1Rank = d1r;
+            dealerCard1Suit = d1s;
         }
         const playerCards = [];
         for (let handNum = 1; handNum <= hands; handNum++) {
@@ -944,32 +966,21 @@ if (startBtn) {
             const card1Suit = c1s.value;
             const card2Rank = c2r.value;
             const card2Suit = c2s.value;
-            let card1RankFinal = card1Rank;
-            let card1SuitFinal = card1Suit;
-            let card2RankFinal = card2Rank;
-            let card2SuitFinal = card2Suit;
-            if (!card1Rank && !card1Suit) {
-                card1RankFinal = '';
-                card1SuitFinal = '';
-            } else if ((card1Rank && !card1Suit) || (!card1Rank && card1Suit)) {
-                card1RankFinal = '';
-                card1SuitFinal = '';
-            }
-            if (!card2Rank && !card2Suit) {
-                card2RankFinal = '';
-                card2SuitFinal = '';
-            } else if ((card2Rank && !card2Suit) || (!card2Rank && card2Suit)) {
-                card2RankFinal = '';
-                card2SuitFinal = '';
+            // Only add if both rank and suit are present or both are empty
+            let card1Valid = (card1Rank && card1Suit) || (!card1Rank && !card1Suit);
+            let card2Valid = (card2Rank && card2Suit) || (!card2Rank && !card2Suit);
+            if (!card1Valid || !card2Valid) {
+                alert(`Hand ${handNum}: Please select both rank and suit for each card, or leave both as Random.`);
+                return;
             }
             playerCards.push({
                 hand: handNum,
-                card1: { rank: card1RankFinal, suit: card1SuitFinal },
-                card2: { rank: card2RankFinal, suit: card2SuitFinal }
+                card1: { rank: card1Rank, suit: card1Suit },
+                card2: { rank: card2Rank, suit: card2Suit }
             });
         }
         const allSelectedCards = [];
-        if (d1r && d1s) allSelectedCards.push({ rank: d1r, suit: d1s, name: "Dealer Up Card" });
+        if (dealerCard1Rank && dealerCard1Suit) allSelectedCards.push({ rank: dealerCard1Rank, suit: dealerCard1Suit, name: "Dealer Up Card" });
         playerCards.forEach(hand => {
             if (hand.card1.rank && hand.card1.suit) {
                 allSelectedCards.push({
@@ -986,22 +997,31 @@ if (startBtn) {
                 });
             }
         });
-        for (let i = 0; i < allSelectedCards.length; i++) {
-            for (let j = i + 1; j < allSelectedCards.length; j++) {
-                if (allSelectedCards[i].rank === allSelectedCards[j].rank &&
-                    allSelectedCards[i].suit === allSelectedCards[j].suit) {
-                    alert(`Duplicate card detected: ${allSelectedCards[i].name} and ${allSelectedCards[j].name} are both ${allSelectedCards[i].rank} of ${allSelectedCards[i].suit}`);
-                    return;
-                }
+        // Decks-aware validation: check if any card is selected more times than allowed
+        const cardCount = {};
+        allSelectedCards.forEach(card => {
+            const key = `${card.rank}:${card.suit}`;
+            cardCount[key] = (cardCount[key] || 0) + 1;
+        });
+        for (const key in cardCount) {
+            if (cardCount[key] > decks) {
+                alert(`Card ${key.replace(':', ' of ')} selected ${cardCount[key]} times, but only ${decks} available in the shoe.`);
+                return;
             }
         }
-        if (dealerCard1Rank) params.append('dealerCard1Rank', dealerCard1Rank);
-        if (dealerCard1Suit) params.append('dealerCard1Suit', dealerCard1Suit);
+        if (dealerCard1Rank && dealerCard1Suit) {
+            params.append('dealerCard1Rank', dealerCard1Rank);
+            params.append('dealerCard1Suit', dealerCard1Suit);
+        }
         playerCards.forEach(hand => {
-            if (hand.card1.rank) params.append(`playerHand${hand.hand}Card1Rank`, hand.card1.rank);
-            if (hand.card1.suit) params.append(`playerHand${hand.hand}Card1Suit`, hand.card1.suit);
-            if (hand.card2.rank) params.append(`playerHand${hand.hand}Card2Rank`, hand.card2.rank);
-            if (hand.card2.suit) params.append(`playerHand${hand.hand}Card2Suit`, hand.card2.suit);
+            if (hand.card1.rank && hand.card1.suit) {
+                params.append(`playerHand${hand.hand}Card1Rank`, hand.card1.rank);
+                params.append(`playerHand${hand.hand}Card1Suit`, hand.card1.suit);
+            }
+            if (hand.card2.rank && hand.card2.suit) {
+                params.append(`playerHand${hand.hand}Card2Rank`, hand.card2.rank);
+                params.append(`playerHand${hand.hand}Card2Suit`, hand.card2.suit);
+            }
         });
         if (suggestedBetEl) suggestedBetEl.textContent = "-";
         if (cardsDealtEl) cardsDealtEl.textContent = "-";
@@ -1024,6 +1044,11 @@ if (startBtn) {
             const result = await apiFetch(`/api/blackjack/start?${params.toString()}`, { method: "POST" });
             // Force update of strategy panel after start
             renderState(result);
+
+            // Set focus to dealer up card rank select
+            const dealerRank = document.getElementById("dealerCard1Rank");
+            setTimeout(() => dealerRank.focus(), 0);
+
             return result;
         });
     });
