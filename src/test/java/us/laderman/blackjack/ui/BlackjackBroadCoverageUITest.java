@@ -59,7 +59,7 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
         try {
             setNumHands(1);
             setDealerUpCard("NINE");
-            setPlayerCard(1, 1, "2");
+            setPlayerCard(1, 1, "TWO");
             setPlayerCard(1, 2, "SIX");
             clickBtn(ID_START_BTN);
 
