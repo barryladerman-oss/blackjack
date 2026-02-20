@@ -4,19 +4,12 @@ import static us.laderman.blackjack.ui.UiTestConstants.BROWSER_WIDTH;
 import static us.laderman.blackjack.ui.UiTestConstants.BROWSER_HEIGHT;
 import static us.laderman.blackjack.ui.UiTestConstants.BASE_URL;
 import static us.laderman.blackjack.ui.UiTestConstants.WAIT_TIMEOUT_SECONDS;
-import static us.laderman.blackjack.ui.UiTestConstants.ID_START_BTN;
-import static us.laderman.blackjack.ui.UiTestConstants.ID_HIT_BTN;
-import static us.laderman.blackjack.ui.UiTestConstants.ID_GAME_STATE;
 import static us.laderman.blackjack.ui.UiTestConstants.ID_HANDS;
-import static us.laderman.blackjack.ui.UiTestConstants.ID_PHASE;
-import static us.laderman.blackjack.ui.UiTestConstants.PHASE_PLAYER_TURN;
-import static us.laderman.blackjack.ui.UiTestConstants.JSON_FIELD_CARDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.checkerframework.checker.units.qual.t;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.openqa.selenium.By;
@@ -132,54 +125,42 @@ public abstract class BaseSeleniumTest {
 
     public void testComplete() {
         try {
-            Thread.sleep(500);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
-        String phase = driver.findElement(By.id(UiTestConstants.ID_PHASE)).getText();
-        assertThat(phase).contains("COMPLETE");
-    }
+        WebElement phase = driver.findElement(By.id(UiTestConstants.ID_PHASE));
+        if (phase.getText().contains("COMPLETE")) {
+            return;
+        }
 
-    void testRunningCountAfterEachHit() {
-        driver.findElement(By.id(ID_START_BTN)).click();
-        wait.until(ExpectedConditions.textToBePresentInElementLocated(By.id(ID_PHASE), PHASE_PLAYER_TURN));
-        WebElement gameStateDiv = driver.findElement(By.id(ID_GAME_STATE));
-        String initialState = gameStateDiv.getText();
-
-        clickBtn(ID_HIT_BTN);
-
-        wait.until(ExpectedConditions.stalenessOf(gameStateDiv));
-        WebElement updatedGameState = driver.findElement(By.id(ID_GAME_STATE));
-        String updatedState = updatedGameState.getText();
-        assertThat(updatedState).isNotEqualTo(initialState);
-        assertThat(updatedState).contains(JSON_FIELD_CARDS);
+        wait.until(ExpectedConditions.stalenessOf(phase));
+        assertThat(phase.getText()).contains("COMPLETE");
     }
 
     void clickActionBtn(int handIndex, String btnAction) {
-        getActionButton(handIndex, btnAction).click();
-    }
+        closeModalIfOpen();
 
-    WebElement getActionButton(int handIndex, String btnAction) {
         String cssHand = "[data-hand='" + handIndex + "']";
         String cssAction = "[data-action='" + btnAction + "']";
 
         WebElement webElement = driver.findElement(By.cssSelector(cssHand + cssAction));
-        wait.until(ExpectedConditions.visibilityOf(webElement));
-        return webElement;
+        wait.until(ExpectedConditions.elementToBeClickable(webElement));
+        webElement.click();
     }
 
     void clickBtn(String buttonID) {
         WebElement webElement = driver.findElement(By.id(buttonID));
 
-        wait.until(ExpectedConditions.visibilityOf(webElement));
+        wait.until(ExpectedConditions.elementToBeClickable(webElement));
         webElement.click();
     }
 
     void clickModalBtn(String buttonID) {
         WebElement webElement = driver.findElement(By.id(buttonID));
 
-        wait.until(ExpectedConditions.visibilityOf(webElement));
+        wait.until(ExpectedConditions.elementToBeClickable(webElement));
         webElement.click();
     }
 

@@ -113,16 +113,6 @@ public class BlackjackService {
         }
     }
 
-    /**
-     * Validates that no duplicate cards are present in the provided array.
-     * 
-     * @param cards array of cards to check
-     * @throws IllegalArgumentException if a duplicate card is found
-     */
-    private void validateNoDuplicates(Card... cards) {
-        validateNoDuplicates(cards, DEFAULT_DECKS);
-    }
-
     // Overloaded method to validate against deck count
     private void validateNoDuplicates(Card[] cards, int decks) {
         java.util.Map<String, Integer> cardCounts = new java.util.HashMap<>();
