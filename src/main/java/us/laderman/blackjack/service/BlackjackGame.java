@@ -162,6 +162,10 @@ public class BlackjackGame {
         if (hand.getCards().size() != 2) {
             throw new IllegalArgumentException("Double requires exactly two cards");
         }
+        // Prevent double down on soft hands
+        if (hand.getValue().isSoft()) {
+            throw new IllegalArgumentException("Double down is not allowed on soft hands");
+        }
         hand.setBetUnits(2);
 
         // Deal specific or random card
@@ -518,6 +522,13 @@ public class BlackjackGame {
         } else {
             dealCard(dealerHand);
         }
+
+        // If dealer shows an ace, delay showing first hand action until all insurance decisions are complete
+        if (dealerHasAce()) {
+            // Do not auto-stand blackjacks or show first hand action until insurance decisions are resolved
+            return;
+        }
+        autoStandBlackjacks();
     }
 
     /**
@@ -824,7 +835,7 @@ public class BlackjackGame {
         if (!isActiveHand(handIndex) && !eligibleForInsurance) {
             return "NONE";
         }
-        // ...restriction removed...
+  
         // Check for insurance opportunity first
         if (phase == GamePhase.PLAYER_TURN && !hand.isFromSplit() && dealerUpCard != null
                 && dealerUpCard.getRank() == Rank.ACE) {
