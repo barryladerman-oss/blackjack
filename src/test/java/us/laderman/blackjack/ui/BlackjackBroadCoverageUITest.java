@@ -86,14 +86,18 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
     @Test
     @DisplayName("Full game flow: softHit")
     void testSoftHit() {
-        setNumHands(1);
-        setDealerUpCard("TWO", "HEARTS");
+        setNumHands(2);
+        setDealerUpCard("EIGHT", "HEARTS");
         setPlayerCard(1, 1, "ACE");
         setPlayerCard(1, 2, "FIVE");
+        setPlayerCard(2, 1, "ACE");
+        setPlayerCard(2, 2, "NINE");
         clickBtn(ID_START_BTN);
 
         clickModalBtn(ID_HIT_CONFIRM_BTN);
+
         clickActionBtn(1, ID_STAND_BTN);
+        clickActionBtn(2, ID_STAND_BTN);
 
         testComplete();
     }

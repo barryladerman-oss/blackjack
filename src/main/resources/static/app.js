@@ -41,7 +41,13 @@ const doublesWonEl = document.getElementById("doublesWon");
 const doublesLostEl = document.getElementById("doublesLost");
 const insuranceTotalEl = document.getElementById("insuranceTotal");
 
-let lastState = null;
+let skipAutoModal = false;
+let isBusy = false;
+const setBusy = (busy) => {
+    isBusy = busy;
+    updateButtonStates();
+};
+
 const run = async (fn) => {
     setBusy(true);
     try {
@@ -57,6 +63,7 @@ const run = async (fn) => {
     }
 };
 
+let lastState = null;
 let replaceGameStateNext = false;
 
 // Returns the current gameId, using lastState or fallback
@@ -68,11 +75,6 @@ function guardGameId() {
     // No fallback logic, return null
     return null;
 }
-
-const setBusy = (busy) => {
-    isBusy = busy;
-    updateButtonStates();
-};
 
 const updateButtonStates = () => {
     const startBtn = document.getElementById("startBtn");
@@ -105,8 +107,8 @@ const canSplit = (hand, isActive) => {
     return isActive && hand.cards && hand.cards.length === 2 && getCardRankValue(hand.cards[0]) === getCardRankValue(hand.cards[1]);
 };
 
-const canHit = (hand, handPlayable, isSplitAceComplete, canHitAfterSplitAces) => {
-    return !isSplitAceComplete && handPlayable && canHitAfterSplitAces;
+const canHit = (hand, isSplitAceComplete, canHitAfterSplitAces) => {
+    return !isSplitAceComplete && !hand.standing && !hand.busted && canHitAfterSplitAces;
 };
 
 // Generate player hand card selectors dynamically
@@ -641,11 +643,13 @@ const renderState = (state) => {
                 (hand.cards[0].rank.value === 1 || hand.cards[0].rank === 1 || hand.cards[0].rank === "ACE");
             const canDoubleVal = canDouble(hand, isActive);
             const canSplitVal = canSplit(hand, isActive);
+            // Restore canInsure definition
             const canInsure = hand.cards && hand.cards.length === 2 && dealerOffersInsurance && !hand.insured && !hand.insuranceDeclined && !isFromSplit && !hand.standing && !hand.busted;
+            // Compute split ace complete and handPlayable consistently
             const canHitAfterSplitAces = (hand.canHitAfterSplitAces ?? hand.isCanHitAfterSplitAces) !== false;
             const handPlayable = !hand.standing && !hand.busted;
             const isSplitAceComplete = isFromSplit && !canHitAfterSplitAces;
-            let showHit = canHit(hand, handPlayable, isSplitAceComplete, canHitAfterSplitAces);
+            let showHit = canHit(hand, isSplitAceComplete, canHitAfterSplitAces);
             let showStand = !isSplitAceComplete && handPlayable;
             let showDouble = !isSplitAceComplete && handPlayable && canDoubleVal;
             let showSplit = !isSplitAceComplete && handPlayable && canSplitVal && !isFromSplit;
@@ -708,8 +712,9 @@ const renderState = (state) => {
                     <button data-action="decline_insurance" data-hand="${hand.index + 1}" class="insurance-btn ghost${isDeclineRecommended ? ' recommended' : ''}">Decline Insurance</button>
                 </div>`;
             }
-            // Delay showing player actions until all insurance decisions are complete for all hands
-            if (isActive && handPlayable && state.phase === "PLAYER_TURN" && !canInsure && allHandsResolvedInsurance) {
+
+            // Show player actions for the active hand after insurance resolved, or immediately if no insurance is offered
+            if (isActive && handPlayable && state.phase === "PLAYER_TURN" && !canInsure && (allHandsResolvedInsurance || !dealerOffersInsurance)) {
                 const recommended = recommendedAction;
                 actionsHtml += `<div class="hand-actions">`
                     + (showHit ? `<button data-action="hit" data-hand="${hand.index + 1}"${recommended === "hit" ? ' class="recommended"' : ''}>Hit</button>` : '')
@@ -752,8 +757,12 @@ const renderState = (state) => {
             }
         }
     }
+    skipAutoModal = false;
     setBusy(false);
+    updateButtonStates();
 }
+// Force update after DOM change
+setTimeout(updateButtonStates, 0);
 
 const initializeCardSelectors = () => {
     // Get initial hands value from input
@@ -1196,6 +1205,7 @@ const closeHitCardModal = () => {
     if (!hitCardModal) return;
     hitCardModal.style.display = "none";
     currentHitHandIndex = null;
+    updateButtonStates();
 };
 
 if (hitCardCancelBtn) {
