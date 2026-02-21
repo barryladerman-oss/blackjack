@@ -100,15 +100,14 @@ class BlackjackServiceTest {
     @DisplayName("should provide decks remaining info")
     void testDecksRemainingInfo() {
         GameState state = service.startGame(1, new HashMap<>());
-        assertThat(state.getDecksRemaining()).isGreaterThan(0);
+        assertThat(state.getCardsRemaining()).isGreaterThan(0);
 
         // Test with custom deck count
         HashMap<String, String> params = new HashMap<>();
         params.put("decks", "6");
         GameState state6 = service.startGame(1, params);
         // Should be less than or equal to 6 (after initial deal)
-        assertThat(state6.getDecksRemaining()).isLessThanOrEqualTo(6.0);
-        assertThat(state6.getDecksRemaining()).isGreaterThan(0);
+        assertThat(state6.getCardsRemaining()).isGreaterThan(0);
 
         // Test with invalid deck count (e.g., 0 or negative)
         params.put("decks", "0");

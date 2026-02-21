@@ -263,7 +263,7 @@ class GameStateModelTest {
                 java.util.List.of(),
                 5,
                 2.5,
-                1.0,
+                52,
                 0,
                 0,
                 1,

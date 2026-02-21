@@ -3,7 +3,7 @@ package us.laderman.blackjack.ui;
 /**
  * Shared constants for UI Selenium tests.
  */
-public final class UiTestConstants {
+public final class TestConstants {
     // Modal IDs
     public static final String ID_HIT_CARD_MODAL = "hitCardModal";
     public static final String ID_SPLIT_CARD_MODAL = "splitCardModal";
@@ -68,7 +68,7 @@ public final class UiTestConstants {
     // Page content
     public static final String PAGE_TITLE = "Blackjack";
 
-    private UiTestConstants() {
+    private TestConstants() {
         // Prevent instantiation
     }
 }

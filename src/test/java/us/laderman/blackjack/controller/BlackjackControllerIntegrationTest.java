@@ -261,7 +261,7 @@ class BlackjackControllerTest {
                         createMockPlayerHandState(0),
                         createMockPlayerHandState(1),
                         createMockPlayerHandState(2)),
-                0, 0, 1.0, 0, 0, 1, "Dealer up card 6");
+                0, 0, 52, 0, 0, 1, "Dealer up card 6");
         when(mockService.startGame(eq(3), any())).thenReturn(mockState);
 
         // Act
@@ -302,7 +302,7 @@ class BlackjackControllerTest {
         // Assert
         assertThat(result.getRunningCount()).isNotNull();
         assertThat(result.getTrueCount()).isNotNull();
-        assertThat(result.getDecksRemaining()).isGreaterThan(0);
+        assertThat(result.getCardsRemaining()).isGreaterThan(0);
     }
 
     @Test
@@ -347,7 +347,7 @@ class BlackjackControllerTest {
                 hands,
                 0,
                 0.0,
-                1.0,
+                52,
                 0.0,
                 0.0,
                 1,

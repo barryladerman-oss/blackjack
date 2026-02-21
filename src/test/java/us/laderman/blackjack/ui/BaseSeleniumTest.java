@@ -1,11 +1,15 @@
 package us.laderman.blackjack.ui;
 
-import static us.laderman.blackjack.ui.UiTestConstants.BROWSER_WIDTH;
-import static us.laderman.blackjack.ui.UiTestConstants.BROWSER_HEIGHT;
-import static us.laderman.blackjack.ui.UiTestConstants.BASE_URL;
-import static us.laderman.blackjack.ui.UiTestConstants.WAIT_TIMEOUT_SECONDS;
-import static us.laderman.blackjack.ui.UiTestConstants.ID_HANDS;
-import static us.laderman.blackjack.ui.UiTestConstants.ID_DECKS;
+import static us.laderman.blackjack.ui.TestConstants.BROWSER_WIDTH;
+import static us.laderman.blackjack.ui.TestConstants.BROWSER_HEIGHT;
+import static us.laderman.blackjack.ui.TestConstants.BASE_URL;
+import static us.laderman.blackjack.ui.TestConstants.WAIT_TIMEOUT_SECONDS;
+import static us.laderman.blackjack.ui.TestConstants.ID_PHASE;
+import static us.laderman.blackjack.ui.TestConstants.ID_HANDS;
+import static us.laderman.blackjack.ui.TestConstants.ID_DECKS;
+import static us.laderman.blackjack.ui.TestConstants.ID_HIT_CARD_MODAL;
+import static us.laderman.blackjack.ui.TestConstants.ID_SPLIT_CARD_MODAL;
+import static us.laderman.blackjack.ui.TestConstants.ID_DOUBLE_CARD_MODAL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
@@ -119,9 +123,9 @@ public abstract class BaseSeleniumTest {
             cancelBtn.click();
             wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(modalId)));
         };
-        closeModalById.accept(UiTestConstants.ID_HIT_CARD_MODAL);
-        closeModalById.accept(UiTestConstants.ID_SPLIT_CARD_MODAL);
-        closeModalById.accept(UiTestConstants.ID_DOUBLE_CARD_MODAL);
+        closeModalById.accept(ID_HIT_CARD_MODAL);
+        closeModalById.accept(ID_SPLIT_CARD_MODAL);
+        closeModalById.accept(ID_DOUBLE_CARD_MODAL);
     }
 
     public void testComplete() {
@@ -131,7 +135,7 @@ public abstract class BaseSeleniumTest {
             Thread.currentThread().interrupt();
         }
 
-        WebElement phase = driver.findElement(By.id(UiTestConstants.ID_PHASE));
+        WebElement phase = driver.findElement(By.id(ID_PHASE));
         if (phase.getText().contains("COMPLETE")) {
             return;
         }
@@ -212,6 +216,14 @@ public abstract class BaseSeleniumTest {
             WebElement suitElement = driver.findElement(By.id(css + "Suit"));
             Select suitSelect = new Select(suitElement);
             suitSelect.selectByValue(suit);
+        }
+    }
+
+    void sleepFor(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

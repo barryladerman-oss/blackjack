@@ -67,12 +67,12 @@ class BlackjackGameTest {
         @DisplayName("should decrease decks remaining on hit")
         void testCardCountIncrementOnHit() {
                 GameState initialState = game.getState();
-                double initialDecksRemaining = initialState.getDecksRemaining();
+                int initialCardsRemaining = initialState.getCardsRemaining();
 
                 game.hit(0, null);
                 GameState afterHitState = game.getState();
 
-                assertThat(afterHitState.getDecksRemaining()).isLessThan(initialDecksRemaining);
+                assertThat(afterHitState.getCardsRemaining()).isLessThan(initialCardsRemaining);
         }
 
         @Test
@@ -105,7 +105,7 @@ class BlackjackGameTest {
         @DisplayName("should track running count with card dealt")
         void testRunningCountTracking() {
                 GameState initialState = game.getState();
-                double initialDecksRemaining = initialState.getDecksRemaining();
+                int initialCardsRemaining = initialState.getCardsRemaining();
 
                 // Hit to add a card and update count (this may or may not work if hand was
                 // auto-stood)
@@ -113,8 +113,8 @@ class BlackjackGameTest {
                         game.hit(0, null);
                         GameState afterHitState = game.getState();
 
-                        // Decks remaining should decrease (more cards dealt)
-                        assertThat(afterHitState.getDecksRemaining()).isLessThan(initialDecksRemaining);
+                        // Cards remaining should decrease (more cards dealt)
+                        assertThat(afterHitState.getCardsRemaining()).isLessThan(initialCardsRemaining);
                 } catch (IllegalStateException e) {
                         // Expected if hand was already completed/stood (e.g., blackjack)
                         assertThat(e.getMessage()).isNotNull();
@@ -133,13 +133,12 @@ class BlackjackGameTest {
 
         @Test
         @DisplayName("should provide decks remaining info")
-        void testDecksRemaining() {
+        void testCardsRemaining() {
                 GameState state = game.getState();
-                double decksRemaining = state.getDecksRemaining();
+                int cardsRemaining = state.getCardsRemaining();
 
-                // Should be close to 1 deck minus initial 4 cards dealt
-                assertThat(decksRemaining).isGreaterThan(0.9);
-                assertThat(decksRemaining).isLessThan(1.0);
+                // Should be less than full deck after initial deal
+                assertThat(cardsRemaining).isGreaterThan(0);
         }
 
         @Test

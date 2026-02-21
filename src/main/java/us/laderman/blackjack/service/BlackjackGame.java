@@ -523,9 +523,11 @@ public class BlackjackGame {
             dealCard(dealerHand);
         }
 
-        // If dealer shows an ace, delay showing first hand action until all insurance decisions are complete
+        // If dealer shows an ace, delay showing first hand action until all insurance
+        // decisions are complete
         if (dealerHasAce()) {
-            // Do not auto-stand blackjacks or show first hand action until insurance decisions are resolved
+            // Do not auto-stand blackjacks or show first hand action until insurance
+            // decisions are resolved
             return;
         }
         autoStandBlackjacks();
@@ -626,7 +628,9 @@ public class BlackjackGame {
      */
     private GameState toGameState() {
         HandValue dealerValue = dealerHand.getValue();
-        double decksRemaining = Math.max(0.25, (decksTotal * 52.0 - cardsDealt) / 52.0);
+        int cardsRemaining = shoe.remaining();
+        double decksRemaining = Math.max(0.25, (decksTotal * 52.0 - cardsDealt) / 52.0); // keep for trueCount
+                                                                                         // calculation
         double trueCount = runningCount / decksRemaining;
         int suggestedBet = suggestBetUnits(trueCount);
 
@@ -721,7 +725,7 @@ public class BlackjackGame {
                 handStates,
                 runningCount,
                 roundToTwo(trueCount),
-                roundToTwo(decksRemaining),
+                cardsRemaining,
                 roundToTwo(netUnits),
                 roundToTwo(insuranceTotal),
                 suggestedBet,
@@ -835,7 +839,7 @@ public class BlackjackGame {
         if (!isActiveHand(handIndex) && !eligibleForInsurance) {
             return "NONE";
         }
-  
+
         // Check for insurance opportunity first
         if (phase == GamePhase.PLAYER_TURN && !hand.isFromSplit() && dealerUpCard != null
                 && dealerUpCard.getRank() == Rank.ACE) {

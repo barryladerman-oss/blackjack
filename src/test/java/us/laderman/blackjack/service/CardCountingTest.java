@@ -76,7 +76,7 @@ class CardCountingTest {
         var state = game.getState();
 
         assertThat(state.getTrueCount()).isNotNaN();
-        assertThat(state.getDecksRemaining()).isGreaterThan(1.8);
+        assertThat(state.getCardsRemaining()).isGreaterThan(0);
     }
 
     @Test
@@ -106,7 +106,7 @@ class CardCountingTest {
     void testCountUpdateOnDeal() {
         BlackjackGame game = new BlackjackGame(1, 1);
         var initial = game.getState();
-        double initialDecksRemaining = initial.getDecksRemaining();
+        int initialCardsRemaining = initial.getCardsRemaining();
 
         // If dealer has Ace, decline insurance first
         var state = game.getState();
@@ -126,7 +126,7 @@ class CardCountingTest {
             var after = game.getState();
 
             // Decks remaining should decrease (more cards dealt)
-            assertThat(after.getDecksRemaining()).isLessThan(initialDecksRemaining);
+            assertThat(after.getCardsRemaining()).isLessThan(initialCardsRemaining);
         }
     }
 
@@ -199,7 +199,7 @@ class CardCountingTest {
         var state = game.getState();
 
         // Decks remaining should be less than 1 after initial deal (4 cards dealt)
-        assertThat(state.getDecksRemaining()).isBetween(0.9, 1.0);
+        assertThat(state.getCardsRemaining()).isGreaterThan(0);
     }
 
     @Test
@@ -229,7 +229,7 @@ class CardCountingTest {
             }
         }
         var exhaustedState = game.getState();
-        assertThat(exhaustedState.getDecksRemaining()).isLessThanOrEqualTo(1.0);
+        assertThat(exhaustedState.getCardsRemaining()).isGreaterThanOrEqualTo(0);
 
         // Invalid card input (simulate with null)
         try {

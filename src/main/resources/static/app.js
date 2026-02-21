@@ -363,7 +363,7 @@ const updateGameInfoDisplay = (state) => {
     const dealerUpcardEl = document.getElementById("dealerUpcard");
     const runningCountEl = document.getElementById("runningCount");
     const trueCountEl = document.getElementById("trueCount");
-    const decksRemainingEl = document.getElementById("decksRemaining");
+    const cardsRemainingEl = document.getElementById("cardsRemaining");
     const showCounts = state && state.phase && state.phase !== "PLAYER_TURN";
 
     // Update game ID
@@ -392,9 +392,9 @@ const updateGameInfoDisplay = (state) => {
             ? state.trueCount.toFixed(2)
             : "-";
     }
-    if (decksRemainingEl) {
-        decksRemainingEl.textContent = showCounts && typeof state.decksRemaining === "number"
-            ? state.decksRemaining.toFixed(2)
+    if (cardsRemainingEl) {
+        cardsRemainingEl.textContent = typeof state.cardsRemaining === "number"
+            ? state.cardsRemaining
             : "-";
     }
 };
@@ -597,21 +597,6 @@ const renderState = (state) => {
 
     const dealerOffersInsurance = dealerShowsAce;
 
-    // Check if all hands have resolved insurance (made an explicit decision)
-    const allHandsResolvedInsurance = state.hands.every(hand => {
-        // A hand has resolved insurance if:
-        // 1. It has taken insurance, OR
-        // 2. It has explicitly declined insurance, OR
-        // 2. It's been auto-stood (from natural blackjack), OR
-        // 3. It's already moved past 2 cards (implicitly refused insurance), OR
-        // 4. It's already busted or standing
-        return hand.insured ||
-            hand.insuranceDeclined ||
-            hand.standing ||
-            hand.busted ||
-            (hand.cards && hand.cards.length > 2);
-    });
-
     const normalizeAction = (value) => {
         const normalized = String(value || "")
             .toLowerCase()
@@ -639,8 +624,6 @@ const renderState = (state) => {
         .map((hand) => {
             const isActive = hand.index === activeIndex;
             const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
-            const isSplitAce = isFromSplit && hand.cards && hand.cards.length > 0 &&
-                (hand.cards[0].rank.value === 1 || hand.cards[0].rank === 1 || hand.cards[0].rank === "ACE");
             const canDoubleVal = canDouble(hand, isActive);
             const canSplitVal = canSplit(hand, isActive);
             // Restore canInsure definition
@@ -715,6 +698,11 @@ const renderState = (state) => {
             // Delay showing player actions for the active hand until insurance is resolved for all hands
             const dealerCards = state.dealer?.cards || [];
             const dealerShowsAce = dealerCards.length > 0 && isAceRank(dealerCards[0]);
+            const allHandsResolvedInsurance = state.hands.every(hand => {
+                const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
+                if (isFromSplit) return true;
+                return hand.insured || hand.insuranceDeclined || hand.standing || hand.busted || (hand.cards && hand.cards.length > 2);
+            });
             // Only show action buttons if insurance is resolved or dealer does not show ace
             if (isActive && handPlayable && state.phase === "PLAYER_TURN" && !canInsure && (!dealerShowsAce || allHandsResolvedInsurance)) {
                 const recommended = recommendedAction;
@@ -1028,6 +1016,7 @@ const dealerShowsAceInState = (state) => {
     return dealerCards.length > 0 && isAceRank(dealerCards[0]);
 };
 
+// Action buttons event listeners
 if (hitBtn) {
     hitBtn.addEventListener("click", () => {
         if (hitBtn.disabled) return;
@@ -1275,15 +1264,6 @@ if (hitCardConfirmBtn) {
     console.error("hitCardConfirmBtn not found!");
 }
 
-// Close modal on background click
-if (hitCardModal) {
-    hitCardModal.addEventListener("click", (e) => {
-        if (e.target === hitCardModal) {
-            closeHitCardModal();
-        }
-    });
-}
-
 // Double card modal functions
 const doubleCardModal = document.getElementById("doubleCardModal");
 const doubleCardRankSelect = document.getElementById("doubleCardRank");
@@ -1408,14 +1388,6 @@ if (doubleCardConfirmBtn) {
             console.log("Double API call - URL:", url);
             return apiFetch(url, { method: "POST" });
         });
-    });
-}
-
-if (doubleCardModal) {
-    doubleCardModal.addEventListener("click", (e) => {
-        if (e.target === doubleCardModal) {
-            closeDoubleCardModal();
-        }
     });
 }
 
@@ -1673,7 +1645,23 @@ if (splitCardConfirmBtn) {
     });
 }
 
-// Close modal on background click
+// Close modals on background click
+if (hitCardModal) {
+    hitCardModal.addEventListener("click", (e) => {
+        if (e.target === hitCardModal) {
+            closeHitCardModal();
+        }
+    });
+}
+
+if (doubleCardModal) {
+    doubleCardModal.addEventListener("click", (e) => {
+        if (e.target === doubleCardModal) {
+            closeDoubleCardModal();
+        }
+    });
+}
+
 if (splitCardModal) {
     splitCardModal.addEventListener("click", (e) => {
         if (e.target === splitCardModal) {

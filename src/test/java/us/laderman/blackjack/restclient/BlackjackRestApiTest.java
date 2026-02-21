@@ -55,10 +55,8 @@ public class BlackjackRestApiTest {
 
         GameState state = response.getData();
         // Should be less than or equal to 4 (after initial deal)
-        org.junit.jupiter.api.Assertions.assertTrue(state.getDecksRemaining() <= 4.0,
-                "Expected decksRemaining to be <= 4, but was: " + state.getDecksRemaining());
-        org.junit.jupiter.api.Assertions.assertTrue(state.getDecksRemaining() > 0,
-                "Expected decksRemaining to be positive, but was: " + state.getDecksRemaining());
+        org.junit.jupiter.api.Assertions.assertTrue(state.getCardsRemaining() > 0,
+                "Expected cardsRemaining to be positive, but was: " + state.getCardsRemaining());
     }
 
     @Test

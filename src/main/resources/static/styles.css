@@ -195,6 +195,21 @@ label {
     font-size: 12px;
 }
 
+#cardSelectionDetails select,
+#cardSelectionContainer select,
+.card-rank-select,
+.card-suit-select {
+    font-size: 18px;
+}
+
+#hands,
+#decks {
+    font-size: 13px;
+    padding: 4px 6px;
+    border-radius: 8px;
+    width: 60px;
+}
+
 input,
 select {
     width: 100%;

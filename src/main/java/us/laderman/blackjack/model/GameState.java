@@ -13,7 +13,7 @@ public class GameState {
     private final List<PlayerHandState> hands;
     private final int runningCount;
     private final double trueCount;
-    private final double decksRemaining;
+    private final int cardsRemaining;
     private final double netUnits;
     private final double insuranceTotal;
     private final int suggestedBetUnits;
@@ -25,7 +25,7 @@ public class GameState {
             List<PlayerHandState> hands,
             int runningCount,
             double trueCount,
-            double decksRemaining,
+            int cardsRemaining,
             double netUnits,
             double insuranceTotal,
             int suggestedBetUnits,
@@ -36,7 +36,7 @@ public class GameState {
         this.hands = hands;
         this.runningCount = runningCount;
         this.trueCount = trueCount;
-        this.decksRemaining = decksRemaining;
+        this.cardsRemaining = cardsRemaining;
         this.netUnits = netUnits;
         this.insuranceTotal = insuranceTotal;
         this.suggestedBetUnits = suggestedBetUnits;
@@ -102,8 +102,8 @@ public class GameState {
      * 
      * @return decks remaining
      */
-    public double getDecksRemaining() {
-        return decksRemaining;
+    public int getCardsRemaining() {
+        return cardsRemaining;
     }
 
     /**
@@ -348,7 +348,7 @@ public class GameState {
                 ", hands=" + hands +
                 ", runningCount=" + runningCount +
                 ", trueCount=" + trueCount +
-                ", decksRemaining=" + decksRemaining +
+                ", cardsRemaining=" + cardsRemaining +
                 ", netUnits=" + netUnits +
                 ", insuranceTotal=" + insuranceTotal +
                 ", suggestedBetUnits=" + suggestedBetUnits +

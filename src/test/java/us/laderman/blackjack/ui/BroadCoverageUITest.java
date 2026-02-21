@@ -9,12 +9,17 @@ import org.openqa.selenium.support.ui.Select;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import static us.laderman.blackjack.ui.UiTestConstants.ID_STAND_BTN;
-import static us.laderman.blackjack.ui.UiTestConstants.ID_START_BTN;
-
-import static us.laderman.blackjack.ui.UiTestConstants.ID_HIT_CONFIRM_BTN;
-import static us.laderman.blackjack.ui.UiTestConstants.ID_SPLIT_CONFIRM_BTN;
-import static us.laderman.blackjack.ui.UiTestConstants.ID_DOUBLE_CONFIRM_BTN;
+import static us.laderman.blackjack.ui.TestConstants.ID_STAND_BTN;
+import static us.laderman.blackjack.ui.TestConstants.ID_START_BTN;
+import static us.laderman.blackjack.ui.TestConstants.ID_GAME_ID;
+import static us.laderman.blackjack.ui.TestConstants.ID_PHASE;
+import static us.laderman.blackjack.ui.TestConstants.ID_DEALER_UPCARD;
+import static us.laderman.blackjack.ui.TestConstants.ID_RUNNING_COUNT;
+import static us.laderman.blackjack.ui.TestConstants.ID_DECKS_REMAINING;
+import static us.laderman.blackjack.ui.TestConstants.ID_TRUE_COUNT;
+import static us.laderman.blackjack.ui.TestConstants.ID_HIT_CONFIRM_BTN;
+import static us.laderman.blackjack.ui.TestConstants.ID_SPLIT_CONFIRM_BTN;
+import static us.laderman.blackjack.ui.TestConstants.ID_DOUBLE_CONFIRM_BTN;
 
 /**
  * Broad coverage UI tests for Blackjack application.
@@ -22,18 +27,18 @@ import static us.laderman.blackjack.ui.UiTestConstants.ID_DOUBLE_CONFIRM_BTN;
  */
 
 @DisplayName("Blackjack Broad Coverage UI Tests")
-public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
+public class BroadCoverageUITest extends BaseSeleniumTest {
 
     @Test
     @DisplayName("Start game and verify UI elements")
     void testStartGameAndVerifyUI() {
-        clickBtn(UiTestConstants.ID_START_BTN);
-        assertThat(driver.findElement(By.id(UiTestConstants.ID_GAME_ID)).getText()).isNotBlank();
-        assertThat(driver.findElement(By.id(UiTestConstants.ID_PHASE)).getText()).isNotBlank();
-        assertThat(driver.findElement(By.id(UiTestConstants.ID_DEALER_UPCARD)).getText()).isNotBlank();
-        assertThat(driver.findElement(By.id(UiTestConstants.ID_RUNNING_COUNT)).getText()).isNotBlank();
-        assertThat(driver.findElement(By.id(UiTestConstants.ID_TRUE_COUNT)).getText()).isNotBlank();
-        assertThat(driver.findElement(By.id(UiTestConstants.ID_DECKS_REMAINING)).getText()).isNotBlank();
+        clickBtn(TestConstants.ID_START_BTN);
+        assertThat(driver.findElement(By.id(ID_GAME_ID)).getText()).isNotBlank();
+        assertThat(driver.findElement(By.id(ID_PHASE)).getText()).isNotBlank();
+        assertThat(driver.findElement(By.id(ID_DEALER_UPCARD)).getText()).isNotBlank();
+        assertThat(driver.findElement(By.id(ID_RUNNING_COUNT)).getText()).isNotBlank();
+        assertThat(driver.findElement(By.id(ID_TRUE_COUNT)).getText()).isNotBlank();
+        assertThat(driver.findElement(By.id(ID_DECKS_REMAINING)).getText()).isNotBlank();
     }
 
     @Test
@@ -158,7 +163,7 @@ public class BlackjackBroadCoverageUITest extends BaseSeleniumTest {
     @DisplayName("Verify all summary panels update")
     void testSummaryPanels() {
         driver.get(baseUrl);
-        clickBtn(UiTestConstants.ID_START_BTN);
+        clickBtn(ID_START_BTN);
 
         assertThat(driver.findElement(By.id("gameInfoSummary")).getText()).isNotBlank();
         assertThat(driver.findElement(By.id("resultsSummary")).getText()).isNotBlank();

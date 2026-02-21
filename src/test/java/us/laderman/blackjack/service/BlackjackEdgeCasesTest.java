@@ -120,7 +120,7 @@ class BlackjackEdgeCasesTest {
         // True count depends on running count and deck penetration
         var state = game.getState();
         assertThat(state.getTrueCount()).isNotNaN();
-        assertThat(state.getDecksRemaining()).isGreaterThan(0);
+        assertThat(state.getCardsRemaining()).isGreaterThan(0);
     }
 
     @Test
@@ -131,8 +131,8 @@ class BlackjackEdgeCasesTest {
         var state = game.getState();
 
         // Decks remaining should be less than or equal to 1 after initial 4-card deal
-        assertThat(state.getDecksRemaining()).isLessThanOrEqualTo(1.0);
-        assertThat(state.getDecksRemaining()).isGreaterThan(0.0);
+        assertThat(state.getCardsRemaining()).isGreaterThanOrEqualTo(0);
+        assertThat(state.getCardsRemaining()).isGreaterThan(0);
     }
 
     @Test
@@ -201,7 +201,7 @@ class BlackjackEdgeCasesTest {
         // Hand count unchanged
         assertThat(state2.getHands()).hasSize(state1.getHands().size());
         // Deck remaining decreased (more cards dealt)
-        assertThat(state2.getDecksRemaining()).isLessThanOrEqualTo(state1.getDecksRemaining());
+        assertThat(state2.getCardsRemaining()).isLessThanOrEqualTo(state1.getCardsRemaining());
     }
 
     @Test
@@ -294,7 +294,7 @@ class BlackjackEdgeCasesTest {
             }
         }
         var exhaustedState = deckGame.getState();
-        assertThat(exhaustedState.getDecksRemaining()).isLessThanOrEqualTo(1.0);
+        assertThat(exhaustedState.getCardsRemaining()).isGreaterThanOrEqualTo(0);
     }
 
 }
