@@ -712,9 +712,11 @@ const renderState = (state) => {
                     <button data-action="decline_insurance" data-hand="${hand.index + 1}" class="insurance-btn ghost${isDeclineRecommended ? ' recommended' : ''}">Decline Insurance</button>
                 </div>`;
             }
-
-            // Show player actions for the active hand after insurance resolved, or immediately if no insurance is offered
-            if (isActive && handPlayable && state.phase === "PLAYER_TURN" && !canInsure && (allHandsResolvedInsurance || !dealerOffersInsurance)) {
+            // Delay showing player actions for the active hand until insurance is resolved for all hands
+            const dealerCards = state.dealer?.cards || [];
+            const dealerShowsAce = dealerCards.length > 0 && isAceRank(dealerCards[0]);
+            // Only show action buttons if insurance is resolved or dealer does not show ace
+            if (isActive && handPlayable && state.phase === "PLAYER_TURN" && !canInsure && (!dealerShowsAce || allHandsResolvedInsurance)) {
                 const recommended = recommendedAction;
                 actionsHtml += `<div class="hand-actions">`
                     + (showHit ? `<button data-action="hit" data-hand="${hand.index + 1}"${recommended === "hit" ? ' class="recommended"' : ''}>Hit</button>` : '')
