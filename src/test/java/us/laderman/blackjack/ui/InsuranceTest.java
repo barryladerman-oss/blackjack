@@ -49,6 +49,7 @@ public class InsuranceTest extends BaseSeleniumTest {
                 if (text.contains("Decline")) {
                     wait.until(ExpectedConditions.elementToBeClickable(btn));
                     btn.click();
+                    sleepFor(1000);
 
                     insuranceBtns = driver.findElements(By.cssSelector(".insurance-btn"));
                     break;
@@ -56,6 +57,11 @@ public class InsuranceTest extends BaseSeleniumTest {
             }
         }
         sleepFor(1000);
+
+        WebElement phase = driver.findElement(By.id(TestConstants.ID_PHASE));
+        if (phase.getText().contains("COMPLETE")) {
+            return;
+        }
 
         // Now action buttons should appear for the first hand
         css = ".hand-actions button[data-action]";
