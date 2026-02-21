@@ -15,7 +15,6 @@ import static us.laderman.blackjack.ui.TestConstants.ID_GAME_ID;
 import static us.laderman.blackjack.ui.TestConstants.ID_PHASE;
 import static us.laderman.blackjack.ui.TestConstants.ID_DEALER_UPCARD;
 import static us.laderman.blackjack.ui.TestConstants.ID_RUNNING_COUNT;
-import static us.laderman.blackjack.ui.TestConstants.ID_DECKS_REMAINING;
 import static us.laderman.blackjack.ui.TestConstants.ID_TRUE_COUNT;
 import static us.laderman.blackjack.ui.TestConstants.ID_HIT_CONFIRM_BTN;
 import static us.laderman.blackjack.ui.TestConstants.ID_SPLIT_CONFIRM_BTN;
@@ -38,7 +37,7 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
         assertThat(driver.findElement(By.id(ID_DEALER_UPCARD)).getText()).isNotBlank();
         assertThat(driver.findElement(By.id(ID_RUNNING_COUNT)).getText()).isNotBlank();
         assertThat(driver.findElement(By.id(ID_TRUE_COUNT)).getText()).isNotBlank();
-        assertThat(driver.findElement(By.id(ID_DECKS_REMAINING)).getText()).isNotBlank();
+        assertThat(driver.findElement(By.id("cardsRemaining")).getText()).isNotBlank();
     }
 
     @Test
@@ -167,5 +166,6 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
 
         assertThat(driver.findElement(By.id("gameInfoSummary")).getText()).isNotBlank();
         assertThat(driver.findElement(By.id("resultsSummary")).getText()).isNotBlank();
+        assertThat(driver.findElement(By.id("cardsRemaining")).getText()).isNotBlank();
     }
 }

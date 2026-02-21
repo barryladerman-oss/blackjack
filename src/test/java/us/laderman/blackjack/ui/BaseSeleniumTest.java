@@ -13,6 +13,7 @@ import static us.laderman.blackjack.ui.TestConstants.ID_DOUBLE_CARD_MODAL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -112,6 +113,14 @@ public abstract class BaseSeleniumTest {
         }
     }
 
+    void sleepFor(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     protected void closeModalIfOpen() {
         java.util.function.Consumer<String> closeModalById = (modalId) -> {
             WebElement modal = driver.findElement(By.id(modalId));
@@ -129,11 +138,7 @@ public abstract class BaseSeleniumTest {
     }
 
     public void testComplete() {
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        sleepFor(1000);
 
         WebElement phase = driver.findElement(By.id(ID_PHASE));
         if (phase.getText().contains("COMPLETE")) {
@@ -153,6 +158,24 @@ public abstract class BaseSeleniumTest {
         WebElement webElement = driver.findElement(By.cssSelector(cssHand + cssAction));
         wait.until(ExpectedConditions.elementToBeClickable(webElement));
         webElement.click();
+    }
+
+    // Select Stand action on every hand if available, calling closeModalIfOpen
+    // after each action
+    void standAllHandsIfAvailable() {
+        List<WebElement> handActionSections = driver.findElements(By.cssSelector(".hand-actions"));
+        for (WebElement section : handActionSections) {
+            List<WebElement> standBtns = section.findElements(By.cssSelector("button[data-action='stand']"));
+            while (!standBtns.isEmpty()) {
+                WebElement standBtn = standBtns.get(0);
+                wait.until(ExpectedConditions.elementToBeClickable(standBtn));
+                standBtn.click();
+                closeModalIfOpen();
+
+                handActionSections = driver.findElements(By.cssSelector(".hand-actions"));
+                standBtns = section.findElements(By.cssSelector("button[data-action='stand']"));
+            }
+        }
     }
 
     void clickBtn(String buttonID) {
@@ -216,14 +239,6 @@ public abstract class BaseSeleniumTest {
             WebElement suitElement = driver.findElement(By.id(css + "Suit"));
             Select suitSelect = new Select(suitElement);
             suitSelect.selectByValue(suit);
-        }
-    }
-
-    void sleepFor(int millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 }

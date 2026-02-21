@@ -46,6 +46,11 @@ let isBusy = false;
 const setBusy = (busy) => {
     isBusy = busy;
     updateButtonStates();
+    // Remove fallback timeout logic
+    if (hitModalFallbackTimeout) {
+        clearTimeout(hitModalFallbackTimeout);
+        hitModalFallbackTimeout = null;
+    }
 };
 
 const run = async (fn) => {
@@ -695,16 +700,30 @@ const renderState = (state) => {
                     <button data-action="decline_insurance" data-hand="${hand.index + 1}" class="insurance-btn ghost${isDeclineRecommended ? ' recommended' : ''}">Decline Insurance</button>
                 </div>`;
             }
-            // Delay showing player actions for the active hand until insurance is resolved for all hands
+            // Show player actions for the first active hand immediately after insurance is resolved for all hands
             const dealerCards = state.dealer?.cards || [];
             const dealerShowsAce = dealerCards.length > 0 && isAceRank(dealerCards[0]);
             const allHandsResolvedInsurance = state.hands.every(hand => {
                 const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
                 if (isFromSplit) return true;
-                return hand.insured || hand.insuranceDeclined || hand.standing || hand.busted || (hand.cards && hand.cards.length > 2);
+                return hand.insured || hand.insuranceDeclined;
             });
-            // Only show action buttons if insurance is resolved or dealer does not show ace
-            if (isActive && handPlayable && state.phase === "PLAYER_TURN" && !canInsure && (!dealerShowsAce || allHandsResolvedInsurance)) {
+
+            // Find the first active hand
+            const firstActiveHandIndex = state.hands.findIndex(hand => !hand.standing && !hand.busted);
+            // Show action buttons for the first active hand after insurance is resolved for all hands
+            if (hand.index === firstActiveHandIndex && handPlayable && state.phase === "PLAYER_TURN" && !canInsure && dealerShowsAce && allHandsResolvedInsurance) {
+                const recommended = recommendedAction;
+                actionsHtml += `<div class="hand-actions">`
+                    + (showHit ? `<button data-action="hit" data-hand="${hand.index + 1}"${recommended === "hit" ? ' class="recommended"' : ''}>Hit</button>` : '')
+                    + (showStand ? `<button data-action="stand" data-hand="${hand.index + 1}"${recommended === "stand" ? ' class="recommended"' : ''}>Stand</button>` : '')
+                    + (showDouble ? `<button data-action="double" data-hand="${hand.index + 1}"${recommended === "double" ? ' class="recommended"' : ''}>Double</button>` : '')
+                    + (showSplit ? `<button data-action="split" data-hand="${hand.index + 1}"${recommended === "split" ? ' class="recommended"' : ''}>Split</button>` : '')
+                    + `</div>`;
+            }
+
+            // For other cases (not dealer ace), show actions as before
+            else if (isActive && handPlayable && state.phase === "PLAYER_TURN" && !canInsure && !dealerShowsAce) {
                 const recommended = recommendedAction;
                 actionsHtml += `<div class="hand-actions">`
                     + (showHit ? `<button data-action="hit" data-hand="${hand.index + 1}"${recommended === "hit" ? ' class="recommended"' : ''}>Hit</button>` : '')
@@ -717,6 +736,7 @@ const renderState = (state) => {
             return `<div class=\"row hand-row${isActive ? " active" : ""}${resultClass}\">\n                    <div class=\"row-title\">Hand ${hand.index + 1}</div>\n                    <div class=\"cards\">${renderCards(hand.cards)}</div>\n                    <div class=\"hand-meta\">\n                        <span class=\"hand-status\">${handStatus}</span>\n                        ${result}\n                        ${doubled}\n                        ${hint}\n                    </div>\n                    ${actionsHtml}\n                </div>`;
         })
         .join("");
+
     // After rendering hands, auto-open the hit/double/split modal if needed
     if (state.phase === "PLAYER_TURN" && state.hands && state.hands.length > 0) {
         const dealerCards = state.dealer?.cards || [];
@@ -1230,17 +1250,6 @@ if (hitCardConfirmBtn) {
 
         // Always close modal before async call
         closeHitCardModal();
-        // Fallback: after 1s, if modal is still open, log warning (should be rare)
-        if (hitModalFallbackTimeout) {
-            clearTimeout(hitModalFallbackTimeout);
-        }
-        hitModalFallbackTimeout = setTimeout(() => {
-            if (hitCardModal && hitCardModal.style.display !== "none") {
-                console.warn("[Auto-close fallback] Forcibly closing hitCardModal");
-                closeHitCardModal();
-            }
-            hitModalFallbackTimeout = null;
-        }, 1000);
 
         replaceGameStateNext = true;
         run(async () => {
@@ -1369,13 +1378,7 @@ if (doubleCardConfirmBtn) {
 
         closeDoubleCardModal();
 
-        // Fallback: forcibly close modal after 1s if still open
-        setTimeout(() => {
-            if (doubleCardModal && doubleCardModal.style.display !== "none") {
-                console.warn("[Auto-close fallback] Forcibly closing doubleCardModal");
-                closeDoubleCardModal();
-            }
-        }, 1000);
+        // Fallback forcibly close modal logic removed
 
         replaceGameStateNext = true;
         run(() => {
