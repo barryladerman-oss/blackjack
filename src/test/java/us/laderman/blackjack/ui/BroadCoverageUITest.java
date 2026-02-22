@@ -8,7 +8,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static us.laderman.blackjack.ui.TestConstants.ID_STAND_BTN;
 import static us.laderman.blackjack.ui.TestConstants.ID_START_BTN;
 import static us.laderman.blackjack.ui.TestConstants.ID_GAME_ID;
@@ -69,7 +68,7 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
 
         clickActionBtn(1, ID_STAND_BTN);
 
-        testComplete();
+        assert (testComplete());
     }
 
     @Test
@@ -81,10 +80,10 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
         setPlayerCard(1, 2, "SIX");
         clickBtn(ID_START_BTN);
 
-        clickModalBtn(ID_HIT_CONFIRM_BTN);
+        clickBtn(ID_HIT_CONFIRM_BTN);
         clickActionBtn(1, ID_STAND_BTN);
 
-        testComplete();
+        assert (testComplete());
     }
 
     @Test
@@ -98,12 +97,12 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
         setPlayerCard(2, 2, "NINE");
         clickBtn(ID_START_BTN);
 
-        clickModalBtn(ID_HIT_CONFIRM_BTN);
+        clickBtn(ID_HIT_CONFIRM_BTN);
 
         clickActionBtn(1, ID_STAND_BTN);
         clickActionBtn(2, ID_STAND_BTN);
 
-        testComplete();
+        assert (testComplete());
     }
 
     @Test
@@ -134,13 +133,13 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
         WebElement splitCardRank2 = driver.findElement(By.id("splitCard2Rank"));
         new Select(splitCardRank1).selectByValue("TEN");
         new Select(splitCardRank2).selectByValue("TEN");
-        clickModalBtn(ID_SPLIT_CONFIRM_BTN);
+        clickBtn(ID_SPLIT_CONFIRM_BTN);
 
         clickActionBtn(1, ID_STAND_BTN);
         clickActionBtn(2, ID_STAND_BTN);
         clickActionBtn(3, ID_STAND_BTN);
 
-        testComplete();
+        assert (testComplete());
     }
 
     @Test
@@ -152,7 +151,7 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
         setPlayerCard(1, 2, "SIX");
         clickBtn(ID_START_BTN);
 
-        clickModalBtn(ID_DOUBLE_CONFIRM_BTN);
+        clickBtn(ID_DOUBLE_CONFIRM_BTN);
 
         // no actions left after doubling, so verify game is complete
         testComplete();

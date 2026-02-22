@@ -490,14 +490,13 @@ public class BlackjackGame {
             Hand hand = playerHands.get(i);
             BlackjackService.HandCards cards = playerHandCards.get(i);
             if (cards != null && cards.card1 != null) {
-                // Use specific card for this hand
                 dealSpecificCard(hand, cards.card1);
             } else {
                 dealCard(hand);
             }
         }
 
-        // Deal first card to dealer
+        // Deal first card to dealer (up card)
         if (dealerCard1 != null) {
             dealSpecificCard(dealerHand, dealerCard1);
         } else {
@@ -509,18 +508,26 @@ public class BlackjackGame {
             Hand hand = playerHands.get(i);
             BlackjackService.HandCards cards = playerHandCards.get(i);
             if (cards != null && cards.card2 != null) {
-                // Use specific card for this hand
                 dealSpecificCard(hand, cards.card2);
             } else {
                 dealCard(hand);
             }
         }
 
-        // Deal second card to dealer
+        // Deal second card to dealer (hole card, hidden until round complete)
         if (dealerCard2 != null) {
             dealSpecificCard(dealerHand, dealerCard2);
         } else {
             dealCard(dealerHand);
+        }
+
+        // Check for dealer blackjack immediately after dealing
+        if (dealerHand.getCards().size() == 2) {
+            HandValue dealerValue = dealerHand.getValue();
+            if (dealerValue.getTotal() == 21) {
+                completeRound();
+                return;
+            }
         }
 
         // If dealer shows an ace, delay showing first hand action until all insurance

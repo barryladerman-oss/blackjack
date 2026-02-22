@@ -127,8 +127,18 @@ public abstract class BaseSeleniumTest {
             if (!modal.isDisplayed())
                 return;
 
-            WebElement cancelBtn = modal.findElement(By.cssSelector(
-                    "button[id*='cancel'],button[class*='cancel'],button[class*='close'],button[id*='close']"));
+            String css;
+            if (modalId.equals(ID_HIT_CARD_MODAL)) {
+                css = "hitCardCancelBtn";
+            } else if (modalId.equals(ID_DOUBLE_CARD_MODAL)) {
+                css = "doubleCardCancelBtn";
+            } else if (modalId.equals(ID_SPLIT_CARD_MODAL)) {
+                css = "splitCardCancelBtn";
+            } else {
+                return;
+            }
+            WebElement cancelBtn = modal.findElement(By.id(css));
+
             cancelBtn.click();
             wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(modalId)));
         };
@@ -137,16 +147,17 @@ public abstract class BaseSeleniumTest {
         closeModalById.accept(ID_DOUBLE_CARD_MODAL);
     }
 
-    public void testComplete() {
+    public boolean testComplete() {
         sleepFor(1000);
 
         WebElement phase = driver.findElement(By.id(ID_PHASE));
         if (phase.getText().contains("COMPLETE")) {
-            return;
+            return true;
         }
 
         wait.until(ExpectedConditions.stalenessOf(phase));
         assertThat(phase.getText()).contains("COMPLETE");
+        return true;
     }
 
     void clickActionBtn(int handIndex, String btnAction) {
