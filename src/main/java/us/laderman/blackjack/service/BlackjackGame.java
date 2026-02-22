@@ -94,6 +94,7 @@ public class BlackjackGame {
         if (hand.isStanding() || hand.isBusted()) {
             return toGameState();
         }
+
         // Check if insurance decisions are pending
         if (dealerHasAce() && !allHandsResolvedInsurance()) {
             throw new IllegalStateException("All hands must make an insurance decision first");
@@ -127,6 +128,7 @@ public class BlackjackGame {
     public GameState stand(int handIndex) {
         ensurePlayerTurn();
         Hand hand = getPlayerHand(handIndex);
+
         // Check if insurance decisions are pending
         if (dealerHasAce() && !allHandsResolvedInsurance()) {
             throw new IllegalStateException("All hands must make an insurance decision first");
@@ -151,10 +153,12 @@ public class BlackjackGame {
         if (hand.isStanding() || hand.isBusted()) {
             throw new IllegalStateException("Cannot double down on a completed hand");
         }
+
         // Check if insurance decisions are pending
         if (dealerHasAce() && !allHandsResolvedInsurance()) {
             throw new IllegalStateException("All hands must make an insurance decision first");
         }
+
         // Allow doubling on split hands, except split aces
         if (hand.isFromSplit() && hand.getSplitFromRank() == Rank.ACE) {
             throw new IllegalArgumentException("Cannot double on split aces");
@@ -162,6 +166,7 @@ public class BlackjackGame {
         if (hand.getCards().size() != 2) {
             throw new IllegalArgumentException("Double requires exactly two cards");
         }
+
         // Prevent double down on soft hands
         if (hand.getValue().isSoft()) {
             throw new IllegalArgumentException("Double down is not allowed on soft hands");
@@ -325,10 +330,12 @@ public class BlackjackGame {
         if (hand.isFromSplit()) {
             throw new IllegalArgumentException("Insurance not available for split hands");
         }
+
         // Insurance available only on first 2 cards
         if (hand.getCards().size() != 2) {
             throw new IllegalArgumentException("Insurance only available with exactly two cards");
         }
+
         // Dealer must be showing an Ace
         Card dealerUpCard = dealerHand.getCards().isEmpty() ? null : dealerHand.getCards().get(0);
         if (dealerUpCard == null || dealerUpCard.getRank() != Rank.ACE) {
@@ -336,10 +343,12 @@ public class BlackjackGame {
         }
         hand.setInsured(true);
         hand.setInsuranceDeclined(false);
+
         // Check if dealer has blackjack (21 with exactly 2 cards)
         HandValue dealerValue = dealerHand.getValue();
         if (dealerValue.getTotal() == 21 && dealerHand.getCards().size() == 2) {
             hand.setInsuranceWon(true);
+
             // If dealer has blackjack, check if all hands have resolved insurance
             if (allHandsResolvedInsurance()) {
                 completeRound();
@@ -363,16 +372,19 @@ public class BlackjackGame {
         if (hand.isFromSplit()) {
             throw new IllegalArgumentException("Insurance not available for split hands");
         }
+
         // Insurance available only on first 2 cards
         if (hand.getCards().size() != 2) {
             throw new IllegalArgumentException("Insurance decision only available with exactly two cards");
         }
+
         // Dealer must be showing an Ace
         Card dealerUpCard = dealerHand.getCards().isEmpty() ? null : dealerHand.getCards().get(0);
         if (dealerUpCard == null || dealerUpCard.getRank() != Rank.ACE) {
             throw new IllegalArgumentException("Insurance decision only available when dealer shows an Ace");
         }
         hand.setInsuranceDeclined(true);
+
         // If dealer has blackjack, end round once all hands have resolved insurance
         HandValue dealerValue = dealerHand.getValue();
         if (dealerValue.getTotal() == 21 && dealerHand.getCards().size() == 2) {

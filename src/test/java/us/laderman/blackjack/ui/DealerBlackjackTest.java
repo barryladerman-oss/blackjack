@@ -17,7 +17,7 @@ public class DealerBlackjackTest extends BaseSeleniumTest {
     @Test
     @DisplayName("Dealer up card ten, hole card ace triggers dealer blackjack and reveals both cards")
     void testDealerUpCardTenHoleCardAce() {
-        for (int i = 0; i < 26; i++) {
+        for (int i = 0; i < 50; i++) {
             setNumHands(1);
             setDealerUpCard("TEN", "HEARTS");
             setPlayerCard(1, 1, "EIGHT", "CLUBS");
