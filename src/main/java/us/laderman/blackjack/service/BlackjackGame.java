@@ -6,9 +6,11 @@ import us.laderman.blackjack.model.Hand;
 import us.laderman.blackjack.model.HandValue;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Shoe;
+import us.laderman.blackjack.odds.OddsCalculator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -649,6 +651,9 @@ public class BlackjackGame {
      * @return GameState object
      */
     private GameState toGameState() {
+        Map<String, Double> odds = getOdds(shoe, playerHands, getDealerUpCard(), 0);
+        System.out.println("DEBUG: Odds for current state: " + odds);
+
         HandValue dealerValue = dealerHand.getValue();
         int cardsRemaining = shoe.remaining();
         double decksRemaining = Math.max(0.25, (decksTotal * 52.0 - cardsDealt) / 52.0); // keep for trueCount
@@ -706,8 +711,8 @@ public class BlackjackGame {
             Hand hand = playerHands.get(i);
             HandValue value = hand.getValue();
             String result = resolveResult(hand, value.getTotal(), hand.isBusted(), dealerValue);
-            String recommended = recommendAction(i, hand, value, dealerUpCard, trueCount);
-            
+            String recommended = recommendAction(i, playerHands, value, dealerUpCard, trueCount);
+
             handStates.add(new GameState.PlayerHandState(
                     i,
                     hand.getCards(),
@@ -840,6 +845,31 @@ public class BlackjackGame {
         };
     }
 
+    private Map<String, Double> getOdds(Shoe shoe, List<Hand> playerHands, Card dealerUpCard, int handIndex) {
+        Shoe testShoe = new Shoe(shoe);
+        Hand playerHand = playerHands.get(handIndex);
+
+        if (dealerUpCard.getRank() == Rank.TEN ||
+                dealerUpCard.getRank() == Rank.JACK ||
+                dealerUpCard.getRank() == Rank.QUEEN ||
+                dealerUpCard.getRank() == Rank.KING) {
+            for (Card card : testShoe.getCards()) {
+                if (card.getRank() == Rank.ACE) {
+                    testShoe.removeSpecificCard(card);
+                }
+            }
+        }
+        if (dealerUpCard.getRank() == Rank.ACE) {
+            for (Card card : testShoe.getCards()) {
+                if (card.getRank() == Rank.TEN) {
+                    testShoe.removeSpecificCard(card);
+                }
+            }
+        }
+        Map<String, Double> odds = OddsCalculator.calculateOdds(testShoe, playerHand, dealerUpCard);
+        return odds;
+    }
+
     /**
      * Recommends the next action for a player hand based on basic and advanced
      * strategy.
@@ -851,7 +881,10 @@ public class BlackjackGame {
      * @param trueCount    Current true count
      * @return Recommended action string
      */
-    private String recommendAction(int handIndex, Hand hand, HandValue value, Card dealerUpCard, double trueCount) {
+    private String recommendAction(int handIndex, List<Hand> playerHands, HandValue value, Card dealerUpCard,
+            double trueCount) {
+        Hand hand = playerHands.get(handIndex);
+
         // Allow insurance recommendation for all eligible hands when dealer shows Ace
         boolean dealerShowsAce = phase == GamePhase.PLAYER_TURN && dealerUpCard != null
                 && dealerUpCard.getRank() == Rank.ACE;
@@ -877,15 +910,13 @@ public class BlackjackGame {
         if (phase != GamePhase.PLAYER_TURN || hand.isBusted() || hand.isStanding()) {
             return "NONE";
         }
-
         // Don't recommend actions on blackjack (natural 21 with 2 cards)
         if (!hand.isFromSplit() && hand.getCards().size() == 2 && value.getTotal() == 21) {
             return "NONE";
         }
 
-        int dealerUpValue = dealerUpCard == null ? 10 : dealerUpCard.getRank().getValue();
-
         // Get basic strategy recommendation
+        int dealerUpValue = dealerUpCard == null ? 10 : dealerUpCard.getRank().getValue();
         boolean allowSplit = !hand.isFromSplit() && hand.canSplit();
         String recommendation = Strategy.getRecommendedAction(hand, dealerUpValue, allowSplit);
 
@@ -912,7 +943,6 @@ public class BlackjackGame {
             }
             return fallback;
         }
-
         return recommendation;
     }
 

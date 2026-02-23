@@ -44,7 +44,7 @@ public class Shoe {
      * 
      * @return List of remaining Card objects
      */
-    public List<Card> getRemainingCards() {
+    public List<Card> getCards() {
         return new ArrayList<>(cards);
     }
 
