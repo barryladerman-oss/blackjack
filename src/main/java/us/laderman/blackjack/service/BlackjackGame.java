@@ -651,7 +651,7 @@ public class BlackjackGame {
      * @return GameState object
      */
     private GameState toGameState() {
-        Map<String, Double> odds = getOdds(shoe, playerHands, getDealerUpCard(), 0);
+        Map<String, Double> odds = getOdds(shoe, playerHands, 0, getDealerUpCard());
         System.out.println("DEBUG: Odds for current state: " + odds);
 
         HandValue dealerValue = dealerHand.getValue();
@@ -845,7 +845,7 @@ public class BlackjackGame {
         };
     }
 
-    private Map<String, Double> getOdds(Shoe shoe, List<Hand> playerHands, Card dealerUpCard, int handIndex) {
+    private Map<String, Double> getOdds(Shoe shoe, List<Hand> playerHands, int handIndex, Card dealerUpCard) {
         Shoe testShoe = new Shoe(shoe);
         Hand playerHand = playerHands.get(handIndex);
 
