@@ -2,11 +2,7 @@ package us.laderman.blackjack.ui;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static us.laderman.blackjack.ui.TestConstants.*;
 
 /**

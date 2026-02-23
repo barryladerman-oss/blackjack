@@ -1,7 +1,4 @@
-package us.laderman.blackjack.service;
-
-import us.laderman.blackjack.model.Card;
-import us.laderman.blackjack.model.Rank;
+package us.laderman.blackjack.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,6 +18,29 @@ public class Hand {
     private boolean isFromSplit = false;
     private Rank splitFromRank = null;
     private boolean canHitAfterSplitAces = true;
+
+    public Hand() {
+    }
+
+    /**
+     * Copy constructor for Hand. Performs a deep copy of the cards list and copies
+     * all fields.
+     * 
+     * @param other the Hand to copy
+     */
+    public Hand(Hand other) {
+        cards.addAll(other.cards); // Card is assumed to be immutable or safe to share
+
+        this.standing = other.standing;
+        this.busted = other.busted;
+        this.insured = other.insured;
+        this.insuranceWon = other.insuranceWon;
+        this.insuranceDeclined = other.insuranceDeclined;
+        this.betUnits = other.betUnits;
+        this.isFromSplit = other.isFromSplit;
+        this.splitFromRank = other.splitFromRank;
+        this.canHitAfterSplitAces = other.canHitAfterSplitAces;
+    }
 
     /**
      * Adds a card to the hand and updates bust status.

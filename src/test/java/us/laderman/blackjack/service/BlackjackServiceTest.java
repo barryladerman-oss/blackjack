@@ -133,14 +133,6 @@ class BlackjackServiceTest {
     }
 
     @Test
-    @DisplayName("should suggest a bet")
-    void testSuggestedBet() {
-        GameState state = service.startGame(1, new HashMap<>());
-
-        assertThat(state.getSuggestedBetUnits()).isGreaterThanOrEqualTo(1);
-    }
-
-    @Test
     @DisplayName("should provide game note")
     void testGameNote() {
         GameState state = service.startGame(1, new HashMap<>());

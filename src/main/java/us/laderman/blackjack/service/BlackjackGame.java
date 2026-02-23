@@ -2,7 +2,10 @@ package us.laderman.blackjack.service;
 
 import us.laderman.blackjack.model.Card;
 import us.laderman.blackjack.model.GameState;
+import us.laderman.blackjack.model.Hand;
+import us.laderman.blackjack.model.HandValue;
 import us.laderman.blackjack.model.Rank;
+import us.laderman.blackjack.model.Shoe;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -651,7 +654,6 @@ public class BlackjackGame {
         double decksRemaining = Math.max(0.25, (decksTotal * 52.0 - cardsDealt) / 52.0); // keep for trueCount
                                                                                          // calculation
         double trueCount = runningCount / decksRemaining;
-        int suggestedBet = suggestBetUnits(trueCount);
 
         // Calculate net units (sum of wins/losses weighted by bet units)
         double handResults = 0;
@@ -705,6 +707,7 @@ public class BlackjackGame {
             HandValue value = hand.getValue();
             String result = resolveResult(hand, value.getTotal(), hand.isBusted(), dealerValue);
             String recommended = recommendAction(i, hand, value, dealerUpCard, trueCount);
+            
             handStates.add(new GameState.PlayerHandState(
                     i,
                     hand.getCards(),
@@ -747,7 +750,6 @@ public class BlackjackGame {
                 cardsRemaining,
                 roundToTwo(netUnits),
                 roundToTwo(insuranceTotal),
-                suggestedBet,
                 note);
     }
 
@@ -912,20 +914,6 @@ public class BlackjackGame {
         }
 
         return recommendation;
-    }
-
-    /**
-     * Suggests the number of bet units based on the true count.
-     * 
-     * @param trueCount Current true count
-     * @return Suggested bet units
-     */
-    private int suggestBetUnits(double trueCount) {
-        if (trueCount <= 1.0) {
-            return 1;
-        }
-        int units = 1 + (int) Math.floor(trueCount - 1.0);
-        return Math.min(10, Math.max(1, units));
     }
 
     /**

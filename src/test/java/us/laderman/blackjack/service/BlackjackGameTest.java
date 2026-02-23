@@ -142,15 +142,6 @@ class BlackjackGameTest {
         }
 
         @Test
-        @DisplayName("should suggest betting based on count")
-        void testSuggestBetUnits() {
-                GameState state = game.getState();
-                int suggestedBet = state.getSuggestedBetUnits();
-
-                assertThat(suggestedBet).isGreaterThanOrEqualTo(1);
-        }
-
-        @Test
         @DisplayName("should provide game note")
         void testGameNote() {
                 GameState state = game.getState();

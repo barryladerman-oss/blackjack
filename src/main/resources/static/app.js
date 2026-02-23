@@ -30,7 +30,6 @@ const cardSelectionContainer = document.getElementById("cardSelectionContainer")
 
 const cardsDealtEl = document.getElementById("cardsDealt");
 const trueCountEl = document.getElementById("trueCount");
-const suggestedBetEl = document.getElementById("suggestedBet");
 const strategyTextEl = document.getElementById("strategyText");
 const noteTextEl = document.getElementById("noteText");
 const handsWonEl = document.getElementById("handsWon");
@@ -545,7 +544,6 @@ const renderState = (state) => {
         }
     }
     if (strategyTextEl) strategyTextEl.innerHTML = strategyText;
-    if (suggestedBetEl) suggestedBetEl.textContent = state.suggestedBetUnits ?? "-";
     if (noteTextEl) noteTextEl.textContent = state.note || "-";
 
     const results = Array.isArray(state.hands) ? state.hands : [];
@@ -915,7 +913,6 @@ if (startBtn) {
                 params.append(`playerHand${hand.hand}Card2Suit`, hand.card2.suit);
             }
         });
-        if (suggestedBetEl) suggestedBetEl.textContent = "-";
         if (cardsDealtEl) cardsDealtEl.textContent = "-";
         if (strategyTextEl) strategyTextEl.textContent = "-";
         if (noteTextEl) noteTextEl.textContent = "-";

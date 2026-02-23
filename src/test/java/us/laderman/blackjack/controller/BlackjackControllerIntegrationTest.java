@@ -261,7 +261,7 @@ class BlackjackControllerTest {
                         createMockPlayerHandState(0),
                         createMockPlayerHandState(1),
                         createMockPlayerHandState(2)),
-                0, 0, 52, 0, 0, 1, "Dealer up card 6");
+                0, 0, 52, 0, 0, "Dealer up card 6");
         when(mockService.startGame(eq(3), any())).thenReturn(mockState);
 
         // Act
@@ -306,20 +306,6 @@ class BlackjackControllerTest {
     }
 
     @Test
-    @DisplayName("should include betting suggestion in response")
-    void testBettingSuggestionInResponse() {
-        // Arrange
-        GameState mockState = createMockGameState();
-        when(mockService.getState(any(UUID.class))).thenReturn(mockState);
-
-        // Act
-        GameState result = controller.state(UUID.randomUUID().toString());
-
-        // Assert
-        assertThat(result.getSuggestedBetUnits()).isGreaterThanOrEqualTo(1);
-    }
-
-    @Test
     @DisplayName("should include strategy advice in response")
     void testStrategyAdviceInResponse() {
         // Arrange
@@ -350,7 +336,6 @@ class BlackjackControllerTest {
                 52,
                 0.0,
                 0.0,
-                1,
                 "New game");
     }
 

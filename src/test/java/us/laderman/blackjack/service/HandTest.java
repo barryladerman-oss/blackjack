@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
 import us.laderman.blackjack.model.Card;
+import us.laderman.blackjack.model.Hand;
+import us.laderman.blackjack.model.HandValue;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Suit;
 

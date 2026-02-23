@@ -1,5 +1,7 @@
 package us.laderman.blackjack.service;
 
+import us.laderman.blackjack.model.Hand;
+import us.laderman.blackjack.model.HandValue;
 import us.laderman.blackjack.model.Rank;
 
 /**

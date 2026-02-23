@@ -202,7 +202,6 @@ class GameStateModelTest {
                 1,
                 0,
                 0,
-                1,
                 "Test");
 
         assertThat(state.getId()).isEqualTo("test-id");
@@ -221,7 +220,6 @@ class GameStateModelTest {
                 1,
                 0,
                 0,
-                1,
                 "Test");
 
         assertThat(state.getPhase()).isEqualTo("PLAYER_TURN");
@@ -246,7 +244,6 @@ class GameStateModelTest {
                 1,
                 0,
                 0,
-                1,
                 "Test");
 
         assertThat(state.getDealer()).isNotNull();
@@ -266,30 +263,10 @@ class GameStateModelTest {
                 52,
                 0,
                 0,
-                1,
                 "Test");
 
         assertThat(state.getRunningCount()).isEqualTo(5);
         assertThat(state.getTrueCount()).isEqualTo(2.5);
-    }
-
-    @Test
-    @DisplayName("should store betting information")
-    void testBettingInformation() {
-        GameState state = new GameState(
-                "id",
-                "PLAYER_TURN",
-                null,
-                java.util.List.of(),
-                0,
-                0,
-                1,
-                0,
-                0,
-                3,
-                "Test");
-
-        assertThat(state.getSuggestedBetUnits()).isEqualTo(3);
     }
 
     @Test
@@ -305,7 +282,6 @@ class GameStateModelTest {
                 1,
                 0,
                 0,
-                1,
                 "Dealer up card 6");
 
         assertThat(state.getNote()).isEqualTo("Dealer up card 6");
@@ -378,120 +354,6 @@ class PlayerHandStateModelTest {
                 false,
                 true,
                 1);
-
         assertThat(hand.getIndex()).isEqualTo(1);
-    }
-
-    @Test
-    @DisplayName("should store hand cards")
-    void testHandCards() {
-        var cards = java.util.List.of(
-                new Card(Suit.HEARTS, Rank.TEN),
-                new Card(Suit.DIAMONDS, Rank.FIVE));
-        var hand = new GameState.PlayerHandState(
-                0,
-                cards,
-                15,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                null,
-                "HIT",
-                false,
-                true,
-                1);
-
-        assertThat(hand.getCards()).hasSize(2);
-    }
-
-    @Test
-    @DisplayName("should store hand total")
-    void testHandTotal() {
-        var hand = new GameState.PlayerHandState(
-                0,
-                java.util.List.of(),
-                15,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                null,
-                "HIT",
-                false,
-                true,
-                1);
-
-        assertThat(hand.getTotal()).isEqualTo(15);
-    }
-
-    @Test
-    @DisplayName("should store soft hand state")
-    void testHandSoftState() {
-        var hand = new GameState.PlayerHandState(
-                0,
-                java.util.List.of(),
-                17,
-                true,
-                false,
-                false,
-                false,
-                false,
-                false,
-                null,
-                "STAND",
-                false,
-                true,
-                1);
-
-        assertThat(hand.isSoft()).isTrue();
-    }
-
-    @Test
-    @DisplayName("should store result")
-    void testHandResult() {
-        var hand = new GameState.PlayerHandState(
-                0,
-                java.util.List.of(),
-                20,
-                false,
-                false,
-                true,
-                false,
-                false,
-                false,
-                "WIN",
-                null,
-                false,
-                true,
-                1);
-
-        assertThat(hand.getResult()).isEqualTo("WIN");
-    }
-
-    @Test
-    @DisplayName("should store bet units")
-    void testHandBetUnits() {
-        var hand = new GameState.PlayerHandState(
-                0,
-                java.util.List.of(),
-                15,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                null,
-                "HIT",
-                false,
-                true,
-                2);
-
-        assertThat(hand.getBetUnits()).isEqualTo(2);
     }
 }

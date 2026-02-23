@@ -1,8 +1,4 @@
-package us.laderman.blackjack.service;
-
-import us.laderman.blackjack.model.Card;
-import us.laderman.blackjack.model.Rank;
-import us.laderman.blackjack.model.Suit;
+package us.laderman.blackjack.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,6 +11,21 @@ import java.util.Random;
 public class Shoe {
     private final List<Card> cards;
     private final Random random = new Random();
+
+    public Shoe() {
+        this.cards = new ArrayList<>();
+    }
+
+    /**
+     * Copy constructor for Shoe.
+     * Creates a new Shoe with the same cards as the original.
+     * 
+     * @param original The Shoe to copy
+     */
+    public Shoe(Shoe other) {
+        this.cards = new ArrayList<>(other.cards.size());
+        this.cards.addAll(other.cards);
+    }
 
     public Shoe(int decks) {
         this.cards = new ArrayList<>(decks * 52);
@@ -29,6 +40,15 @@ public class Shoe {
     }
 
     /**
+     * Returns a copy of the remaining cards in the shoe.
+     * 
+     * @return List of remaining Card objects
+     */
+    public List<Card> getRemainingCards() {
+        return new ArrayList<>(cards);
+    }
+
+    /**
      * Draws a card from the shoe.
      * 
      * @return the drawn card
@@ -39,6 +59,15 @@ public class Shoe {
             throw new IllegalStateException("Shoe is empty");
         }
         return cards.remove(cards.size() - 1);
+    }
+
+    /**
+     * Removes a specific card from the shoe.
+     * 
+     * @param targetCard the card to add
+     */
+    public void addSpecificCard(Card targetCard) {
+        cards.add(targetCard);
     }
 
     /**

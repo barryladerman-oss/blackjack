@@ -42,11 +42,11 @@ public class GameStateDeserializer extends JsonDeserializer<GameState> {
         int cardsRemaining = node.has("cardsRemaining") ? node.get("cardsRemaining").asInt() : 0;
         double netUnits = node.has("netUnits") ? node.get("netUnits").asDouble() : 0.0;
         double insuranceTotal = node.has("insuranceTotal") ? node.get("insuranceTotal").asDouble() : 0.0;
-        int suggestedBetUnits = node.has("suggestedBetUnits") ? node.get("suggestedBetUnits").asInt() : 0;
+        // suggestedBetUnits removed
         String note = node.has("note") ? node.get("note").asText() : "";
 
         return new GameState(id, phase, dealer, hands, runningCount, trueCount,
-                cardsRemaining, netUnits, insuranceTotal, suggestedBetUnits, note);
+                cardsRemaining, netUnits, insuranceTotal, note);
     }
 
     private GameState.DealerState deserializeDealerState(JsonNode node, DeserializationContext ctxt)

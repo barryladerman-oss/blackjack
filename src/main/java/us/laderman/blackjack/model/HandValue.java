@@ -1,4 +1,4 @@
-package us.laderman.blackjack.service;
+package us.laderman.blackjack.model;
 
 /**
  * Represents the value of a Blackjack hand, including soft/hard values and bust
@@ -33,11 +33,6 @@ public class HandValue {
         return total;
     }
 
-    /**
-     * Returns whether the hand is soft (contains an ace counted as 11).
-     * 
-     * @return True if the hand is soft
-     */
     /**
      * Returns whether the hand is soft (contains an ace counted as 11).
      * 

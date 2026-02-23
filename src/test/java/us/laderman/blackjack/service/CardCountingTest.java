@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
 import us.laderman.blackjack.model.Card;
+import us.laderman.blackjack.model.Hand;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Suit;
 
@@ -77,28 +78,6 @@ class CardCountingTest {
 
         assertThat(state.getTrueCount()).isNotNaN();
         assertThat(state.getCardsRemaining()).isGreaterThan(0);
-    }
-
-    @Test
-    @DisplayName("should favor increased bet on high true count")
-    void testBettingSuggestionHighCount() {
-        // Create a game and test betting logic
-        BlackjackGame game = new BlackjackGame(1, 1);
-        var state = game.getState();
-
-        // Suggested bet should be based on true count
-        assertThat(state.getSuggestedBetUnits()).isGreaterThanOrEqualTo(1);
-    }
-
-    @Test
-    @DisplayName("should reduce bet on negative true count")
-    void testBettingSuggestionLowCount() {
-        // On negative count, should suggest minimum bet
-        BlackjackGame game = new BlackjackGame(1, 1);
-        var state = game.getState();
-
-        // Even with low count, should suggest at least 1 unit
-        assertThat(state.getSuggestedBetUnits()).isGreaterThanOrEqualTo(1);
     }
 
     @Test

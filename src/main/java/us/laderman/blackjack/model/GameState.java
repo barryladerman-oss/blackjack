@@ -16,7 +16,6 @@ public class GameState {
     private final int cardsRemaining;
     private final double netUnits;
     private final double insuranceTotal;
-    private final int suggestedBetUnits;
     private final String note;
 
     public GameState(String id,
@@ -28,7 +27,6 @@ public class GameState {
             int cardsRemaining,
             double netUnits,
             double insuranceTotal,
-            int suggestedBetUnits,
             String note) {
         this.id = id;
         this.phase = phase;
@@ -39,7 +37,6 @@ public class GameState {
         this.cardsRemaining = cardsRemaining;
         this.netUnits = netUnits;
         this.insuranceTotal = insuranceTotal;
-        this.suggestedBetUnits = suggestedBetUnits;
         this.note = note;
     }
 
@@ -122,15 +119,6 @@ public class GameState {
      */
     public double getInsuranceTotal() {
         return insuranceTotal;
-    }
-
-    /**
-     * Gets the suggested bet units for the next round.
-     * 
-     * @return suggested bet units
-     */
-    public int getSuggestedBetUnits() {
-        return suggestedBetUnits;
     }
 
     /**
@@ -351,7 +339,6 @@ public class GameState {
                 ", cardsRemaining=" + cardsRemaining +
                 ", netUnits=" + netUnits +
                 ", insuranceTotal=" + insuranceTotal +
-                ", suggestedBetUnits=" + suggestedBetUnits +
                 ", note='" + note + '\'' +
                 '}';
     }
