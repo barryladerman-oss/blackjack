@@ -68,6 +68,10 @@ public class Hand {
         return Collections.unmodifiableList(cards);
     }
 
+    public boolean isBlackjack() {
+        return cards.size() == 2 && getValue().getTotal() == 21;
+    }
+
     /**
      * Checks if the hand is standing.
      * 

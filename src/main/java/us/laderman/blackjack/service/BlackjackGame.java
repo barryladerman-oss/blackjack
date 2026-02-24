@@ -54,6 +54,7 @@ public class BlackjackGame {
         this.id = UUID.randomUUID();
         this.decksTotal = decks;
         this.shoe = new Shoe(decks);
+        this.runningCount = 0;
 
         // Remove specific cards from shoe before dealing
         for (BlackjackService.HandCards hc : playerHandCards.values()) {
@@ -75,6 +76,15 @@ public class BlackjackGame {
             playerHands.add(new Hand());
         }
         dealInitial(playerHandCards, dealerCard1, dealerCard2);
+        // Recalculate running count for all cards already dealt
+        for (Hand hand : playerHands) {
+            for (Card card : hand.getCards()) {
+                updateCount(card);
+            }
+        }
+        for (Card card : dealerHand.getCards()) {
+            updateCount(card);
+        }
         autoStandBlackjacks();
     }
 
@@ -326,9 +336,7 @@ public class BlackjackGame {
         hand.setInsured(true);
         hand.setInsuranceDeclined(false);
 
-        // Check if dealer has blackjack (21 with exactly 2 cards)
-        HandValue dealerValue = dealerHand.getValue();
-        if (dealerValue.getTotal() == 21 && dealerHand.getCards().size() == 2) {
+        if (dealerHand.isBlackjack()) {
             hand.setInsuranceWon(true);
 
             // If dealer has blackjack, check if all hands have resolved insurance
@@ -367,9 +375,7 @@ public class BlackjackGame {
         }
         hand.setInsuranceDeclined(true);
 
-        // If dealer has blackjack, end round once all hands have resolved insurance
-        HandValue dealerValue = dealerHand.getValue();
-        if (dealerValue.getTotal() == 21 && dealerHand.getCards().size() == 2) {
+        if (dealerHand.isBlackjack()) {
             if (allHandsResolvedInsurance()) {
                 completeRound();
             }
@@ -397,8 +403,7 @@ public class BlackjackGame {
         // 1. The hand is not playable (busted, standing, blackjack)
         // 2. The hand has been offered insurance and either took it or ignored it
         // 3. The hand was created by a split (split hands are not offered insurance)
-        HandValue dealerValue = dealerHand.getValue();
-        if (dealerValue.getTotal() != 21 || dealerHand.getCards().size() != 2) {
+        if (!dealerHand.isBlackjack()) {
             return true; // Dealer doesn't have blackjack, insurance not applicable
         }
 
@@ -516,12 +521,9 @@ public class BlackjackGame {
         }
 
         // Check for dealer blackjack immediately after dealing
-        if (dealerHand.getCards().size() == 2) {
-            HandValue dealerValue = dealerHand.getValue();
-            if (dealerValue.getTotal() == 21) {
-                completeRound();
-                return;
-            }
+        if (dealerHand.isBlackjack()) {
+            completeRound();
+            return;
         }
 
         // If dealer shows an ace, delay showing first hand action until all insurance
@@ -551,7 +553,7 @@ public class BlackjackGame {
      */
     private void autoStandBlackjacks() {
         for (Hand hand : playerHands) {
-            if (hand.getCards().size() == 2 && hand.getValue().getTotal() == 21) {
+            if (hand.isBlackjack()) {
                 hand.setStanding(true);
             }
         }
@@ -605,9 +607,8 @@ public class BlackjackGame {
         phase = GamePhase.DEALER_TURN;
         while (true) {
             HandValue value = dealerHand.getValue();
-            // Dealer hits on soft 17 (has an ace counting as 11)
-            boolean isSoft17 = value.isSoft() && value.getTotal() == 17;
-            if (value.getTotal() < 17 || isSoft17) {
+            // Dealer stands on soft 17
+            if (value.getTotal() < 17) {
                 dealCard(dealerHand);
                 continue;
             }
@@ -813,31 +814,6 @@ public class BlackjackGame {
         };
     }
 
-    private Odds getOdds(Shoe shoe, List<Hand> playerHands, int handIndex, Card dealerUpCard) {
-        Shoe testShoe = new Shoe(shoe);
-        Hand playerHand = playerHands.get(handIndex);
-
-        if (dealerUpCard.getRank() == Rank.TEN ||
-                dealerUpCard.getRank() == Rank.JACK ||
-                dealerUpCard.getRank() == Rank.QUEEN ||
-                dealerUpCard.getRank() == Rank.KING) {
-            for (Card card : testShoe.getCards()) {
-                if (card.getRank() == Rank.ACE) {
-                    testShoe.removeSpecificCard(card);
-                }
-            }
-        }
-        if (dealerUpCard.getRank() == Rank.ACE) {
-            for (Card card : testShoe.getCards()) {
-                if (card.getRank() == Rank.TEN) {
-                    testShoe.removeSpecificCard(card);
-                }
-            }
-        }
-        Odds odds = OddsCalculator.calculateOdds(testShoe, playerHand, dealerUpCard);
-        return odds;
-    }
-
     /**
      * Recommends the next action for a player hand based on basic and advanced
      * strategy.
@@ -879,12 +855,12 @@ public class BlackjackGame {
             return "NONE";
         }
         // Don't recommend actions on blackjack (natural 21 with 2 cards)
-        if (!hand.isFromSplit() && hand.getCards().size() == 2 && value.getTotal() == 21) {
+        if (!hand.isFromSplit() && hand.isBlackjack()) {
             return "NONE";
         }
 
-        if (shoe.getCards().size() < 52) {
-            Odds odds = getOdds(shoe, playerHands, handIndex, getDealerUpCard());
+        if (shoe.getCards().size() < 2) {
+            Odds odds = OddsCalculator.calculateOdds(shoe, hand, getDealerUpCard());
             System.out.println("ODDS ----- Odds for current state: " + odds);
         }
 

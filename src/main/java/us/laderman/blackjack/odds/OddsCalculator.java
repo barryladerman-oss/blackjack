@@ -6,9 +6,32 @@ import java.util.*;
 /**
  * Utility to calculate the odds of a player hand winning against a dealer up
  * card.
- * This routine simulates all possible outcomes recursively.
  */
 public class OddsCalculator {
+
+    public Odds getOdds(Shoe shoe, Hand playerHand, Card dealerUpCard) {
+        Shoe testShoe = new Shoe(shoe);
+
+        if (dealerUpCard.getRank() == Rank.TEN ||
+                dealerUpCard.getRank() == Rank.JACK ||
+                dealerUpCard.getRank() == Rank.QUEEN ||
+                dealerUpCard.getRank() == Rank.KING) {
+            for (Card card : testShoe.getCards()) {
+                if (card.getRank() == Rank.ACE) {
+                    testShoe.removeSpecificCard(card);
+                }
+            }
+        }
+        if (dealerUpCard.getRank() == Rank.ACE) {
+            for (Card card : testShoe.getCards()) {
+                if (card.getRank() == Rank.TEN) {
+                    testShoe.removeSpecificCard(card);
+                }
+            }
+        }
+        Odds odds = calculateOdds(testShoe, playerHand, dealerUpCard);
+        return odds;
+    }
 
     /**
      * Calculates the probability of the player hand winning, pushing, or losing
@@ -23,18 +46,19 @@ public class OddsCalculator {
         Odds result = new Odds();
 
         Map<Integer, Odds> cache = new HashMap<>();
-        Shoe copyShoe = new Shoe(shoe);
 
-        // do once for each rank and cache
-        {
+        for (Card card : shoe.getCards()) {
+            Shoe copyShoe = new Shoe(shoe);
+            copyShoe.removeSpecificCard(card);
+
             Hand dealerHand = new Hand();
             dealerHand.addCard(dealerUpCard);
 
-            Card dealerHoleCard = copyShoe.draw();
+            Card dealerHoleCard = card;
             dealerHand.addCard(dealerHoleCard);
 
             if (!cache.containsKey(dealerHoleCard.getRank().getValue())) {
-                Odds simulatedOdds = simulateDealer(dealerHand.getCards(), copyShoe, false);
+                Odds simulatedOdds = simulateDealer(copyShoe, dealerHand, playerHand);
                 cache.put(dealerHoleCard.getRank().getValue(), simulatedOdds);
             }
             result.combine(cache.get(dealerHoleCard.getRank().getValue()));
@@ -43,11 +67,38 @@ public class OddsCalculator {
     }
 
     // Recursively simulate all possible dealer outcomes
-    private static Odds simulateDealer(List<Card> dealerCards, Shoe shoe,
-            boolean playerBlackjack) {
+    private static Odds simulateDealer(Shoe shoe, Hand dealerHand, Hand playerHand) {
         Odds result = new Odds();
-        result.setSimTotal(1);
-        result.setSimWin(1);
+
+        // Dealer stands if total >= 17 (does NOT hit on soft 17)
+        if (dealerHand.getValue().getTotal() < 17) {
+            // Dealer must hit: try every possible card
+            for (Card shoeCard : shoe.getCards()) {
+                Shoe nextShoe = new Shoe(shoe);
+                nextShoe.removeSpecificCard(shoeCard);
+
+                Hand nextHand = new Hand(dealerHand);
+                nextHand.addCard(shoeCard);
+
+                Odds branchOdds = simulateDealer(nextShoe, nextHand, playerHand);
+                result.combine(branchOdds);
+            }
+            return result;
+        }
+
+        // Dealer stands: resolve outcome
+        result.setSimTotal(result.getSimTotal() + 1);
+        if (playerHand.isBusted()) {
+            result.setSimLose(result.getSimLose() + 1);
+        } else if (dealerHand.isBusted()) {
+            result.setSimWin(result.getSimWin() + 1);
+        } else if (playerHand.getValue().getTotal() > dealerHand.getValue().getTotal()) {
+            result.setSimWin(result.getSimWin() + 1);
+        } else if (playerHand.getValue().getTotal() < dealerHand.getValue().getTotal()) {
+            result.setSimLose(result.getSimLose() + 1);
+        } else {
+            result.setSimPush(result.getSimPush() + 1);
+        }
         return result;
     }
 }

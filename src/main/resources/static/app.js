@@ -29,7 +29,6 @@ const dealerMeta = document.getElementById("dealerMeta");
 const cardSelectionContainer = document.getElementById("cardSelectionContainer");
 
 const cardsDealtEl = document.getElementById("cardsDealt");
-const trueCountEl = document.getElementById("trueCount");
 const strategyTextEl = document.getElementById("strategyText");
 const noteTextEl = document.getElementById("noteText");
 const handsWonEl = document.getElementById("handsWon");
@@ -39,6 +38,13 @@ const netUnitsEl = document.getElementById("netUnits");
 const doublesWonEl = document.getElementById("doublesWon");
 const doublesLostEl = document.getElementById("doublesLost");
 const insuranceTotalEl = document.getElementById("insuranceTotal");
+
+const gameIdEl = document.getElementById("gameId");
+const phaseEl = document.getElementById("phase");
+const dealerUpcardEl = document.getElementById("dealerUpcard");
+const runningCountEl = document.getElementById("runningCount");
+const trueCountEl = document.getElementById("trueCount");
+const cardsRemainingEl = document.getElementById("cardsRemaining");
 
 let skipAutoModal = false;
 let isBusy = false;
@@ -361,46 +367,18 @@ const updateDropdownFilters = () => {
 };
 
 const updateGameInfoDisplay = (state) => {
-    // Update game info display elements with proper IDs for UI tests
-    const gameIdEl = document.getElementById("gameId");
-    const phaseEl = document.getElementById("phase");
-    const dealerUpcardEl = document.getElementById("dealerUpcard");
-    const runningCountEl = document.getElementById("runningCount");
-    const trueCountEl = document.getElementById("trueCount");
-    const cardsRemainingEl = document.getElementById("cardsRemaining");
-    const showCounts = state && state.phase && state.phase !== "PLAYER_TURN";
-
-    // Update game ID
-    if (gameIdEl) {
-        gameIdEl.textContent = state?.id || state?.gameId;
-    }
-
-    // Update phase
-    if (phaseEl) {
-        phaseEl.textContent = state.phase || '-';
-    }
-
-    // Update dealer upcard
-    if (dealerUpcardEl) {
-        dealerUpcardEl.textContent = "-";
-    }
-
-    // Update running count
-    if (runningCountEl) {
-        runningCountEl.textContent = showCounts && typeof state.runningCount === "number" && state.runningCount >= 0
-            ? state.runningCount
-            : "-";
-    }
-    if (trueCountEl) {
-        trueCountEl.textContent = showCounts && typeof state.trueCount === "number" && state.trueCount >= 0
-            ? state.trueCount.toFixed(2)
-            : "-";
-    }
-    if (cardsRemainingEl) {
-        cardsRemainingEl.textContent = typeof state.cardsRemaining === "number"
-            ? state.cardsRemaining
-            : "-";
-    }
+    gameIdEl.textContent = state?.id || state?.gameId;
+    phaseEl.textContent = state.phase || '-';
+    dealerUpcardEl.textContent = "-";
+    runningCountEl.textContent = typeof state.runningCount === "number" && state.runningCount >= 0
+        ? state.runningCount
+        : "-";
+    trueCountEl.textContent = typeof state.trueCount === "number" && state.trueCount >= 0
+        ? state.trueCount.toFixed(2)
+        : "-";
+    cardsRemainingEl.textContent = typeof state.cardsRemaining === "number"
+        ? state.cardsRemaining
+        : "-";
 };
 
 const getCardRankValue = (card) => {
