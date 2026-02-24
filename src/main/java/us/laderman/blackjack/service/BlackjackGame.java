@@ -3,7 +3,6 @@ package us.laderman.blackjack.service;
 import us.laderman.blackjack.model.Card;
 import us.laderman.blackjack.model.GameState;
 import us.laderman.blackjack.model.Hand;
-import us.laderman.blackjack.model.HandValue;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Shoe;
 import us.laderman.blackjack.odds.OddsCalculator;
@@ -16,7 +15,6 @@ import java.util.UUID;
 
 /**
  * Core logic for managing a Blackjack game session.
- * Manages the state and logic of a single Blackjack game instance.
  * Handles player actions, dealer logic, and game state transitions.
  */
 
@@ -32,9 +30,9 @@ public class BlackjackGame {
 
     /**
      * Constructs a new BlackjackGame with the specified number of hands and decks.
-     * 
-     * @param hands Number of player hands
-     * @param decks Number of decks in the shoe
+     *
+     * @param hands the number of player hands
+     * @param decks the number of decks in the shoe
      */
     public BlackjackGame(int hands, int decks) {
         this(hands, decks, new java.util.HashMap<>(), null, null);
@@ -42,12 +40,12 @@ public class BlackjackGame {
 
     /**
      * Constructs a new BlackjackGame with specific cards for players and dealer.
-     * 
-     * @param hands           Number of player hands
-     * @param decks           Number of decks in the shoe
-     * @param playerHandCards Map of hand index to specific cards
-     * @param dealerCard1     Dealer's first card
-     * @param dealerCard2     Dealer's second card
+     *
+     * @param hands           the number of player hands
+     * @param decks           the number of decks in the shoe
+     * @param playerHandCards map of hand index to specific cards
+     * @param dealerCard1     dealer's first card
+     * @param dealerCard2     dealer's second card
      */
     public BlackjackGame(int hands, int decks, java.util.Map<Integer, BlackjackService.HandCards> playerHandCards,
             Card dealerCard1, Card dealerCard2) {
@@ -89,9 +87,9 @@ public class BlackjackGame {
     }
 
     /**
-     * Returns the unique game ID.
-     * 
-     * @return UUID of the game
+     * Returns the unique game ID for this session.
+     *
+     * @return the UUID of the game
      */
     public UUID getId() {
         return id;
@@ -99,10 +97,10 @@ public class BlackjackGame {
 
     /**
      * Performs a hit action for the specified hand.
-     * 
-     * @param handIndex    Index of the hand to hit
-     * @param selectedCard Specific card to deal, or null for random
-     * @return Updated game state
+     *
+     * @param handIndex    the index of the hand to hit
+     * @param selectedCard the specific card to deal, or null for random
+     * @return the updated game state
      */
     public GameState hit(int handIndex, Card selectedCard) {
         ensurePlayerTurn();
@@ -128,7 +126,7 @@ public class BlackjackGame {
         } else {
             dealCard(hand);
         }
-        if (hand.isBusted() || hand.getValue().getTotal() == 21) {
+        if (hand.isBusted() || hand.getValue() == 21) {
             hand.setStanding(true);
         }
         finishIfReady();
@@ -137,9 +135,9 @@ public class BlackjackGame {
 
     /**
      * Performs a stand action for the specified hand.
-     * 
-     * @param handIndex Index of the hand to stand
-     * @return Updated game state
+     *
+     * @param handIndex the index of the hand to stand
+     * @return the updated game state
      */
     public GameState stand(int handIndex) {
         ensurePlayerTurn();
@@ -156,10 +154,10 @@ public class BlackjackGame {
 
     /**
      * Performs a double down action for the specified hand.
-     * 
-     * @param handIndex    Index of the hand to double down
-     * @param selectedCard Specific card to deal, or null for random
-     * @return Updated game state
+     *
+     * @param handIndex    the index of the hand to double down
+     * @param selectedCard the specific card to deal, or null for random
+     * @return the updated game state
      */
     public GameState doubleDown(int handIndex, Card selectedCard) {
         if (phase != GamePhase.PLAYER_TURN) {
@@ -184,7 +182,7 @@ public class BlackjackGame {
         }
 
         // Prevent double down on soft hands
-        if (hand.getValue().isSoft()) {
+        if (hand.isSoft()) {
             throw new IllegalArgumentException("Double down is not allowed on soft hands");
         }
         hand.setBetUnits(2);
@@ -203,11 +201,11 @@ public class BlackjackGame {
 
     /**
      * Splits the specified hand, dealing specific cards to each new hand.
-     * 
-     * @param handIndex Index of the hand to split
-     * @param card1     Card for original hand
-     * @param card2     Card for new hand
-     * @return Updated game state
+     *
+     * @param handIndex the index of the hand to split
+     * @param card1     card for original hand
+     * @param card2     card for new hand
+     * @return the updated game state
      */
     public GameState split(int handIndex, Card card1, Card card2) {
         return split(handIndex, card1, card2, null, null);
@@ -216,13 +214,13 @@ public class BlackjackGame {
     /**
      * Splits the specified hand, optionally dealing specific ranks to each new
      * hand.
-     * 
-     * @param handIndex Index of the hand to split
-     * @param card1     Card for original hand
-     * @param card2     Card for new hand
-     * @param rank1     Rank for original hand
-     * @param rank2     Rank for new hand
-     * @return Updated game state
+     *
+     * @param handIndex the index of the hand to split
+     * @param card1     card for original hand
+     * @param card2     card for new hand
+     * @param rank1     rank for original hand
+     * @param rank2     rank for new hand
+     * @return the updated game state
      */
     public GameState split(int handIndex, Card card1, Card card2, Rank rank1, Rank rank2) {
         ensurePlayerTurn();
@@ -309,9 +307,9 @@ public class BlackjackGame {
 
     /**
      * Offers insurance to the specified hand.
-     * 
-     * @param handIndex Index of the hand
-     * @return Updated game state
+     *
+     * @param handIndex the index of the hand
+     * @return the updated game state
      */
     public GameState insurance(int handIndex) {
         ensurePlayerTurn();
@@ -349,9 +347,9 @@ public class BlackjackGame {
 
     /**
      * Declines insurance for the specified hand.
-     * 
-     * @param handIndex Index of the hand
-     * @return Updated game state
+     *
+     * @param handIndex the index of the hand
+     * @return the updated game state
      */
     public GameState declineInsurance(int handIndex) {
         ensurePlayerTurn();
@@ -385,8 +383,8 @@ public class BlackjackGame {
 
     /**
      * Returns the current game state.
-     * 
-     * @return GameState object
+     *
+     * @return the current GameState object
      */
     public GameState getState() {
         return toGameState();
@@ -394,7 +392,7 @@ public class BlackjackGame {
 
     /**
      * Checks if all hands have resolved insurance decisions.
-     * 
+     *
      * @return true if all hands resolved insurance
      */
     private boolean allHandsResolvedInsurance() {
@@ -434,7 +432,7 @@ public class BlackjackGame {
 
     /**
      * Checks if the dealer's up card is an Ace.
-     * 
+     *
      * @return true if dealer has Ace
      */
     private boolean dealerHasAce() {
@@ -444,7 +442,7 @@ public class BlackjackGame {
 
     /**
      * Ensures the current phase is PLAYER_TURN.
-     * Throws exception if not.
+     * Throws IllegalStateException if not.
      */
     private void ensurePlayerTurn() {
         if (phase != GamePhase.PLAYER_TURN) {
@@ -454,9 +452,9 @@ public class BlackjackGame {
 
     /**
      * Returns the player hand at the specified index.
-     * 
-     * @param index Hand index
-     * @return Hand object
+     *
+     * @param index the hand index
+     * @return the Hand object
      */
     private Hand getPlayerHand(int index) {
         if (index < 0 || index >= playerHands.size()) {
@@ -467,8 +465,8 @@ public class BlackjackGame {
 
     /**
      * Returns the dealer's up card.
-     * 
-     * @return Dealer's up card, or null if none
+     *
+     * @return the dealer's up card, or null if none
      */
     private Card getDealerUpCard() {
         List<Card> cards = dealerHand.getCards();
@@ -477,10 +475,10 @@ public class BlackjackGame {
 
     /**
      * Deals initial cards to all player hands and dealer.
-     * 
-     * @param playerHandCards Map of hand index to specific cards
-     * @param dealerCard1     Dealer's first card
-     * @param dealerCard2     Dealer's second card
+     *
+     * @param playerHandCards map of hand index to specific cards
+     * @param dealerCard1     dealer's first card
+     * @param dealerCard2     dealer's second card
      */
     private void dealInitial(java.util.Map<Integer, BlackjackService.HandCards> playerHandCards, Card dealerCard1,
             Card dealerCard2) {
@@ -538,9 +536,9 @@ public class BlackjackGame {
 
     /**
      * Deals a specific card to the given hand and updates count.
-     * 
-     * @param hand Target hand
-     * @param card Card to deal
+     *
+     * @param hand the target hand
+     * @param card the card to deal
      */
     private void dealSpecificCard(Hand hand, Card card) {
         cardsDealt++;
@@ -562,8 +560,8 @@ public class BlackjackGame {
 
     /**
      * Deals a random card to the given hand and updates count.
-     * 
-     * @param hand Target hand
+     *
+     * @param hand the target hand
      */
     private void dealCard(Hand hand) {
         Card card = shoe.draw();
@@ -574,8 +572,8 @@ public class BlackjackGame {
 
     /**
      * Updates the running count based on the card dealt.
-     * 
-     * @param card Card dealt
+     *
+     * @param card the card dealt
      */
     private void updateCount(Card card) {
         Rank rank = card.getRank();
@@ -606,9 +604,8 @@ public class BlackjackGame {
     private void playDealer() {
         phase = GamePhase.DEALER_TURN;
         while (true) {
-            HandValue value = dealerHand.getValue();
             // Dealer stands on soft 17
-            if (value.getTotal() < 17) {
+            if (dealerHand.getValue() < 17) {
                 dealCard(dealerHand);
                 continue;
             }
@@ -619,11 +616,10 @@ public class BlackjackGame {
 
     /**
      * Converts the current game state to a GameState object for UI/API.
-     * 
-     * @return GameState object
+     *
+     * @return the GameState object
      */
     private GameState toGameState() {
-        HandValue dealerValue = dealerHand.getValue();
         int cardsRemaining = shoe.remaining();
         double decksRemaining = Math.max(0.25, (decksTotal * 52.0 - cardsDealt) / 52.0); // keep for trueCount
                                                                                          // calculation
@@ -633,7 +629,7 @@ public class BlackjackGame {
         double handResults = 0;
         double insuranceTotal = 0;
         for (Hand hand : playerHands) {
-            double resultValue = getResultValue(hand, hand.getValue().getTotal(), hand.isBusted(), dealerValue);
+            double resultValue = getResultValue(hand, dealerHand);
             handResults += resultValue * hand.getBetUnits();
             // Insurance handling: costs 0.5 units per bet unit, pays 2:1 if dealer has
             // blackjack
@@ -660,11 +656,11 @@ public class BlackjackGame {
         // Only show dealer's actual total when round is complete; show up card value
         // only during player turn
         int displayDealerTotal = (phase == GamePhase.COMPLETE || phase == GamePhase.DEALER_TURN)
-                ? dealerValue.getTotal()
+                ? dealerHand.getValue()
                 : (dealerCards.isEmpty() ? 0 : dealerCards.get(0).getRank().getValue());
 
         boolean displayDealerSoft = (phase == GamePhase.COMPLETE || phase == GamePhase.DEALER_TURN)
-                ? dealerValue.isSoft()
+                ? dealerHand.isSoft()
                 : false;
 
         GameState.DealerState dealerState = new GameState.DealerState(
@@ -678,15 +674,14 @@ public class BlackjackGame {
         Card dealerUpCard = dealerHand.getCards().isEmpty() ? null : dealerHand.getCards().get(0);
         for (int i = 0; i < playerHands.size(); i++) {
             Hand hand = playerHands.get(i);
-            HandValue value = hand.getValue();
-            String result = resolveResult(hand, value.getTotal(), hand.isBusted(), dealerValue);
-            String recommended = recommendAction(i, playerHands, value, dealerUpCard, trueCount);
+            String result = resolveResult(hand, dealerHand);
+            String recommended = recommendAction(hand, dealerUpCard, i, trueCount);
 
             handStates.add(new GameState.PlayerHandState(
                     i,
                     hand.getCards(),
-                    value.getTotal(),
-                    value.isSoft(),
+                    hand.getValue(),
+                    hand.isSoft(),
                     hand.isBusted(),
                     hand.isStanding(),
                     hand.isInsured(),
@@ -729,22 +724,20 @@ public class BlackjackGame {
 
     /**
      * Resolves the result for a player hand.
-     * 
-     * @param hand         Player hand
-     * @param playerTotal  Player's total value
-     * @param playerBusted Whether player busted
-     * @param dealerValue  Dealer's hand value
-     * @return Result string (WIN, LOSE, PUSH, IN_PROGRESS)
+     *
+     * @param hand       the player hand
+     * @param dealerHand the dealer's hand
+     * @return result string (WIN, LOSE, PUSH, IN_PROGRESS)
      */
-    private String resolveResult(Hand hand, int playerTotal, boolean playerBusted, HandValue dealerValue) {
-        String result = getResultString(playerTotal, playerBusted, dealerValue);
+    private String resolveResult(Hand hand, Hand dealerHand) {
+        String result = getResultString(hand, dealerHand);
         return (phase == GamePhase.COMPLETE) ? result : "IN_PROGRESS";
     }
 
     /**
      * Checks if the hand at the given index is active for player actions.
-     * 
-     * @param handIndex Index of the hand
+     *
+     * @param handIndex the index of the hand
      * @return true if hand is active
      */
     private boolean isActiveHand(int handIndex) {
@@ -762,23 +755,22 @@ public class BlackjackGame {
 
     /**
      * Returns the result string for a hand (WIN, LOSE, PUSH).
-     * 
-     * @param playerTotal  Player's total value
-     * @param playerBusted Whether player busted
-     * @param dealerValue  Dealer's hand value
-     * @return Result string
+     *
+     * @param hand       the player hand
+     * @param dealerHand the dealer's hand
+     * @return result string
      */
-    private String getResultString(int playerTotal, boolean playerBusted, HandValue dealerValue) {
-        if (playerBusted) {
+    private String getResultString(Hand hand, Hand dealerHand) {
+        if (hand.isBusted()) {
             return "LOSE";
         }
         if (dealerHand.isBusted()) {
             return "WIN";
         }
-        if (playerTotal > dealerValue.getTotal()) {
+        if (hand.getValue() > dealerHand.getValue()) {
             return "WIN";
         }
-        if (playerTotal < dealerValue.getTotal()) {
+        if (hand.getValue() < dealerHand.getValue()) {
             return "LOSE";
         }
         return "PUSH";
@@ -787,19 +779,17 @@ public class BlackjackGame {
     /**
      * Returns the result value for a hand (1 for win, -1 for loss, 1.5 for
      * blackjack win, 0 for push).
-     * 
-     * @param hand         Player hand
-     * @param playerTotal  Player's total value
-     * @param playerBusted Whether player busted
-     * @param dealerValue  Dealer's hand value
-     * @return Result value
+     *
+     * @param hand       the player hand
+     * @param dealerHand the dealer's hand
+     * @return result value
      */
-    private double getResultValue(Hand hand, int playerTotal, boolean playerBusted, HandValue dealerValue) {
+    private double getResultValue(Hand hand, Hand dealerHand) {
         // Check if player hand is a blackjack (21 with exactly 2 cards)
-        boolean isPlayerBlackjack = playerTotal == 21 && hand.getCards().size() == 2;
-        boolean isDealerBlackjack = dealerValue.getTotal() == 21 && dealerHand.getCards().size() == 2;
+        boolean isPlayerBlackjack = hand.getValue() == 21 && hand.getCards().size() == 2;
+        boolean isDealerBlackjack = dealerHand.getValue() == 21 && dealerHand.getCards().size() == 2;
 
-        String result = getResultString(playerTotal, playerBusted, dealerValue);
+        String result = getResultString(hand, dealerHand);
 
         // Blackjack pays 1.5:1
         if (isPlayerBlackjack && result.equals("WIN") && !isDealerBlackjack) {
@@ -817,18 +807,14 @@ public class BlackjackGame {
     /**
      * Recommends the next action for a player hand based on basic and advanced
      * strategy.
-     * 
-     * @param handIndex    Index of the hand
-     * @param hand         Player hand
-     * @param value        Hand value
-     * @param dealerUpCard Dealer's up card
-     * @param trueCount    Current true count
-     * @return Recommended action string
+     *
+     * @param hand         the player hand
+     * @param dealerUpCard the dealer's up card
+     * @param handIndex    the index of the hand
+     * @param trueCount    the current true count
+     * @return recommended action string
      */
-    private String recommendAction(int handIndex, List<Hand> playerHands, HandValue value, Card dealerUpCard,
-            double trueCount) {
-        Hand hand = playerHands.get(handIndex);
-
+    private String recommendAction(Hand hand, Card dealerUpCard, int handIndex, double trueCount) {
         // Allow insurance recommendation for all eligible hands when dealer shows Ace
         boolean dealerShowsAce = phase == GamePhase.PLAYER_TURN && dealerUpCard != null
                 && dealerUpCard.getRank() == Rank.ACE;

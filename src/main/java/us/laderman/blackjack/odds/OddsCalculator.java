@@ -71,7 +71,7 @@ public class OddsCalculator {
         Odds result = new Odds();
 
         // Dealer stands if total >= 17 (does NOT hit on soft 17)
-        if (dealerHand.getValue().getTotal() < 17) {
+        if (dealerHand.getValue() < 17) {
             // Dealer must hit: try every possible card
             for (Card shoeCard : shoe.getCards()) {
                 Shoe nextShoe = new Shoe(shoe);
@@ -92,9 +92,9 @@ public class OddsCalculator {
             result.setSimLose(result.getSimLose() + 1);
         } else if (dealerHand.isBusted()) {
             result.setSimWin(result.getSimWin() + 1);
-        } else if (playerHand.getValue().getTotal() > dealerHand.getValue().getTotal()) {
+        } else if (playerHand.getValue() > dealerHand.getValue()) {
             result.setSimWin(result.getSimWin() + 1);
-        } else if (playerHand.getValue().getTotal() < dealerHand.getValue().getTotal()) {
+        } else if (playerHand.getValue() < dealerHand.getValue()) {
             result.setSimLose(result.getSimLose() + 1);
         } else {
             result.setSimPush(result.getSimPush() + 1);

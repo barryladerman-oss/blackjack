@@ -9,7 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 
 import us.laderman.blackjack.model.Card;
 import us.laderman.blackjack.model.Hand;
-import us.laderman.blackjack.model.HandValue;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Suit;
 
@@ -48,9 +47,7 @@ class HandTest {
         hand.addCard(new Card(Suit.HEARTS, Rank.KING));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.FIVE));
 
-        HandValue value = hand.getValue();
-
-        assertThat(value.getTotal()).isEqualTo(15);
+        assertThat(hand.getValue()).isEqualTo(15);
     }
 
     @Test
@@ -62,10 +59,8 @@ class HandTest {
         hand.addCard(new Card(Suit.HEARTS, Rank.ACE));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.FIVE));
 
-        HandValue value = hand.getValue();
-
-        assertThat(value.getTotal()).isEqualTo(16);
-        assertThat(value.isSoft()).isTrue();
+        assertThat(hand.getValue()).isEqualTo(16);
+        assertThat(hand.isSoft()).isTrue();
     }
 
     @Test
@@ -78,10 +73,8 @@ class HandTest {
         hand.addCard(new Card(Suit.DIAMONDS, Rank.NINE));
         hand.addCard(new Card(Suit.CLUBS, Rank.EIGHT));
 
-        HandValue value = hand.getValue();
-
-        assertThat(value.getTotal()).isEqualTo(18);
-        assertThat(value.isSoft()).isFalse();
+        assertThat(hand.getValue()).isEqualTo(18);
+        assertThat(hand.isSoft()).isFalse();
     }
 
     @Test
@@ -196,9 +189,7 @@ class HandTest {
         hand.addCard(new Card(Suit.HEARTS, Rank.ACE));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.KING));
 
-        HandValue value = hand.getValue();
-
-        assertThat(value.getTotal()).isEqualTo(21);
+        assertThat(hand.getValue()).isEqualTo(21);
     }
 
     @Test
@@ -208,9 +199,7 @@ class HandTest {
         hand.addCard(new Card(Suit.DIAMONDS, Rank.ACE));
         hand.addCard(new Card(Suit.CLUBS, Rank.NINE));
 
-        HandValue value = hand.getValue();
-
-        assertThat(value.getTotal()).isEqualTo(21);
+        assertThat(hand.getValue()).isEqualTo(21);
     }
 
     @Test
@@ -219,7 +208,7 @@ class HandTest {
         // Empty hand
         Hand emptyHand = new Hand();
         assertThat(emptyHand.getCards()).isEmpty();
-        assertThat(emptyHand.getValue().getTotal()).isEqualTo(0);
+        assertThat(emptyHand.getValue()).isEqualTo(0);
 
         // Duplicate cards
         Card card = new Card(Suit.HEARTS, Rank.TEN);
@@ -232,7 +221,7 @@ class HandTest {
             overflowHand.addCard(new Card(Suit.CLUBS, Rank.TWO));
         }
         assertThat(overflowHand.getCards()).hasSize(20);
-        assertThat(overflowHand.getValue().getTotal()).isGreaterThan(21);
+        assertThat(overflowHand.getValue()).isGreaterThan(21);
         // Invalid card values (simulate with null)
         overflowHand.addCard(null);
         assertThat(overflowHand.getCards()).containsNull();

@@ -1,7 +1,6 @@
 package us.laderman.blackjack.service;
 
 import us.laderman.blackjack.model.Hand;
-import us.laderman.blackjack.model.HandValue;
 import us.laderman.blackjack.model.Rank;
 
 /**
@@ -129,7 +128,6 @@ public class Strategy {
             return "NONE";
         }
 
-        HandValue value = hand.getValue();
         int dealerIndex = getDealerIndex(dealerUpCard);
 
         // Check split first if possible
@@ -145,20 +143,20 @@ public class Strategy {
 
         // Check double, then hit/stand for two-card hands
         if (hand.getCards().size() == 2) {
-            if (value.isSoft()) {
-                return getSoftHandAction(value.getTotal(), dealerIndex);
+            if (hand.isSoft()) {
+                return getSoftHandAction(hand.getValue(), dealerIndex);
             } else {
-                int action = getHardHandAction(value.getTotal(), dealerIndex);
+                int action = getHardHandAction(hand.getValue(), dealerIndex);
                 return action == 2 ? "DOUBLE" : (action == 1 ? "STAND" : "HIT");
             }
         }
 
         // For hands with 3+ cards, only hit or stand
-        if (value.isSoft()) {
-            int action = getSoftHandActionValue(value.getTotal(), dealerIndex);
+        if (hand.isSoft()) {
+            int action = getSoftHandActionValue(hand.getValue(), dealerIndex);
             return action == 1 ? "STAND" : "HIT";
         } else {
-            int action = getHardHandAction(value.getTotal(), dealerIndex);
+            int action = getHardHandAction(hand.getValue(), dealerIndex);
             return action == 1 ? "STAND" : "HIT";
         }
     }
@@ -181,9 +179,8 @@ public class Strategy {
             return basicStrategy;
         }
 
-        HandValue value = hand.getValue();
-        int total = value.getTotal();
-        boolean soft = value.isSoft();
+        int total = hand.getValue();
+        boolean soft = hand.isSoft();
 
         // Hard hand deviations
         if (!soft && total == 16 && dealerUpCard == 10 && trueCount >= 0.0) {

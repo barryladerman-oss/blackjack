@@ -53,8 +53,7 @@ public class Hand {
      */
     public void addCard(Card card) {
         cards.add(card);
-        HandValue value = getValue();
-        if (value.getTotal() > 21) {
+        if (getValue() > 21) {
             busted = true;
         }
     }
@@ -69,7 +68,7 @@ public class Hand {
     }
 
     public boolean isBlackjack() {
-        return cards.size() == 2 && getValue().getTotal() == 21;
+        return cards.size() == 2 && getValue() == 21;
     }
 
     /**
@@ -83,6 +82,16 @@ public class Hand {
 
     public void setStanding(boolean standing) {
         this.standing = standing;
+    }
+
+    public boolean isSoft() {
+        int aces = 0;
+        for (Card card : cards) {
+            if (card.getRank() == Rank.ACE) {
+                aces++;
+            }
+        }
+        return aces > 0;
     }
 
     public boolean isBusted() {
@@ -159,12 +168,10 @@ public class Hand {
         this.canHitAfterSplitAces = can;
     }
 
-    public HandValue getValue() {
+    public int getValue() {
         int total = 0;
         int aces = 0;
         for (Card card : cards) {
-            if (card == null)
-                continue;
             total += card.getRank().getValue();
             if (card.getRank() == Rank.ACE) {
                 aces++;
@@ -174,7 +181,6 @@ public class Hand {
             total -= 10;
             aces--;
         }
-        boolean soft = aces > 0;
-        return new HandValue(total, soft);
+        return total;
     }
 }

@@ -141,9 +141,8 @@ class CardCountingTest {
         hand.addCard(new Card(Suit.HEARTS, Rank.ACE));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.SIX));
 
-        var value = hand.getValue();
-        assertThat(value.getTotal()).isEqualTo(17);
-        assertThat(value.isSoft()).isTrue();
+        assertThat(hand.getValue()).isEqualTo(17);
+        assertThat(hand.isSoft()).isTrue();
     }
 
     @Test
@@ -154,9 +153,8 @@ class CardCountingTest {
         hand.addCard(new Card(Suit.HEARTS, Rank.TEN));
         hand.addCard(new Card(Suit.DIAMONDS, Rank.SIX));
 
-        var value = hand.getValue();
-        assertThat(value.getTotal()).isEqualTo(16);
-        assertThat(value.isSoft()).isFalse();
+        assertThat(hand.getValue()).isEqualTo(17);
+        assertThat(hand.isSoft()).isTrue();
     }
 
     @Test

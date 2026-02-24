@@ -64,8 +64,8 @@ class BlackjackEdgeCasesTest {
         hand.addCard(new Card(Suit.CLUBS, Rank.EIGHT));
 
         // Should be hard 18 (ACE counts as 1)
-        assertThat(hand.getValue().getTotal()).isEqualTo(18);
-        assertThat(hand.getValue().isSoft()).isFalse();
+        assertThat(hand.getValue()).isEqualTo(18);
+        assertThat(hand.isSoft()).isFalse();
     }
 
     @Test
@@ -77,7 +77,7 @@ class BlackjackEdgeCasesTest {
         hand.addCard(new Card(Suit.CLUBS, Rank.NINE));
 
         // Should be 21 (two aces = 11+1+9 = 21 or 1+1+9 = 11, should be 21)
-        assertThat(hand.getValue().getTotal()).isEqualTo(21);
+        assertThat(hand.getValue()).isEqualTo(21);
     }
 
     @Test
@@ -213,7 +213,7 @@ class BlackjackEdgeCasesTest {
         hand.addCard(new Card(Suit.DIAMONDS, Rank.JACK));
 
         // Total is 20, not 21
-        assertThat(hand.getValue().getTotal()).isEqualTo(20);
+        assertThat(hand.getValue()).isEqualTo(20);
     }
 
     @Test
@@ -224,8 +224,8 @@ class BlackjackEdgeCasesTest {
         hand.addCard(new Card(Suit.DIAMONDS, Rank.FIVE));
 
         // Should be soft 16
-        assertThat(hand.getValue().getTotal()).isEqualTo(16);
-        assertThat(hand.getValue().isSoft()).isTrue();
+        assertThat(hand.getValue()).isEqualTo(16);
+        assertThat(hand.isSoft()).isTrue();
 
         // Add another card
         hand.addCard(new Card(Suit.CLUBS, Rank.FIVE));
@@ -233,9 +233,7 @@ class BlackjackEdgeCasesTest {
         // Should be hard 11 (converted to 1)? No, should be 21 if ACE was 11 + 5 = 16,
         // then +5 = 21? No...
         // ACE was 11, +5 = 16, +5 = 21. But wait, that's only soft if one ace
-        // Let me verify actual value
-        var value = hand.getValue();
-        assertThat(value.getTotal()).isLessThanOrEqualTo(21);
+        assertThat(hand.getValue()).isLessThanOrEqualTo(21);
     }
 
     @Test
@@ -246,8 +244,8 @@ class BlackjackEdgeCasesTest {
         dealerHand.addCard(new Card(Suit.DIAMONDS, Rank.SIX));
 
         // Should be soft 17
-        assertThat(dealerHand.getValue().getTotal()).isEqualTo(17);
-        assertThat(dealerHand.getValue().isSoft()).isTrue();
+        assertThat(dealerHand.getValue()).isEqualTo(17);
+        assertThat(dealerHand.isSoft()).isTrue();
     }
 
     @Test
