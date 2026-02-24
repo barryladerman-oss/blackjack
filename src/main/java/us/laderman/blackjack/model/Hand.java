@@ -42,6 +42,10 @@ public class Hand {
         this.canHitAfterSplitAces = other.canHitAfterSplitAces;
     }
 
+    public Hand(List<Card> cards) {
+        this.cards.addAll(cards);
+    }
+
     /**
      * Adds a card to the hand and updates bust status.
      * 

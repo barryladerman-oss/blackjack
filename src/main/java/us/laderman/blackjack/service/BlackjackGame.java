@@ -7,10 +7,11 @@ import us.laderman.blackjack.model.HandValue;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Shoe;
 import us.laderman.blackjack.odds.OddsCalculator;
+import us.laderman.blackjack.odds.Odds;
+import us.laderman.blackjack.BlackjackUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -232,9 +233,6 @@ public class BlackjackGame {
             throw new IllegalArgumentException("Cannot split a hand that was already split");
         }
 
-        System.out.println("DEBUG: Split called with card1=" + card1 + ", card2=" + card2
-                + ", rank1=" + rank1 + ", rank2=" + rank2);
-
         Card moved = hand.splitOff();
         hand.setIsFromSplit(true);
         Hand newHand = new Hand();
@@ -247,10 +245,6 @@ public class BlackjackGame {
 
         // If splitting aces, restrict to one card per ace
         boolean isAceHand = hand.getCards().get(0).getRank() == Rank.ACE;
-        System.out.println("DEBUG: After splitOff, hand has " + hand.getCards().size() + " cards");
-        System.out.println(
-                "DEBUG: Card 0: " + hand.getCards().get(0).getRank() + " of " + hand.getCards().get(0).getSuit());
-        System.out.println("DEBUG: isAceHand=" + isAceHand);
         if (isAceHand) {
             hand.setCanHitAfterSplitAces(false);
             newHand.setCanHitAfterSplitAces(false);
@@ -261,7 +255,6 @@ public class BlackjackGame {
 
         // Deal cards to both hands
         if (card1 != null) {
-            System.out.println("DEBUG: Dealing specific card1: " + card1.getRank() + " of " + card1.getSuit());
             if (!shoe.removeSpecificCard(card1)) {
                 throw new IllegalArgumentException(
                         "Selected card not available: " + card1.getRank().getLabel() + " of "
@@ -269,19 +262,16 @@ public class BlackjackGame {
             }
             dealSpecificCard(hand, card1);
         } else if (rank1 != null) {
-            System.out.println("DEBUG: Dealing specific rank1: " + rank1);
             Card drawnCard = shoe.drawSpecificRank(rank1);
             if (drawnCard == null) {
                 throw new IllegalArgumentException("No card with rank " + rank1.getLabel() + " available");
             }
             dealSpecificCard(hand, drawnCard);
         } else {
-            System.out.println("DEBUG: Dealing random card to original hand");
             dealCard(hand);
         }
 
         if (card2 != null) {
-            System.out.println("DEBUG: Dealing specific card2: " + card2.getRank() + " of " + card2.getSuit());
             if (!shoe.removeSpecificCard(card2)) {
                 throw new IllegalArgumentException(
                         "Selected card not available: " + card2.getRank().getLabel() + " of "
@@ -289,34 +279,21 @@ public class BlackjackGame {
             }
             dealSpecificCard(newHand, card2);
         } else if (rank2 != null) {
-            System.out.println("DEBUG: Dealing specific rank2: " + rank2);
             Card drawnCard = shoe.drawSpecificRank(rank2);
             if (drawnCard == null) {
                 throw new IllegalArgumentException("No card with rank " + rank2.getLabel() + " available");
             }
             dealSpecificCard(newHand, drawnCard);
         } else {
-            System.out.println("DEBUG: Dealing random card to new hand");
             dealCard(newHand);
         }
 
         if (isAceHand) {
             hand.setStanding(true);
             newHand.setStanding(true);
-            System.out.println("DEBUG SPLIT ACES: Set both hands to standing");
-            System.out.println("DEBUG SPLIT ACES: Hand 0 after standing: standing=" + playerHands.get(0).isStanding());
-            System.out.println("DEBUG SPLIT ACES: Hand 1 after standing: standing=" + playerHands.get(1).isStanding());
-            System.out.println("DEBUG SPLIT ACES: Now calling finishIfReady()...");
         }
 
         finishIfReady();
-        System.out.println("DEBUG SPLIT: About to return state with phase=" + phase);
-        System.out.println("DEBUG SPLIT: Hand 0: standing=" + playerHands.get(0).isStanding() + ", busted="
-                + playerHands.get(0).isBusted());
-        if (playerHands.size() > 1) {
-            System.out.println("DEBUG SPLIT: Hand 1: standing=" + playerHands.get(1).isStanding() + ", busted="
-                    + playerHands.get(1).isBusted());
-        }
         return toGameState();
     }
 
@@ -611,18 +588,12 @@ public class BlackjackGame {
      * Checks if all hands are finished and triggers dealer play if so.
      */
     private void finishIfReady() {
-        System.out.println("DEBUG finishIfReady: Checking " + playerHands.size() + " hands...");
         for (int i = 0; i < playerHands.size(); i++) {
             Hand hand = playerHands.get(i);
-            System.out.println("DEBUG finishIfReady: Hand " + i + " - standing=" + hand.isStanding() + ", busted="
-                    + hand.isBusted());
             if (!hand.isStanding() && !hand.isBusted()) {
-                System.out.println("DEBUG finishIfReady: Found playable hand at index " + i + ", returning early");
                 return;
             }
         }
-        System.out
-                .println("DEBUG finishIfReady: No playable hands, calling playDealer() and setting phase to COMPLETE");
         playDealer();
         phase = GamePhase.COMPLETE;
     }
@@ -651,9 +622,6 @@ public class BlackjackGame {
      * @return GameState object
      */
     private GameState toGameState() {
-        Map<String, Double> odds = getOdds(shoe, playerHands, 0, getDealerUpCard());
-        System.out.println("DEBUG: Odds for current state: " + odds);
-
         HandValue dealerValue = dealerHand.getValue();
         int cardsRemaining = shoe.remaining();
         double decksRemaining = Math.max(0.25, (decksTotal * 52.0 - cardsDealt) / 52.0); // keep for trueCount
@@ -733,7 +701,7 @@ public class BlackjackGame {
         String note;
         if (phase == GamePhase.COMPLETE) {
             if (insuranceTotal != 0) {
-                note = "Round complete | Insurance: " + roundToTwo(insuranceTotal);
+                note = "Round complete | Insurance: " + BlackjackUtil.roundToTwo(insuranceTotal);
             } else if (getDealerUpCard() != null && getDealerUpCard().getRank() == Rank.ACE) {
                 note = "Round complete | insurance declined or not taken";
             } else {
@@ -751,10 +719,10 @@ public class BlackjackGame {
                 dealerState,
                 handStates,
                 runningCount,
-                roundToTwo(trueCount),
+                BlackjackUtil.roundToTwo(trueCount),
                 cardsRemaining,
-                roundToTwo(netUnits),
-                roundToTwo(insuranceTotal),
+                BlackjackUtil.roundToTwo(netUnits),
+                BlackjackUtil.roundToTwo(insuranceTotal),
                 note);
     }
 
@@ -845,7 +813,7 @@ public class BlackjackGame {
         };
     }
 
-    private Map<String, Double> getOdds(Shoe shoe, List<Hand> playerHands, int handIndex, Card dealerUpCard) {
+    private Odds getOdds(Shoe shoe, List<Hand> playerHands, int handIndex, Card dealerUpCard) {
         Shoe testShoe = new Shoe(shoe);
         Hand playerHand = playerHands.get(handIndex);
 
@@ -866,7 +834,7 @@ public class BlackjackGame {
                 }
             }
         }
-        Map<String, Double> odds = OddsCalculator.calculateOdds(testShoe, playerHand, dealerUpCard);
+        Odds odds = OddsCalculator.calculateOdds(testShoe, playerHand, dealerUpCard);
         return odds;
     }
 
@@ -915,6 +883,11 @@ public class BlackjackGame {
             return "NONE";
         }
 
+        if (shoe.getCards().size() < 52) {
+            Odds odds = getOdds(shoe, playerHands, handIndex, getDealerUpCard());
+            System.out.println("ODDS ----- Odds for current state: " + odds);
+        }
+
         // Get basic strategy recommendation
         int dealerUpValue = dealerUpCard == null ? 10 : dealerUpCard.getRank().getValue();
         boolean allowSplit = !hand.isFromSplit() && hand.canSplit();
@@ -944,15 +917,5 @@ public class BlackjackGame {
             return fallback;
         }
         return recommendation;
-    }
-
-    /**
-     * Rounds a double value to two decimal places.
-     * 
-     * @param value Value to round
-     * @return Rounded value
-     */
-    private double roundToTwo(double value) {
-        return Math.round(value * 100.0) / 100.0;
     }
 }
