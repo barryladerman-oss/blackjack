@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"us.laderman.blackjack"},{"l":"us.laderman.blackjack.controller"},{"l":"us.laderman.blackjack.model"},{"l":"us.laderman.blackjack.service"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"us.laderman.blackjack"},{"l":"us.laderman.blackjack.controller"},{"l":"us.laderman.blackjack.model"},{"l":"us.laderman.blackjack.odds"},{"l":"us.laderman.blackjack.service"}];updateSearchResults();

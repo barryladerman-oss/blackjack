@@ -85,13 +85,20 @@ public class Hand {
     }
 
     public boolean isSoft() {
+        if (isBlackjack()) {
+            return false; // Blackjack is not considered a soft hand
+        }
+
+        int total = 0;
         int aces = 0;
         for (Card card : cards) {
+            total += card.getRank().getValue();
             if (card.getRank() == Rank.ACE) {
+                total -= 10; // Count Ace as 1 instead of 11
                 aces++;
             }
         }
-        return aces > 0;
+        return aces > 0 && total <= 11;
     }
 
     public boolean isBusted() {

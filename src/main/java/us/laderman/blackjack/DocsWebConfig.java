@@ -10,6 +10,6 @@ public class DocsWebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/docs/**")
-                .addResourceLocations("classpath:/static/doc/");
+                .addResourceLocations("classpath:/site/apidocs/");
     }
 }
