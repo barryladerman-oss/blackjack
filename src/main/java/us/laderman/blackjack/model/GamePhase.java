@@ -1,4 +1,4 @@
-package us.laderman.blackjack.service;
+package us.laderman.blackjack.model;
 
 /**
  * Enum representing the phases of a Blackjack game.
