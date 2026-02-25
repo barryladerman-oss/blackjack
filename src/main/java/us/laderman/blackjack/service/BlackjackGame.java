@@ -5,8 +5,9 @@ import us.laderman.blackjack.model.GameState;
 import us.laderman.blackjack.model.Hand;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Shoe;
-import us.laderman.blackjack.odds.OddsCalculator;
-import us.laderman.blackjack.odds.Odds;
+import us.laderman.blackjack.strategy.Odds;
+import us.laderman.blackjack.strategy.OddsCalculator;
+import us.laderman.blackjack.strategy.Strategy;
 import us.laderman.blackjack.BlackjackUtil;
 
 import java.util.ArrayList;

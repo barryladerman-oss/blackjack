@@ -1,4 +1,4 @@
-package us.laderman.blackjack.odds;
+package us.laderman.blackjack.strategy;
 
 import us.laderman.blackjack.model.*;
 import java.util.*;

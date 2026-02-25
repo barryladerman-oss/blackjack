@@ -107,12 +107,7 @@ public class BlackjackController {
     }
 
     private GameState handleHitRequest(String id, Integer hand, String rank, String suit) {
-        UUID gameId;
-        try {
-            gameId = UUID.fromString(id);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid game id", ex);
-        }
+        UUID gameId = UUID.fromString(id);
 
         try {
             return service.hit(gameId, hand, rank, suit);
@@ -161,12 +156,7 @@ public class BlackjackController {
     }
 
     private GameState handleDoubleRequest(String id, Integer hand, String rank, String suit) {
-        UUID gameId;
-        try {
-            gameId = UUID.fromString(id);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid game id", ex);
-        }
+        UUID gameId = UUID.fromString(id);
 
         try {
             return service.doubleDown(gameId, hand, rank, suit);
@@ -200,12 +190,7 @@ public class BlackjackController {
         String params = String.format("id=%s, hand=%d, card1Rank=%s, card1Suit=%s, card2Rank=%s, card2Suit=%s",
                 id, hand, card1Rank, card1Suit, card2Rank, card2Suit);
         logRequest("/api/blackjack/split/" + id, params);
-        UUID gameId;
-        try {
-            gameId = UUID.fromString(id);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid game id", ex);
-        }
+        UUID gameId = UUID.fromString(id);
 
         try {
             if (card1Rank != null || card1Suit != null || card2Rank != null || card2Suit != null) {
@@ -252,12 +237,7 @@ public class BlackjackController {
     }
 
     private GameState handleStateRequest(String id, Integer hand, ActionType action) {
-        UUID gameId;
-        try {
-            gameId = UUID.fromString(id);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid game id", ex);
-        }
+        UUID gameId = UUID.fromString(id);
 
         try {
             return switch (action) {

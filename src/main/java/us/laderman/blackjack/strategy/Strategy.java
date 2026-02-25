@@ -1,4 +1,4 @@
-package us.laderman.blackjack.service;
+package us.laderman.blackjack.strategy;
 
 import us.laderman.blackjack.model.Hand;
 import us.laderman.blackjack.model.Rank;

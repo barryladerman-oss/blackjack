@@ -1,4 +1,4 @@
-package us.laderman.blackjack.odds;
+package us.laderman.blackjack.strategy;
 
 public class Odds {
     private int simWin;

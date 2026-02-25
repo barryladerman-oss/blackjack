@@ -117,17 +117,20 @@ public class BlackjackService {
     private void validateNoDuplicates(Card[] cards, int decks) {
         java.util.Map<String, Integer> cardCounts = new java.util.HashMap<>();
         for (Card card : cards) {
-            if (card != null) {
-                String key = card.getRank() + "_" + card.getSuit();
-                cardCounts.put(key, cardCounts.getOrDefault(key, 0) + 1);
-                if (cardCounts.get(key) > decks) {
-                    throw new IllegalArgumentException(
-                            "Card selected too many times: " + card.getRank().getLabel() + " of "
-                                    + card.getSuit().getLabel() +
-                                    " (selected " + cardCounts.get(key) + " times, but only " + decks
-                                    + " available in the shoe)");
-                }
+            if (card == null) {
+                continue;
             }
+
+            String key = card.getRank() + "_" + card.getSuit();
+            cardCounts.put(key, cardCounts.getOrDefault(key, 0) + 1);
+            if (cardCounts.get(key) > decks) {
+                throw new IllegalArgumentException(
+                        "Card selected too many times: " + card.getRank().getLabel() + " of "
+                                + card.getSuit().getLabel() +
+                                " (selected " + cardCounts.get(key) + " times, but only " + decks
+                                + " available in the shoe)");
+            }
+
         }
     }
 
