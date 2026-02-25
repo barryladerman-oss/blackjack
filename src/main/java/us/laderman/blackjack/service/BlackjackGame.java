@@ -649,8 +649,6 @@ public class BlackjackGame {
         // Only show dealer's up card during player turn; reveal hole card when round is
         // complete
         List<Card> dealerCards = dealerHand.getCards();
-        // Always send both cards (up card + hole card), UI will handle showing hole
-        // card as back
         List<Card> visibleDealerCards = dealerCards;
 
         // Only show dealer's actual total when round is complete; show up card value
@@ -827,7 +825,7 @@ public class BlackjackGame {
         // Check for insurance opportunity first
         if (phase == GamePhase.PLAYER_TURN && !hand.isFromSplit() && dealerUpCard != null
                 && dealerUpCard.getRank() == Rank.ACE) {
-            if (hand.getCards().size() == 2 && !hand.isInsured() && !hand.isInsuranceDeclined()
+            if (!hand.isInsured() && !hand.isInsuranceDeclined()
                     && !hand.isStanding() && !hand.isBusted()) {
                 // Recommend insurance when true count is high (2 or higher)
                 if (trueCount >= 2) {

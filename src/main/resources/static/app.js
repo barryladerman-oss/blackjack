@@ -370,9 +370,11 @@ const updateGameInfoDisplay = (state) => {
     gameIdEl.textContent = state?.id || state?.gameId;
     phaseEl.textContent = state.phase || '-';
     dealerUpcardEl.textContent = "-";
-    runningCountEl.textContent = typeof state.runningCount === "number" && state.runningCount >= 0
-        ? state.runningCount
-        : "-";
+    if (runningCountEl) {
+        runningCountEl.textContent = typeof state.runningCount === "number" && state.runningCount >= 0
+            ? state.runningCount
+            : "-";
+    }
     trueCountEl.textContent = typeof state.trueCount === "number" && state.trueCount >= 0
         ? state.trueCount.toFixed(2)
         : "-";
