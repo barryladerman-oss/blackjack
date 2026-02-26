@@ -33,6 +33,7 @@ public class BlackjackGame {
     // Rule settings
     private final boolean allowDoubleOn9;
     private final boolean dealerHitSoft17;
+    private final boolean allowDoubleOnSplit;
 
     /**
      * Constructs a new BlackjackGame with the specified number of hands and decks.
@@ -40,8 +41,32 @@ public class BlackjackGame {
      * @param hands the number of player hands
      * @param decks the number of decks in the shoe
      */
+
     public BlackjackGame(int hands, int decks) {
-        this(hands, decks, new java.util.HashMap<>(), null, null);
+        this(hands, decks, new java.util.HashMap<>(), null, null, true, true, true);
+    }
+
+    // Overloads for test compatibility
+    public BlackjackGame(int hands, int decks, java.util.HashMap<Integer, BlackjackService.HandCards> playerHandCards,
+            Card dealerCard1, Card dealerCard2) {
+        this(hands, decks, (java.util.Map<Integer, BlackjackService.HandCards>) playerHandCards, dealerCard1,
+                dealerCard2, true, true, true);
+    }
+
+    public BlackjackGame(int hands, int decks, java.util.HashMap<Integer, BlackjackService.HandCards> playerHandCards,
+            Card dealerCard1, Card dealerCard2, boolean allowDoubleOn9, boolean dealerHitSoft17) {
+        this(hands, decks, (java.util.Map<Integer, BlackjackService.HandCards>) playerHandCards, dealerCard1,
+                dealerCard2, allowDoubleOn9, dealerHitSoft17, true);
+    }
+
+    public BlackjackGame(int hands, int decks, java.util.Map<Integer, BlackjackService.HandCards> playerHandCards,
+            Card dealerCard1, Card dealerCard2) {
+        this(hands, decks, playerHandCards, dealerCard1, dealerCard2, true, true, true);
+    }
+
+    public BlackjackGame(int hands, int decks, java.util.Map<Integer, BlackjackService.HandCards> playerHandCards,
+            Card dealerCard1, Card dealerCard2, boolean allowDoubleOn9, boolean dealerHitSoft17) {
+        this(hands, decks, playerHandCards, dealerCard1, dealerCard2, allowDoubleOn9, dealerHitSoft17, true);
     }
 
     /**
@@ -54,13 +79,15 @@ public class BlackjackGame {
      * @param dealerCard2     dealer's second card
      */
     public BlackjackGame(int hands, int decks, java.util.Map<Integer, BlackjackService.HandCards> playerHandCards,
-            Card dealerCard1, Card dealerCard2, boolean allowDoubleOn9, boolean dealerHitSoft17) {
+            Card dealerCard1, Card dealerCard2, boolean allowDoubleOn9, boolean dealerHitSoft17,
+            boolean allowDoubleOnSplit) {
         this.id = UUID.randomUUID();
         this.decksTotal = decks;
         this.shoe = new Shoe(decks);
         this.runningCount = 0;
         this.allowDoubleOn9 = allowDoubleOn9;
         this.dealerHitSoft17 = dealerHitSoft17;
+        this.allowDoubleOnSplit = allowDoubleOnSplit;
 
         // Remove specific cards from shoe before dealing
         for (BlackjackService.HandCards hc : playerHandCards.values()) {
@@ -182,8 +209,13 @@ public class BlackjackGame {
         }
 
         // Allow doubling on split hands, except split aces
-        if (hand.isFromSplit() && hand.getSplitFromRank() == Rank.ACE) {
-            throw new IllegalArgumentException("Cannot double on split aces");
+        if (hand.isFromSplit()) {
+            if (hand.getSplitFromRank() == Rank.ACE) {
+                throw new IllegalArgumentException("Cannot double on split aces");
+            }
+            if (!allowDoubleOnSplit) {
+                throw new IllegalArgumentException("Double after split is not allowed by rule");
+            }
         }
         if (hand.getCards().size() != 2) {
             throw new IllegalArgumentException("Double requires exactly two cards");
@@ -255,6 +287,7 @@ public class BlackjackGame {
             throw new IllegalArgumentException("Cannot split a hand that was already split");
         }
 
+        // Remove the second card from the original hand (splitOff returns it)
         Card moved = hand.splitOff();
         hand.setIsFromSplit(true);
         Hand newHand = new Hand();
@@ -272,10 +305,13 @@ public class BlackjackGame {
             newHand.setCanHitAfterSplitAces(false);
         }
 
+        // Each hand should have the original card plus the newly dealt card
+        // hand already has its original card
+        // newHand gets the moved card (the other original card)
         newHand.addCard(moved);
         playerHands.add(handIndex + 1, newHand);
 
-        // Deal cards to both hands
+        // Now deal a new card to each hand
         if (card1 != null) {
             if (!shoe.removeSpecificCard(card1)) {
                 throw new IllegalArgumentException(
@@ -879,6 +915,11 @@ public class BlackjackGame {
             recommendation = "HIT";
         }
 
+        // Prevent recommending double after split if rule is off
+        if ("DOUBLE".equals(recommendation) && hand.isFromSplit() && !allowDoubleOnSplit) {
+            recommendation = "HIT";
+        }
+
         // Apply count-based deviations for a more sophisticated strategy
         recommendation = Strategy.applyCountDeviation(recommendation, hand, dealerUpValue, trueCount);
 
@@ -887,11 +928,18 @@ public class BlackjackGame {
             recommendation = "HIT";
         }
 
+        // Prevent recommending double after split if rule is off (after deviation)
+        if ("DOUBLE".equals(recommendation) && hand.isFromSplit() && !allowDoubleOnSplit) {
+            recommendation = "HIT";
+        }
+
         if (hand.isFromSplit()) {
             if ("INSURE".equals(recommendation) || "NO_INSURANCE".equals(recommendation)
-                    || "DOUBLE".equals(recommendation) || "SPLIT".equals(recommendation)) {
+                    || "SPLIT".equals(recommendation)) {
                 String fallback = Strategy.getRecommendedAction(hand, dealerUpValue, false);
-                if ("DOUBLE".equals(fallback) || "SPLIT".equals(fallback)) {
+                // Only fallback to hit if fallback is split (never double), otherwise allow
+                // double if logic/rules allow
+                if ("SPLIT".equals(fallback)) {
                     return "HIT";
                 }
                 return fallback;

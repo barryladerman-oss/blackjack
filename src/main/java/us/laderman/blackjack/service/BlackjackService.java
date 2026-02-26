@@ -83,9 +83,17 @@ public class BlackjackService {
         // Parse rule settings
         boolean allowDoubleOn9 = "1".equals(allParams.get("allowDoubleOn9"));
         boolean dealerHitSoft17 = "1".equals(allParams.get("dealerHitSoft17"));
+        boolean allowDoubleOnSplit = "1".equals(allParams.get("allowDoubleOnSplit"));
 
-        BlackjackGame game = new BlackjackGame(hands, decks, playerHandCards, dealerCard1, null, allowDoubleOn9,
-                dealerHitSoft17);
+        BlackjackGame game = new BlackjackGame(
+                hands,
+                decks,
+                playerHandCards,
+                dealerCard1,
+                null,
+                allowDoubleOn9,
+                dealerHitSoft17,
+                allowDoubleOnSplit);
         games.put(game.getId(), new GameEntry(game));
         return game.getState();
     }
