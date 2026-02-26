@@ -30,6 +30,10 @@ public class BlackjackGame {
     private int cardsDealt;
     private GamePhase phase = GamePhase.PLAYER_TURN;
 
+    // Rule settings
+    private final boolean allowDoubleOn9;
+    private final boolean dealerHitSoft17;
+
     /**
      * Constructs a new BlackjackGame with the specified number of hands and decks.
      *
@@ -50,11 +54,13 @@ public class BlackjackGame {
      * @param dealerCard2     dealer's second card
      */
     public BlackjackGame(int hands, int decks, java.util.Map<Integer, BlackjackService.HandCards> playerHandCards,
-            Card dealerCard1, Card dealerCard2) {
+            Card dealerCard1, Card dealerCard2, boolean allowDoubleOn9, boolean dealerHitSoft17) {
         this.id = UUID.randomUUID();
         this.decksTotal = decks;
         this.shoe = new Shoe(decks);
         this.runningCount = 0;
+        this.allowDoubleOn9 = allowDoubleOn9;
+        this.dealerHitSoft17 = dealerHitSoft17;
 
         // Remove specific cards from shoe before dealing
         for (BlackjackService.HandCards hc : playerHandCards.values()) {
@@ -187,6 +193,12 @@ public class BlackjackGame {
         if (hand.isSoft()) {
             throw new IllegalArgumentException("Double down is not allowed on soft hands");
         }
+
+        // Only allow double on 9 if rule is enabled
+        if (hand.getValue() == 9 && !allowDoubleOn9) {
+            throw new IllegalArgumentException("Double down on 9 is not allowed by rule");
+        }
+
         hand.setBetUnits(2);
 
         // Deal specific or random card
@@ -520,7 +532,13 @@ public class BlackjackGame {
             dealCard(dealerHand);
         }
 
-        // Check for dealer blackjack immediately after dealing
+        // If dealer shows Ace, delay blackjack check until after insurance decisions
+        Card dealerUpCard = getDealerUpCard();
+        if (dealerUpCard != null && dealerUpCard.getRank() == Rank.ACE) {
+            // Wait for insurance decisions before checking for blackjack
+            return;
+        }
+        // Otherwise, check for dealer blackjack immediately
         if (dealerHand.isBlackjack()) {
             completeRound();
             return;
@@ -606,8 +624,8 @@ public class BlackjackGame {
     private void playDealer() {
         phase = GamePhase.DEALER_TURN;
         while (true) {
-            // Dealer stands on soft 17
-            if (dealerHand.getValue() < 17) {
+            boolean isSoft17 = dealerHand.isSoft() && dealerHand.getValue() == 17;
+            if (dealerHand.getValue() < 17 || (dealerHitSoft17 && isSoft17)) {
                 dealCard(dealerHand);
                 continue;
             }
@@ -853,10 +871,21 @@ public class BlackjackGame {
         // Get basic strategy recommendation
         int dealerUpValue = dealerUpCard == null ? 10 : dealerUpCard.getRank().getValue();
         boolean allowSplit = !hand.isFromSplit() && hand.canSplit();
+
         String recommendation = Strategy.getRecommendedAction(hand, dealerUpValue, allowSplit);
+
+        // Prevent recommending double on 9 if rule is off
+        if ("DOUBLE".equals(recommendation) && hand.getValue() == 9 && !allowDoubleOn9) {
+            recommendation = "HIT";
+        }
 
         // Apply count-based deviations for a more sophisticated strategy
         recommendation = Strategy.applyCountDeviation(recommendation, hand, dealerUpValue, trueCount);
+
+        // Prevent recommending double on 9 after count deviation if rule is off
+        if ("DOUBLE".equals(recommendation) && hand.getValue() == 9 && !allowDoubleOn9) {
+            recommendation = "HIT";
+        }
 
         if (hand.isFromSplit()) {
             if ("INSURE".equals(recommendation) || "NO_INSURANCE".equals(recommendation)

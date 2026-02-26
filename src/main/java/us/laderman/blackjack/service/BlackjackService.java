@@ -80,7 +80,12 @@ public class BlackjackService {
         }
         validateNoDuplicates(allCards.toArray(new Card[0]), decks);
 
-        BlackjackGame game = new BlackjackGame(hands, decks, playerHandCards, dealerCard1, null);
+        // Parse rule settings
+        boolean allowDoubleOn9 = "1".equals(allParams.get("allowDoubleOn9"));
+        boolean dealerHitSoft17 = "1".equals(allParams.get("dealerHitSoft17"));
+
+        BlackjackGame game = new BlackjackGame(hands, decks, playerHandCards, dealerCard1, null, allowDoubleOn9,
+                dealerHitSoft17);
         games.put(game.getId(), new GameEntry(game));
         return game.getState();
     }

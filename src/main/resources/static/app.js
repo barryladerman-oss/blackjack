@@ -28,6 +28,25 @@ const dealerCards = document.getElementById("dealerCards");
 const dealerMeta = document.getElementById("dealerMeta");
 const cardSelectionContainer = document.getElementById("cardSelectionContainer");
 
+// Rule checkboxes
+const allowDoubleOn9Checkbox = document.getElementById("allowDoubleOn9");
+const dealerHitSoft17Checkbox = document.getElementById("dealerHitSoft17");
+
+// Current rule settings
+let allowDoubleOn9 = allowDoubleOn9Checkbox ? allowDoubleOn9Checkbox.checked : false;
+let dealerHitSoft17 = dealerHitSoft17Checkbox ? dealerHitSoft17Checkbox.checked : true;
+
+if (allowDoubleOn9Checkbox) {
+    allowDoubleOn9Checkbox.addEventListener("change", () => {
+        allowDoubleOn9 = allowDoubleOn9Checkbox.checked;
+    });
+}
+if (dealerHitSoft17Checkbox) {
+    dealerHitSoft17Checkbox.addEventListener("change", () => {
+        dealerHitSoft17 = dealerHitSoft17Checkbox.checked;
+    });
+}
+
 const cardsDealtEl = document.getElementById("cardsDealt");
 const strategyTextEl = document.getElementById("strategyText");
 const noteTextEl = document.getElementById("noteText");
@@ -618,6 +637,10 @@ const renderState = (state) => {
             let showHit = canHit(hand, isSplitAceComplete, canHitAfterSplitAces);
             let showStand = !isSplitAceComplete && handPlayable;
             let showDouble = !isSplitAceComplete && handPlayable && canDoubleVal;
+            // Hide double button for 9 if rule is off
+            if (showDouble && hand.total === 9 && !allowDoubleOn9) {
+                showDouble = false;
+            }
             let showSplit = !isSplitAceComplete && handPlayable && canSplitVal && !isFromSplit;
 
             const rawRecommendation = hand.recommendedAction || "";
@@ -904,6 +927,10 @@ if (startBtn) {
         testModeGameId = null;
         run(async () => {
             const result = await apiFetch(`/api/blackjack/start?${params.toString()}`, { method: "POST" });
+            // Add rule settings to params
+            params.append('allowDoubleOn9', allowDoubleOn9 ? '1' : '0');
+            params.append('dealerHitSoft17', dealerHitSoft17 ? '1' : '0');
+
             // Force update of strategy panel after start
             renderState(result);
 
