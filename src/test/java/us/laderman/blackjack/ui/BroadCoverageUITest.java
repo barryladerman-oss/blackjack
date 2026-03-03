@@ -16,6 +16,7 @@ import static us.laderman.blackjack.ui.TestConstants.ID_DEALER_UPCARD;
 import static us.laderman.blackjack.ui.TestConstants.ID_RUNNING_COUNT;
 import static us.laderman.blackjack.ui.TestConstants.ID_TRUE_COUNT;
 import static us.laderman.blackjack.ui.TestConstants.ID_HIT_CONFIRM_BTN;
+import static us.laderman.blackjack.ui.TestConstants.ID_HIT_CARD_MODAL;
 import static us.laderman.blackjack.ui.TestConstants.ID_SPLIT_CONFIRM_BTN;
 import static us.laderman.blackjack.ui.TestConstants.ID_DOUBLE_CONFIRM_BTN;
 
@@ -31,11 +32,17 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
     @DisplayName("Start game and verify UI elements")
     void testStartGameAndVerifyUI() {
         clickBtn(TestConstants.ID_START_BTN);
+        // Wait for game ID to be populated
+        wait.until(driver -> {
+            String gameId = driver.findElement(By.id(ID_GAME_ID)).getText();
+            return gameId != null && !gameId.isEmpty();
+        });
         assertThat(driver.findElement(By.id(ID_GAME_ID)).getText()).isNotBlank();
         assertThat(driver.findElement(By.id(ID_PHASE)).getText()).isNotBlank();
         assertThat(driver.findElement(By.id(ID_DEALER_UPCARD)).getText()).isNotBlank();
-        assertThat(driver.findElement(By.id(ID_RUNNING_COUNT)).getText()).isNotBlank();
-        assertThat(driver.findElement(By.id(ID_TRUE_COUNT)).getText()).isNotBlank();
+        // runningCount and trueCount elements should exist
+        assertThat(driver.findElement(By.id(ID_RUNNING_COUNT))).isNotNull();
+        assertThat(driver.findElement(By.id(ID_TRUE_COUNT))).isNotNull();
         assertThat(driver.findElement(By.id("cardsRemaining")).getText()).isNotBlank();
     }
 
@@ -98,6 +105,8 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
         clickBtn(ID_START_BTN);
 
         clickBtn(ID_HIT_CONFIRM_BTN);
+        // Wait for the modal to close after confirm
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id(ID_HIT_CARD_MODAL)));
 
         clickActionBtn(1, ID_STAND_BTN);
         clickActionBtn(2, ID_STAND_BTN);

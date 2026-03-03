@@ -295,7 +295,7 @@ class BlackjackGameTest {
                                 new Card(Suit.SPADES, Rank.NINE)));
 
                 BlackjackGame splitGame = new BlackjackGame(1, 1, hands,
-                                new Card(Suit.DIAMONDS, Rank.TEN), null);
+                                new Card(Suit.DIAMONDS, Rank.TEN), new Card(Suit.CLUBS, Rank.TWO));
 
                 // Split specifying rank for card1, random for card2
                 GameState state = splitGame.split(0, null, null, Rank.THREE, null);
@@ -321,7 +321,7 @@ class BlackjackGameTest {
                                 new Card(Suit.DIAMONDS, Rank.SEVEN)));
 
                 BlackjackGame splitGame = new BlackjackGame(1, 1, hands,
-                                new Card(Suit.HEARTS, Rank.KING), null);
+                                new Card(Suit.HEARTS, Rank.KING), new Card(Suit.SPADES, Rank.THREE));
 
                 // Split with random for card1, rank specified for card2
                 GameState state = splitGame.split(0, null, null, null, Rank.ACE);

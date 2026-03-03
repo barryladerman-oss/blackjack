@@ -237,9 +237,9 @@ public class BlackjackController {
     }
 
     private GameState handleStateRequest(String id, Integer hand, ActionType action) {
-        UUID gameId = UUID.fromString(id);
-
         try {
+            UUID gameId = UUID.fromString(id);
+
             return switch (action) {
                 case STATE -> service.getState(gameId);
                 case STAND -> service.stand(gameId, hand);

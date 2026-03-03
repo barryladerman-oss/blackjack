@@ -108,7 +108,10 @@ public class BlackjackRestApiTest {
     @Test
     @DisplayName("Should allow hitting on a hand")
     public void testHit() {
-        ApiResponse<GameState> startResponse = client.startGame(1);
+        // Start game with dealer having a non-Ace card to avoid insurance
+        java.util.Map<String, String> params = new java.util.HashMap<>();
+        params.put("dealerCard1Rank", "KING");
+        ApiResponse<GameState> startResponse = client.startGame(1, params);
         ApiAssertions.assertSuccess(startResponse);
         String gameId = startResponse.getData().getId();
 

@@ -53,7 +53,7 @@ public class Hand {
      */
     public void addCard(Card card) {
         cards.add(card);
-        if (getValue() > 21) {
+        if (card != null && getValue() > 21) {
             busted = true;
         }
     }
@@ -179,9 +179,11 @@ public class Hand {
         int total = 0;
         int aces = 0;
         for (Card card : cards) {
-            total += card.getRank().getValue();
-            if (card.getRank() == Rank.ACE) {
-                aces++;
+            if (card != null) {
+                total += card.getRank().getValue();
+                if (card.getRank() == Rank.ACE) {
+                    aces++;
+                }
             }
         }
         while (total > 21 && aces > 0) {
