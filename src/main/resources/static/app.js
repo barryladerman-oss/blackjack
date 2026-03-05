@@ -683,6 +683,14 @@ const renderState = (state) => {
             const result = resultDisplay;
             const doubled = (hand.betUnits === 2) ? `<span class=\"tag\">DOUBLED</span>` : "";
             const hint = recommendedAction ? `<span class=\"tag recommended\">${formatRecommendation(recommendedAction)}</span>` : "";
+
+            // Display bust probability if available and hand is active
+            let bustOddsDisplay = "";
+            if (hand.bustProbability !== undefined && hand.bustProbability > 0 && !hand.busted && !hand.standing && state.phase === "PLAYER_TURN") {
+                const bustPercent = (hand.bustProbability * 100).toFixed(1);
+                bustOddsDisplay = `<span class=\"tag bust-odds\" style=\"background-color: var(--bg-secondary); color: var(--text-primary); font-size: 0.85em;\">Bust: ${bustPercent}%</span>`;
+            }
+
             const handStatus = [
                 `${hand.total}`,
                 hand.soft ? "(soft)" : null,
@@ -741,7 +749,7 @@ const renderState = (state) => {
                     + `</div>`;
             }
 
-            return `<div class=\"row hand-row${isActive ? " active" : ""}${resultClass}\">\n                    <div class=\"row-title\">Hand ${hand.index + 1}</div>\n                    <div class=\"cards\">${renderCards(hand.cards)}</div>\n                    <div class=\"hand-meta\">\n                        <span class=\"hand-status\">${handStatus}</span>\n                        ${result}\n                        ${doubled}\n                        ${hint}\n                    </div>\n                    ${actionsHtml}\n                </div>`;
+            return `<div class=\"row hand-row${isActive ? " active" : ""}${resultClass}\">\n                    <div class=\"row-title\">Hand ${hand.index + 1}</div>\n                    <div class=\"cards\">${renderCards(hand.cards)}</div>\n                    <div class=\"hand-meta\">\n                        <span class=\"hand-status\">${handStatus}</span>\n                        ${result}\n                        ${doubled}\n                        ${hint}\n                        ${bustOddsDisplay}\n                    </div>\n                    ${actionsHtml}\n                </div>`;
         })
         .join("");
 
@@ -1203,9 +1211,20 @@ const showHitCardModal = (handIndex) => {
 
     // Show hand value in modal
     const hand = lastState && lastState.hands && lastState.hands[handIndex];
+    console.log("Hit modal - hand:", hand);
+    console.log("Hit modal - bustProbability:", hand?.bustProbability);
     let valueText = "";
     if (hand) {
         valueText = `Hand Value: <strong>${hand.total}</strong> ${hand.soft ? '(soft)' : ''} ${hand.busted ? '(bust)' : ''}`;
+
+        // Add bust probability if available
+        if (hand.bustProbability !== undefined && !hand.busted) {
+            const bustPercent = (hand.bustProbability * 100).toFixed(1);
+            valueText += `<br><span style="color: var(--warning, #ff6b6b);">Bust Odds: <strong>${bustPercent}%</strong></span>`;
+            console.log("Adding bust odds to modal:", bustPercent + "%");
+        } else {
+            console.log("Bust odds not shown - bustProb:", hand.bustProbability, "busted:", hand.busted);
+        }
     }
     let valueDiv = hitCardModal.querySelector('.hand-value-info');
     if (!valueDiv) {

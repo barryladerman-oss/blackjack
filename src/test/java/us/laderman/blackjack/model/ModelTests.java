@@ -353,7 +353,8 @@ class PlayerHandStateModelTest {
                 "HIT",
                 false,
                 true,
-                1);
+                1,
+                0.0);
         assertThat(hand.getIndex()).isEqualTo(1);
     }
 }

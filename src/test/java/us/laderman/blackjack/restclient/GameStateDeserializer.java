@@ -99,10 +99,11 @@ public class GameStateDeserializer extends JsonDeserializer<GameState> {
         boolean canHitAfterSplitAces = node.has("canHitAfterSplitAces") ? node.get("canHitAfterSplitAces").asBoolean()
                 : false;
         int betUnits = node.has("betUnits") ? node.get("betUnits").asInt() : 0;
+        double bustProbability = node.has("bustProbability") ? node.get("bustProbability").asDouble() : 0.0;
 
         return new GameState.PlayerHandState(index, cards, total, soft, busted, standing,
                 insured, insuranceDeclined, insuranceWon, result, recommendedAction,
-                isFromSplit, canHitAfterSplitAces, betUnits);
+                isFromSplit, canHitAfterSplitAces, betUnits, bustProbability);
     }
 
     private List<Card> deserializeCards(JsonNode node, DeserializationContext ctxt)

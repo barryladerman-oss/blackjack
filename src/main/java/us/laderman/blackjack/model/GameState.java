@@ -215,6 +215,7 @@ public class GameState {
         private final boolean isFromSplit;
         private final boolean canHitAfterSplitAces;
         private final int betUnits;
+        private final double bustProbability;
 
         public PlayerHandState(int index,
                 List<Card> cards,
@@ -229,7 +230,8 @@ public class GameState {
                 String recommendedAction,
                 boolean isFromSplit,
                 boolean canHitAfterSplitAces,
-                int betUnits) {
+                int betUnits,
+                double bustProbability) {
             this.index = index;
             this.cards = cards;
             this.total = total;
@@ -244,6 +246,7 @@ public class GameState {
             this.isFromSplit = isFromSplit;
             this.canHitAfterSplitAces = canHitAfterSplitAces;
             this.betUnits = betUnits;
+            this.bustProbability = bustProbability;
         }
 
         public int getIndex() {
@@ -306,6 +309,15 @@ public class GameState {
             return betUnits;
         }
 
+        /**
+         * Gets the probability of busting on the next card.
+         * 
+         * @return bust probability (0.0 to 1.0)
+         */
+        public double getBustProbability() {
+            return bustProbability;
+        }
+
         @Override
         public String toString() {
             return "PlayerHandState{" +
@@ -323,6 +335,7 @@ public class GameState {
                     ", isFromSplit=" + isFromSplit +
                     ", canHitAfterSplitAces=" + canHitAfterSplitAces +
                     ", betUnits=" + betUnits +
+                    ", bustProbability=" + bustProbability +
                     '}';
         }
     }

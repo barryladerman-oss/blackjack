@@ -731,6 +731,9 @@ public class BlackjackGame {
             String result = resolveResult(hand, dealerHand);
             String recommended = recommendAction(hand, dealerUpCard, i, trueCount);
 
+            // Calculate bust probability for the next card
+            double bustProb = OddsCalculator.calculateBustProbability(shoe, hand);
+
             handStates.add(new GameState.PlayerHandState(
                     i,
                     hand.getCards(),
@@ -745,7 +748,8 @@ public class BlackjackGame {
                     recommended,
                     hand.isFromSplit(),
                     hand.canHitAfterSplitAces(),
-                    hand.getBetUnits()));
+                    hand.getBetUnits(),
+                    bustProb));
         }
 
         String note;

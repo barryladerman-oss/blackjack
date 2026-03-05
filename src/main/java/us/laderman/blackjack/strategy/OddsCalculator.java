@@ -101,4 +101,45 @@ public class OddsCalculator {
         }
         return result;
     }
+
+    /**
+     * Calculates the probability that the player hand will bust on the next card.
+     *
+     * @param shoe       The current shoe
+     * @param playerHand The player's hand
+     * @return Probability of busting (0.0 to 1.0)
+     */
+    public static double calculateBustProbability(Shoe shoe, Hand playerHand) {
+        // If already busted or standing, return 0
+        if (playerHand.isBusted() || playerHand.isStanding()) {
+            return 0.0;
+        }
+
+        int currentValue = playerHand.getValue();
+
+        // If 21, cannot bust
+        if (currentValue >= 21) {
+            return 0.0;
+        }
+
+        List<Card> availableCards = shoe.getCards();
+        if (availableCards.isEmpty()) {
+            return 0.0;
+        }
+
+        int bustCards = 0;
+        int totalCards = availableCards.size();
+
+        for (Card card : availableCards) {
+            // Create a test hand to check if this card would bust
+            Hand testHand = new Hand(playerHand);
+            testHand.addCard(card);
+
+            if (testHand.isBusted()) {
+                bustCards++;
+            }
+        }
+
+        return (double) bustCards / totalCards;
+    }
 }
