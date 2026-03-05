@@ -118,19 +118,12 @@ public class OddsCalculator {
         int currentValue = playerHand.getValue();
 
         // If 21, cannot bust
-        if (currentValue >= 21) {
+        if (currentValue >= 21 || currentValue < 12) {
             return 0.0;
         }
 
-        List<Card> availableCards = shoe.getCards();
-        if (availableCards.isEmpty()) {
-            return 0.0;
-        }
-
-        int bustCards = 0;
-        int totalCards = availableCards.size();
-
-        for (Card card : availableCards) {
+       int bustCards = 0;
+       for (Card card : shoe.getCards()) {
             // Create a test hand to check if this card would bust
             Hand testHand = new Hand(playerHand);
             testHand.addCard(card);
@@ -139,7 +132,6 @@ public class OddsCalculator {
                 bustCards++;
             }
         }
-
-        return (double) bustCards / totalCards;
+        return (double) bustCards / shoe.getCards().size();
     }
 }
