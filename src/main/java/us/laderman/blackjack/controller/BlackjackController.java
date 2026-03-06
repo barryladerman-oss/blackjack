@@ -55,7 +55,6 @@ public class BlackjackController {
         System.out.println(logMessage.toString());
     }
 
-    @RequestMapping(value = "/start", method = { RequestMethod.GET, RequestMethod.POST })
     /**
      * Starts a new Blackjack game.
      * 
@@ -63,6 +62,7 @@ public class BlackjackController {
      * @param allParams additional parameters for game setup
      * @return the initial game state
      */
+    @RequestMapping(value = "/start", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState start(
             @RequestParam(defaultValue = "1") int hands,
             @RequestParam(defaultValue = "6") int decks,
@@ -84,19 +84,18 @@ public class BlackjackController {
         }
     }
 
-    @RequestMapping(value = "/state/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     /**
      * Gets the current state of the game.
      * 
      * @param id game identifier
      * @return the current game state
      */
+    @RequestMapping(value = "/state/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState state(@PathVariable String id) {
         logRequest("/api/blackjack/state/" + id, "id=" + id);
         return handleStateRequest(id, null, ActionType.STATE);
     }
 
-    @RequestMapping(value = "/hit/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     /**
      * Performs a hit action for the specified hand.
      * 
@@ -106,6 +105,7 @@ public class BlackjackController {
      * @param suit optional suit for split
      * @return the updated game state
      */
+    @RequestMapping(value = "/hit/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState hit(
             @PathVariable String id,
             @RequestParam int hand,
@@ -131,7 +131,6 @@ public class BlackjackController {
         }
     }
 
-    @RequestMapping(value = "/stand/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     /**
      * Performs a stand action for the specified hand.
      * 
@@ -139,13 +138,13 @@ public class BlackjackController {
      * @param hand hand index
      * @return the updated game state
      */
+    @RequestMapping(value = "/stand/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState stand(@PathVariable String id, @RequestParam int hand) {
         String params = String.format("id=%s, hand=%d", id, hand);
         logRequest("/api/blackjack/stand/" + id, params);
         return handleStateRequest(id, hand, ActionType.STAND);
     }
 
-    @RequestMapping(value = "/double/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     /**
      * Performs a double down action for the specified hand.
      * 
@@ -155,6 +154,7 @@ public class BlackjackController {
      * @param suit optional suit for split
      * @return the updated game state
      */
+    @RequestMapping(value = "/double/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState doubleDown(
             @PathVariable String id,
             @RequestParam int hand,
@@ -180,7 +180,6 @@ public class BlackjackController {
         }
     }
 
-    @RequestMapping(value = "/split/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     /**
      * Splits the specified hand into two hands.
      * 
@@ -192,6 +191,7 @@ public class BlackjackController {
      * @param card2Suit optional suit for second card
      * @return the updated game state
      */
+    @RequestMapping(value = "/split/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState split(@PathVariable String id, @RequestParam int hand,
             @RequestParam(required = false) String card1Rank,
             @RequestParam(required = false) String card1Suit,
@@ -218,7 +218,6 @@ public class BlackjackController {
         }
     }
 
-    @RequestMapping(value = "/insurance/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     /**
      * Performs an insurance action for the specified hand.
      * 
@@ -226,13 +225,13 @@ public class BlackjackController {
      * @param hand hand index
      * @return the updated game state
      */
+    @RequestMapping(value = "/insurance/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState insurance(@PathVariable String id, @RequestParam int hand) {
         String params = String.format("id=%s, hand=%d", id, hand);
         logRequest("/api/blackjack/insurance/" + id, params);
         return handleStateRequest(id, hand, ActionType.INSURANCE);
     }
 
-    @RequestMapping(value = "/decline-insurance/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     /**
      * Declines insurance for the specified hand.
      * 
@@ -240,6 +239,7 @@ public class BlackjackController {
      * @param hand hand index
      * @return the updated game state
      */
+    @RequestMapping(value = "/decline-insurance/{id}", method = { RequestMethod.GET, RequestMethod.POST })
     public GameState declineInsurance(@PathVariable String id, @RequestParam int hand) {
         String params = String.format("id=%s, hand=%d", id, hand);
         logRequest("/api/blackjack/decline-insurance/" + id, params);

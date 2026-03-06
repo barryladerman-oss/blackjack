@@ -49,7 +49,7 @@ class BlackjackControllerTest {
         when(mockService.startGame(anyInt(), any())).thenReturn(mockState);
 
         // Act
-        GameState result = controller.start(1, new java.util.HashMap<>());
+        GameState result = controller.start(1, 6, false, false, new java.util.HashMap<>());
 
         // Assert
         assertThat(result).isNotNull();
@@ -243,7 +243,7 @@ class BlackjackControllerTest {
         when(mockService.startGame(eq(1), any())).thenReturn(mockState);
 
         // Act
-        GameState result = controller.start(1, new java.util.HashMap<>());
+        GameState result = controller.start(1, 6, false, false, new java.util.HashMap<>());
 
         // Assert
         assertThat(result.getHands()).hasSize(1);
@@ -265,7 +265,7 @@ class BlackjackControllerTest {
         when(mockService.startGame(eq(3), any())).thenReturn(mockState);
 
         // Act
-        GameState result = controller.start(3, new java.util.HashMap<>());
+        GameState result = controller.start(3, 6, false, false, new java.util.HashMap<>());
 
         // Assert
         assertThat(result.getHands()).hasSize(3);
