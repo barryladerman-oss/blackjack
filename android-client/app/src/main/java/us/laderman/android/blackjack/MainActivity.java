@@ -234,6 +234,64 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void performInsurance() {
+        if (currentGameId == null) {
+            Toast.makeText(this, "Please start a game first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        statusText.setText("Taking insurance on hand " + (currentHandIndex + 1) + "...");
+
+        Call<GameState> call = apiService.insurance(currentGameId, currentHandIndex);
+        call.enqueue(new Callback<GameState>() {
+            @Override
+            public void onResponse(Call<GameState> call, Response<GameState> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    currentGameState = response.body();
+                    updateUI();
+                    checkHandStatus();
+                } else {
+                    statusText.setText("Failed to take insurance: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<GameState> call, Throwable t) {
+                statusText.setText("Network error: " + t.getMessage());
+                Toast.makeText(MainActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void performDeclineInsurance() {
+        if (currentGameId == null) {
+            Toast.makeText(this, "Please start a game first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        statusText.setText("Declining insurance on hand " + (currentHandIndex + 1) + "...");
+
+        Call<GameState> call = apiService.declineInsurance(currentGameId, currentHandIndex);
+        call.enqueue(new Callback<GameState>() {
+            @Override
+            public void onResponse(Call<GameState> call, Response<GameState> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    currentGameState = response.body();
+                    updateUI();
+                    checkHandStatus();
+                } else {
+                    statusText.setText("Failed to decline insurance: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<GameState> call, Throwable t) {
+                statusText.setText("Network error: " + t.getMessage());
+                Toast.makeText(MainActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void checkHandStatus() {
         if (currentGameState == null || currentGameState.getHands() == null) {
             return;
@@ -480,49 +538,90 @@ public class MainActivity extends AppCompatActivity {
             handOutcome.setVisibility(View.GONE);
         }
 
-        // Setup hand buttons
-        if (isActiveHand && !isHandComplete && !"COMPLETE".equals(currentGameState.getPhase())) {
-            buttonsContainer.setVisibility(View.VISIBLE);
+        // Check if insurance decision is needed first
+        boolean dealerHasAce = false;
+        if (currentGameState.getDealer() != null &&
+                currentGameState.getDealer().getCards() != null &&
+                !currentGameState.getDealer().getCards().isEmpty()) {
+            Card dealerUpCard = currentGameState.getDealer().getCards().get(0);
+            dealerHasAce = "ACE".equals(dealerUpCard.getRank());
+        }
 
-            // Hit button - always available for active hand
-            hitBtn.setOnClickListener(v -> performHitForHand(index));
-            hitBtn.setEnabled(true);
+        boolean needsInsuranceDecision = !hand.isInsured() && !hand.isInsuranceDeclined();
+        boolean showInsurance = isActiveHand &&
+                dealerHasAce &&
+                needsInsuranceDecision &&
+                !"COMPLETE".equals(currentGameState.getPhase());
 
-            // Stand button - always available for active hand
-            standBtn.setOnClickListener(v -> performStandForHand(index));
-            standBtn.setEnabled(true);
-
-            // Double button - only if total is 10 or 11 and exactly 2 cards
-            int total = hand.getTotal();
-            int cardCount = hand.getCards() != null ? hand.getCards().size() : 0;
-            boolean canDouble = (total == 10 || total == 11) && cardCount == 2;
-            if (canDouble) {
-                doubleBtn.setVisibility(View.VISIBLE);
-                doubleBtn.setEnabled(true);
-                doubleBtn.setOnClickListener(v -> performDoubleForHand(index));
-            } else {
-                doubleBtn.setVisibility(View.GONE);
-            }
-
-            // Split button - only if exactly 2 cards of same rank and no split has occurred
-            // yet
-            List<Card> cards = hand.getCards();
-            int totalHands = currentGameState.getHands() != null ? currentGameState.getHands().size() : 0;
-            boolean canSplit = cards != null && cards.size() == 2 &&
-                    cards.get(0).getRank().equals(cards.get(1).getRank()) &&
-                    totalHands == 1; // Only allow split if still one hand (no previous split)
-            if (canSplit) {
-                splitBtn.setVisibility(View.VISIBLE);
-                splitBtn.setEnabled(true);
-                splitBtn.setOnClickListener(v -> performSplitForHand(index));
-            } else {
-                splitBtn.setVisibility(View.GONE);
-            }
-        } else {
+        // Setup insurance buttons (takes priority over other actions)
+        if (showInsurance) {
+            // Hide regular action buttons when insurance decision is needed
             buttonsContainer.setVisibility(View.GONE);
+
+            // Show insurance buttons
+            insuranceButtonsContainer.setVisibility(View.VISIBLE);
+            insuranceBtn.setOnClickListener(v -> performInsuranceForHand(index));
+            insuranceBtn.setEnabled(true);
+            declineInsuranceBtn.setOnClickListener(v -> performDeclineInsuranceForHand(index));
+            declineInsuranceBtn.setEnabled(true);
+        } else {
+            // Hide insurance buttons
+            insuranceButtonsContainer.setVisibility(View.GONE);
+
+            // Setup hand buttons - only show if no insurance decision is pending
+            if (isActiveHand && !isHandComplete && !"COMPLETE".equals(currentGameState.getPhase())) {
+                buttonsContainer.setVisibility(View.VISIBLE);
+
+                // Hit button - always available for active hand
+                hitBtn.setOnClickListener(v -> performHitForHand(index));
+                hitBtn.setEnabled(true);
+
+                // Stand button - always available for active hand
+                standBtn.setOnClickListener(v -> performStandForHand(index));
+                standBtn.setEnabled(true);
+
+                // Double button - only if total is 10 or 11 and exactly 2 cards
+                int total = hand.getTotal();
+                int cardCount = hand.getCards() != null ? hand.getCards().size() : 0;
+                boolean canDouble = (total == 10 || total == 11) && cardCount == 2;
+                if (canDouble) {
+                    doubleBtn.setVisibility(View.VISIBLE);
+                    doubleBtn.setEnabled(true);
+                    doubleBtn.setOnClickListener(v -> performDoubleForHand(index));
+                } else {
+                    doubleBtn.setVisibility(View.GONE);
+                }
+
+                // Split button - only if exactly 2 cards of same rank and no split has occurred
+                // yet
+                List<Card> cards = hand.getCards();
+                int totalHands = currentGameState.getHands() != null ? currentGameState.getHands().size() : 0;
+                boolean canSplit = cards != null && cards.size() == 2 &&
+                        cards.get(0).getRank().equals(cards.get(1).getRank()) &&
+                        totalHands == 1; // Only allow split if still one hand (no previous split)
+                if (canSplit) {
+                    splitBtn.setVisibility(View.VISIBLE);
+                    splitBtn.setEnabled(true);
+                    splitBtn.setOnClickListener(v -> performSplitForHand(index));
+                } else {
+                    splitBtn.setVisibility(View.GONE);
+                }
+            } else {
+                buttonsContainer.setVisibility(View.GONE);
+            }
         }
 
         return view;
+    }
+
+    private void performInsuranceForHand(int handIndex) {
+        currentHandIndex = handIndex;
+        performInsurance();
+    }
+
+    private void performDeclineInsuranceForHand(int handIndex) {
+        currentHandIndex = handIndex;
+        performDeclineInsurance();
     }
 
     private void performHitForHand(int handIndex) {

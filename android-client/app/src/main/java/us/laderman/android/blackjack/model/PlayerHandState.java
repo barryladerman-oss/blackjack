@@ -1,26 +1,10 @@
 package us.laderman.android.blackjack.model;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.List;
 
-public class PlayerHandState {
-    @SerializedName("cards")
-    private List<Card> cards;
-
-    @SerializedName("total")
-    private int total;
-
-    @SerializedName("soft")
-    private boolean soft;
-
-    @SerializedName("busted")
-    private boolean busted;
-
+public class PlayerHandState extends DealerState {
     @SerializedName("standing")
     private boolean standing;
-
-    @SerializedName("blackjack")
-    private boolean blackjack;
 
     @SerializedName("outcome")
     private String outcome;
@@ -37,28 +21,17 @@ public class PlayerHandState {
     @SerializedName("push")
     private boolean push;
 
-    public List<Card> getCards() {
-        return cards;
-    }
+    @SerializedName("insured")
+    private boolean insured;
 
-    public int getTotal() {
-        return total;
-    }
+    @SerializedName("insuranceDeclined")
+    private boolean insuranceDeclined;
 
-    public boolean isSoft() {
-        return soft;
-    }
-
-    public boolean isBusted() {
-        return busted;
-    }
+    @SerializedName("insuranceWon")
+    private boolean insuranceWon;
 
     public boolean isStanding() {
         return standing;
-    }
-
-    public boolean isBlackjack() {
-        return blackjack;
     }
 
     public String getOutcome() {
@@ -79,5 +52,17 @@ public class PlayerHandState {
 
     public boolean isPush() {
         return push;
+    }
+
+    public boolean isInsured() {
+        return insured;
+    }
+
+    public boolean isInsuranceDeclined() {
+        return insuranceDeclined;
+    }
+
+    public boolean isInsuranceWon() {
+        return insuranceWon;
     }
 }
