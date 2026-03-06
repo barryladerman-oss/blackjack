@@ -2,7 +2,15 @@
 
 Spring Boot REST API that runs a minimal blackjack game with multiple player hands and Hi-Lo card counting. The API returns the running count, true count, and a suggested bet size.
 
-## Run
+## Clients
+
+This project includes:
+- **Web Client**: Browser-based interface (in `src/main/resources/static/`)
+- **Android Client**: Native Android app (in `android-client/`)
+
+See the [Android Client README](android-client/README.md) for setup and installation instructions.
+
+## Run Server
 
 ```bash
 mvn spring-boot:run

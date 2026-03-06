@@ -64,13 +64,23 @@ public class BlackjackController {
      * @return the initial game state
      */
     public GameState start(
-            @RequestParam int hands,
+            @RequestParam(defaultValue = "1") int hands,
+            @RequestParam(defaultValue = "6") int decks,
+            @RequestParam(defaultValue = "false") boolean doubleOn9,
+            @RequestParam(defaultValue = "false") boolean hitSoft17,
             @RequestParam java.util.Map<String, String> allParams) {
-        logRequest("/api/blackjack/start", "hands=" + hands);
+        // Add the individual params to the map for the service layer
+        allParams.put("decks", String.valueOf(decks));
+        allParams.put("doubleOn9", String.valueOf(doubleOn9));
+        allParams.put("hitSoft17", String.valueOf(hitSoft17));
+
+        logRequest("/api/blackjack/start", "hands=" + hands + ", decks=" + decks);
         try {
             return service.startGame(hands, allParams);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
         }
     }
 

@@ -349,6 +349,14 @@ public class BlackjackGame {
         if (isAceHand) {
             hand.setStanding(true);
             newHand.setStanding(true);
+        } else {
+            // Auto-stand on 21
+            if (hand.getValue() == 21) {
+                hand.setStanding(true);
+            }
+            if (newHand.getValue() == 21) {
+                newHand.setStanding(true);
+            }
         }
 
         finishIfReady();
@@ -581,7 +589,7 @@ public class BlackjackGame {
         }
 
         // If dealer shows an ace, delay showing first hand action until all insurance
-        // decisions are complete
+        // decisions are resolved
         if (dealerHasAce()) {
             // Do not auto-stand blackjacks or show first hand action until insurance
             // decisions are resolved

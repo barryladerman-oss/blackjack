@@ -81,9 +81,9 @@ public class BlackjackService {
         validateNoDuplicates(allCards.toArray(new Card[0]), decks);
 
         // Parse rule settings
-        boolean allowDoubleOn9 = "1".equals(allParams.get("allowDoubleOn9"));
-        boolean dealerHitSoft17 = "1".equals(allParams.get("dealerHitSoft17"));
-        boolean allowDoubleOnSplit = "1".equals(allParams.get("allowDoubleOnSplit"));
+        boolean allowDoubleOn9 = Boolean.parseBoolean(allParams.get("doubleOn9"));
+        boolean dealerHitSoft17 = Boolean.parseBoolean(allParams.get("hitSoft17"));
+        boolean allowDoubleOnSplit = Boolean.parseBoolean(allParams.get("allowDoubleOnSplit"));
 
         BlackjackGame game = new BlackjackGame(
                 hands,
