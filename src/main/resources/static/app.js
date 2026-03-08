@@ -648,6 +648,10 @@ const renderState = (state) => {
             if (showDouble && hand.total === 9 && !allowDoubleOn9) {
                 showDouble = false;
             }
+            // Hide double button for split hands if rule is off
+            if (showDouble && isFromSplit && !allowDoubleOnSplit) {
+                showDouble = false;
+            }
             let showSplit = !isSplitAceComplete && handPlayable && canSplitVal && !isFromSplit;
 
             const rawRecommendation = hand.recommendedAction || "";
@@ -932,9 +936,9 @@ if (startBtn) {
             }
         });
         // Add rule settings to params
-        params.append('allowDoubleOn9', allowDoubleOn9 ? '1' : '0');
-        params.append('dealerHitSoft17', dealerHitSoft17 ? '1' : '0');
-        params.append('allowDoubleOnSplit', allowDoubleOnSplit ? '1' : '0');
+        params.append('doubleOn9', allowDoubleOn9 ? 'true' : 'false');
+        params.append('hitSoft17', dealerHitSoft17 ? 'true' : 'false');
+        params.append('allowDoubleOnSplit', allowDoubleOnSplit ? 'true' : 'false');
 
         if (cardsDealtEl) cardsDealtEl.textContent = "-";
         if (strategyTextEl) strategyTextEl.textContent = "-";
