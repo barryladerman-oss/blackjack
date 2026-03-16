@@ -129,6 +129,11 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
     @Test
     @DisplayName("Full game flow: split")
     void testSplit() {
+        WebElement webElement = driver.findElement(By.id("allowDoubleOnSplit"));
+        if (!webElement.isSelected()) {
+            webElement.click();
+        }
+
         setNumHands(2);
         setDealerUpCard("TWO", "HEARTS");
         setPlayerCard(1, 1, "EIGHT");
@@ -140,11 +145,15 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("splitCard1Rank")));
         WebElement splitCardRank1 = driver.findElement(By.id("splitCard1Rank"));
         WebElement splitCardRank2 = driver.findElement(By.id("splitCard2Rank"));
-        new Select(splitCardRank1).selectByValue("TEN");
-        new Select(splitCardRank2).selectByValue("TEN");
+        new Select(splitCardRank1).selectByValue("THREE");
+        new Select(splitCardRank2).selectByValue("EIGHT");
         clickBtn(ID_SPLIT_CONFIRM_BTN);
 
-        clickActionBtn(1, ID_STAND_BTN);
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(ID_DOUBLE_CONFIRM_BTN)));
+        clickBtn(ID_DOUBLE_CONFIRM_BTN);
+
+        // clickActionBtn(1, ID_STAND_BTN); // first hand is doubled, so no stand action
+        // available
         clickActionBtn(2, ID_STAND_BTN);
         clickActionBtn(3, ID_STAND_BTN);
 

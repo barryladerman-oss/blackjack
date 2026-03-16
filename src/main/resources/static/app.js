@@ -32,11 +32,14 @@ const cardSelectionContainer = document.getElementById("cardSelectionContainer")
 const allowDoubleOn9Checkbox = document.getElementById("allowDoubleOn9");
 const dealerHitSoft17Checkbox = document.getElementById("dealerHitSoft17");
 const allowDoubleOnSplitCheckbox = document.getElementById("allowDoubleOnSplit");
+const autoDeclineInsuranceOnAceCheckbox = document.getElementById("autoDeclineInsuranceOnAce");
 
 // Current rule settings
 let allowDoubleOn9 = allowDoubleOn9Checkbox ? allowDoubleOn9Checkbox.checked : false;
 let dealerHitSoft17 = dealerHitSoft17Checkbox ? dealerHitSoft17Checkbox.checked : true;
 let allowDoubleOnSplit = allowDoubleOnSplitCheckbox ? allowDoubleOnSplitCheckbox.checked : true;
+let autoDeclineInsuranceOnAce = autoDeclineInsuranceOnAceCheckbox ? autoDeclineInsuranceOnAceCheckbox.checked : false;
+let autoDeclineInsuranceInProgress = false;
 
 if (allowDoubleOn9Checkbox) {
     allowDoubleOn9Checkbox.addEventListener("change", () => {
@@ -51,6 +54,11 @@ if (dealerHitSoft17Checkbox) {
 if (allowDoubleOnSplitCheckbox) {
     allowDoubleOnSplitCheckbox.addEventListener("change", () => {
         allowDoubleOnSplit = allowDoubleOnSplitCheckbox.checked;
+    });
+}
+if (autoDeclineInsuranceOnAceCheckbox) {
+    autoDeclineInsuranceOnAceCheckbox.addEventListener("change", () => {
+        autoDeclineInsuranceOnAce = autoDeclineInsuranceOnAceCheckbox.checked;
     });
 }
 
@@ -132,6 +140,53 @@ const updateButtonStates = () => {
     if (splitBtn) splitBtn.disabled = !canAct;
     document.querySelectorAll(".hand-actions button").forEach((button) => {
         button.disabled = isBusy;
+    });
+};
+
+const getPendingInsuranceHandIndexes = (state = lastState) => {
+    if (!state || state.phase !== "PLAYER_TURN" || !dealerShowsAceInState(state) || !Array.isArray(state.hands)) {
+        return [];
+    }
+
+    return state.hands
+        .map((hand, index) => {
+            const isFromSplit = Boolean(hand.isFromSplit || hand.fromSplit);
+            const needsInsuranceDecision = hand.cards && hand.cards.length === 2
+                && !hand.insured
+                && !hand.insuranceDeclined
+                && !isFromSplit
+                && !hand.standing
+                && !hand.busted;
+            return needsInsuranceDecision ? index : -1;
+        })
+        .filter((index) => index >= 0);
+};
+
+const maybeAutoDeclineInsurance = (state = lastState) => {
+    if (!autoDeclineInsuranceOnAce || autoDeclineInsuranceInProgress) {
+        return;
+    }
+
+    const handIndexes = getPendingInsuranceHandIndexes(state);
+    if (handIndexes.length === 0) {
+        return;
+    }
+
+    autoDeclineInsuranceInProgress = true;
+    replaceGameStateNext = true;
+    run(async () => {
+        const id = guardGameId();
+        if (!id) {
+            throw new Error("No active game found.");
+        }
+
+        let latestState = null;
+        for (const handIndex of handIndexes) {
+            latestState = await apiFetch(`/api/blackjack/decline-insurance/${id}?hand=${handIndex}`, { method: "POST" });
+        }
+        return latestState;
+    }).finally(() => {
+        autoDeclineInsuranceInProgress = false;
     });
 };
 
@@ -790,6 +845,7 @@ const renderState = (state) => {
     skipAutoModal = false;
     setBusy(false);
     updateButtonStates();
+    setTimeout(() => maybeAutoDeclineInsurance(state), 0);
 }
 // Force update after DOM change
 setTimeout(updateButtonStates, 0);

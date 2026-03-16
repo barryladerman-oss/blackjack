@@ -41,18 +41,21 @@
                 <h2>New Game</h2>
                 <div class="compact-form">
                     <label for="hands">Hands</label>
-                    <input id="hands" type="number" min="1" max="5" value="5" />
+                    <input id="hands" type="number" min="1" max="5" value="3" />
                     <label for="decks" style="margin-left:8px;">Decks</label>
-                    <input id="decks" type="number" min="1" max="8" value="6" style="width:60px;" />
+                    <input id="decks" type="number" min="1" max="8" value="1" style="width:60px;" />
                     <button id="startBtn">Start</button>
                     <div style="margin-top:8px;">
                         <label style="font-size:12px;">
-                            <input type="checkbox" id="allowDoubleOn9" checked />Double on 9
+                            <input type="checkbox" id="allowDoubleOn9" unchecked />Allow Double on 9
                         </label>
-                        <label style="font-size:12px; margin-left:12px;">
-                            <input type="checkbox" id="allowDoubleOnSplit" checked />Double after split
-                        </label> <label style="font-size:12px; margin-left:12px;">
-                            <input type="checkbox" id="dealerHitSoft17" checked />Dealer hits on soft 17
+                        <label style="font-size:12px; margin-left:6px;">
+                            <input type="checkbox" id="allowDoubleOnSplit" checked />Allow Double on split
+                        </label> <label style="font-size:12px; margin-left:6px;">
+                            <input type="checkbox" id="dealerHitSoft17" checked />Dealer hits soft 17
+                        </label>
+                        <label style="font-size:12px; margin-left:6px;">
+                            <input type="checkbox" id="autoDeclineInsuranceOnAce" checked />Skip insurance
                         </label>
                     </div>
                 </div>
