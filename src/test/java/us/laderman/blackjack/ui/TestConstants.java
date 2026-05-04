@@ -26,21 +26,23 @@ public final class TestConstants {
     public static final String ID_PHASE = "phase";
     public static final String ID_HIT_BTN = "hit";
     public static final String ID_STAND_BTN = "stand";
+    public static final String ID_DOUBLE_BTN = "double";
     public static final String ID_TRUE_COUNT = "trueCount";
     public static final String ID_RUNNING_COUNT = "runningCount";
     public static final String ID_SUGGESTED_BET = "suggestedBet";
     public static final String ID_DEALER_UPCARD = "dealerUpcard";
     public static final String ID_GAME_ID = "gameId";
     public static final String ID_DECKS_REMAINING = "decksRemaining";
-    public static final String ID_DOUBLE_BTN = "doubleBtn";
     public static final String ID_SPLIT_BTN = "splitBtn";
 
     public static final String ID_HIT_CANCEL_BTN = "hitCardCancelBtn";
     public static final String ID_HIT_CONFIRM_BTN = "hitCardConfirmBtn";
     public static final String ID_SPLIT_CANCEL_BTN = "splitCardCancelBtn";
     public static final String ID_SPLIT_CONFIRM_BTN = "splitCardConfirmBtn";
-    public static final String ID_DOUBLE_ANCEL_BTN = "doubleCardCancelBtn";
+    public static final String ID_DOUBLE_CANCEL_BTN = "doubleCardCancelBtn";
     public static final String ID_DOUBLE_CONFIRM_BTN = "doubleCardConfirmBtn";
+
+    public static final String ID_ALLOW_DOUBLE_ON_9 = "allowDoubleOn9";
 
     public static final String ID_INSURANCE_BTN = "insurance";
 

@@ -12,6 +12,7 @@ import static us.laderman.blackjack.ui.TestConstants.ID_STAND_BTN;
 import static us.laderman.blackjack.ui.TestConstants.ID_START_BTN;
 import static us.laderman.blackjack.ui.TestConstants.ID_GAME_ID;
 import static us.laderman.blackjack.ui.TestConstants.ID_PHASE;
+import static us.laderman.blackjack.ui.TestConstants.ID_ALLOW_DOUBLE_ON_9;
 import static us.laderman.blackjack.ui.TestConstants.ID_DEALER_UPCARD;
 import static us.laderman.blackjack.ui.TestConstants.ID_RUNNING_COUNT;
 import static us.laderman.blackjack.ui.TestConstants.ID_TRUE_COUNT;
@@ -19,6 +20,7 @@ import static us.laderman.blackjack.ui.TestConstants.ID_HIT_CONFIRM_BTN;
 import static us.laderman.blackjack.ui.TestConstants.ID_HIT_CARD_MODAL;
 import static us.laderman.blackjack.ui.TestConstants.ID_SPLIT_CONFIRM_BTN;
 import static us.laderman.blackjack.ui.TestConstants.ID_DOUBLE_CONFIRM_BTN;
+import static us.laderman.blackjack.ui.TestConstants.ID_DOUBLE_BTN;
 
 /**
  * Broad coverage UI tests for Blackjack application.
@@ -163,12 +165,23 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
     @Test
     @DisplayName("Full game flow: double")
     void testDouble() {
-        setNumHands(1);
-        setDealerUpCard("TWO", "HEARTS");
-        setPlayerCard(1, 1, "FIVE");
-        setPlayerCard(1, 2, "SIX");
+        clickBtn(ID_ALLOW_DOUBLE_ON_9);
+
+        setNumHands(3);
+        setDealerUpCard("SIX", "HEARTS");
+        setPlayerCard(1, 1, "NINE");
+        setPlayerCard(1, 2, "TWO");
+        setPlayerCard(2, 1, "ACE");
+        setPlayerCard(2, 2, "EIGHT");
+        setPlayerCard(3, 1, "ACE");
+        setPlayerCard(3, 2, "NINE");
         clickBtn(ID_START_BTN);
 
+        clickBtn(ID_DOUBLE_CONFIRM_BTN);
+        clickActionBtn(2, ID_DOUBLE_BTN);
+        clickBtn(ID_DOUBLE_CONFIRM_BTN);
+
+        clickActionBtn(3, ID_DOUBLE_BTN);
         clickBtn(ID_DOUBLE_CONFIRM_BTN);
 
         // no actions left after doubling, so verify game is complete

@@ -221,13 +221,18 @@ public class BlackjackGame {
             throw new IllegalArgumentException("Double requires exactly two cards");
         }
 
-        // Prevent double down on soft hands
         if (hand.isSoft()) {
-            throw new IllegalArgumentException("Double down is not allowed on soft hands");
+            if (hand.getValue() == 20) {
+                // Soft 20 is allowed to double under the new rules.
+            } else if (hand.getValue() == 19 && !allowDoubleOn9) {
+                throw new IllegalArgumentException("Double down on soft 19 is not allowed by rule");
+            } else if (hand.getValue() != 19) {
+                throw new IllegalArgumentException("Double down is not allowed on soft hands");
+            }
         }
 
-        // Only allow double on 9 if rule is enabled
-        if (hand.getValue() == 9 && !allowDoubleOn9) {
+        // Only allow double on hard 9 if rule is enabled
+        if (hand.getValue() == 9 && !hand.isSoft() && !allowDoubleOn9) {
             throw new IllegalArgumentException("Double down on 9 is not allowed by rule");
         }
 
@@ -922,9 +927,14 @@ public class BlackjackGame {
 
         String recommendation = Strategy.getRecommendedAction(hand, dealerUpValue, allowSplit);
 
-        // Prevent recommending double on 9 if rule is off
-        if ("DOUBLE".equals(recommendation) && hand.getValue() == 9 && !allowDoubleOn9) {
+        // Prevent recommending double on hard 9 if rule is off
+        if ("DOUBLE".equals(recommendation) && hand.getValue() == 9 && !hand.isSoft() && !allowDoubleOn9) {
             recommendation = "HIT";
+        }
+
+        // Prevent recommending double on soft 19 if rule is off
+        if ("DOUBLE".equals(recommendation) && hand.isSoft() && hand.getValue() == 19 && !allowDoubleOn9) {
+            recommendation = "STAND";
         }
 
         // Prevent recommending double after split if rule is off
@@ -935,9 +945,14 @@ public class BlackjackGame {
         // Apply count-based deviations for a more sophisticated strategy
         recommendation = Strategy.applyCountDeviation(recommendation, hand, dealerUpValue, trueCount);
 
-        // Prevent recommending double on 9 after count deviation if rule is off
-        if ("DOUBLE".equals(recommendation) && hand.getValue() == 9 && !allowDoubleOn9) {
+        // Prevent recommending double on hard 9 after count deviation if rule is off
+        if ("DOUBLE".equals(recommendation) && hand.getValue() == 9 && !hand.isSoft() && !allowDoubleOn9) {
             recommendation = "HIT";
+        }
+
+        // Prevent recommending double on soft 19 after count deviation if rule is off
+        if ("DOUBLE".equals(recommendation) && hand.isSoft() && hand.getValue() == 19 && !allowDoubleOn9) {
+            recommendation = "STAND";
         }
 
         // Prevent recommending double after split if rule is off (after deviation)

@@ -82,6 +82,14 @@ const cardsRemainingEl = document.getElementById("cardsRemaining");
 
 let skipAutoModal = false;
 let isBusy = false;
+
+// Check for test mode from URL parameter
+const urlParams = new URLSearchParams(window.location.search);
+const isTestMode = urlParams.has('test');
+if (isTestMode) {
+    document.body.classList.add('test-mode');
+    skipAutoModal = true; // Disable auto-modals in test mode
+}
 const setBusy = (busy) => {
     isBusy = busy;
     updateButtonStates();
@@ -191,7 +199,26 @@ const maybeAutoDeclineInsurance = (state = lastState) => {
 };
 
 const canDouble = (hand, isActive) => {
-    return isActive && hand.cards && hand.cards.length === 2 && !hand.soft && (hand.total === 9 || hand.total === 10 || hand.total === 11);
+    if (!isActive || !hand.cards || hand.cards.length !== 2) {
+        return false;
+    }
+
+    // Allow soft 20 to double
+    if (hand.soft && hand.total === 20) {
+        return true;
+    }
+
+    // Allow soft 19 to double if double on 9 is enabled
+    if (hand.soft && hand.total === 19 && allowDoubleOn9) {
+        return true;
+    }
+
+    // For hard hands, allow 9, 10, 11 if not soft
+    if (!hand.soft && (hand.total === 9 || hand.total === 10 || hand.total === 11)) {
+        return true;
+    }
+
+    return false;
 };
 
 const canSplit = (hand, isActive) => {
@@ -699,8 +726,12 @@ const renderState = (state) => {
             let showHit = canHit(hand, isSplitAceComplete, canHitAfterSplitAces);
             let showStand = !isSplitAceComplete && handPlayable;
             let showDouble = !isSplitAceComplete && handPlayable && canDoubleVal;
-            // Hide double button for 9 if rule is off
-            if (showDouble && hand.total === 9 && !allowDoubleOn9) {
+            // Hide double button for hard 9 if rule is off
+            if (showDouble && hand.total === 9 && !hand.soft && !allowDoubleOn9) {
+                showDouble = false;
+            }
+            // Hide double button for soft 19 if rule is off
+            if (showDouble && hand.soft && hand.total === 19 && !allowDoubleOn9) {
                 showDouble = false;
             }
             // Hide double button for split hands if rule is off
@@ -712,7 +743,10 @@ const renderState = (state) => {
             const rawRecommendation = hand.recommendedAction || "";
             let normalizedRecommendation = normalizeAction(rawRecommendation);
             if (hand.soft && normalizedRecommendation === "double") {
-                normalizedRecommendation = "hit";
+                // Allow soft 20 and soft 19 (when double on 9 enabled) to show double recommendation
+                if (hand.total !== 20 && !(hand.total === 19 && allowDoubleOn9)) {
+                    normalizedRecommendation = "hit";
+                }
             }
             const recommendedAction = isActive && normalizedRecommendation && normalizedRecommendation !== "none"
                 ? normalizedRecommendation
@@ -813,7 +847,7 @@ const renderState = (state) => {
         .join("");
 
     // After rendering hands, auto-open the hit/double/split modal if needed
-    if (state.phase === "PLAYER_TURN" && state.hands && state.hands.length > 0) {
+    if (!skipAutoModal && state.phase === "PLAYER_TURN" && state.hands && state.hands.length > 0) {
         const dealerCards = state.dealer?.cards || [];
         const dealerShowsAce = dealerCards.length > 0 && isAceRank(dealerCards[0]);
         const allHandsResolvedInsurance = state.hands.every(hand => {
@@ -826,9 +860,11 @@ const renderState = (state) => {
             const hand = state.hands[activeIndex];
             let rawRecommendation = hand.recommendedAction || "";
             let normalizedRecommendation = String(rawRecommendation).toLowerCase().replace(/\s|-+/g, "_");
-            // If hand is soft and recommendation is double, change to hit
+            // If hand is soft and recommendation is double, change to hit unless it's soft 20 or soft 19 with double on 9 enabled
             if (hand.soft && normalizedRecommendation === "double") {
-                normalizedRecommendation = "hit";
+                if (hand.total !== 20 && !(hand.total === 19 && allowDoubleOn9)) {
+                    normalizedRecommendation = "hit";
+                }
             }
             // If dealer shows ace, only auto-open after insurance resolved; otherwise, auto-open immediately
             if ((!dealerShowsAce || allHandsResolvedInsurance)) {

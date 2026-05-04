@@ -2,6 +2,7 @@ package us.laderman.blackjack.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -482,6 +483,75 @@ class BlackjackGameTest {
                 String recommendation = hand.getRecommendedAction();
                 assertThat(recommendation).isNotNull().isNotEmpty().isNotEqualTo("NONE");
                 assertThat(recommendation).isEqualTo("STAND");
+        }
+
+        @Test
+        @DisplayName("should allow double on soft 20")
+        void testDoubleOnSoft20Allowed() {
+                HashMap<Integer, BlackjackService.HandCards> softHands = new HashMap<>();
+                softHands.put(0, new BlackjackService.HandCards(
+                                new Card(Suit.HEARTS, Rank.FIVE),
+                                new Card(Suit.SPADES, Rank.SIX)));
+                softHands.put(1, new BlackjackService.HandCards(
+                                new Card(Suit.HEARTS, Rank.ACE),
+                                new Card(Suit.SPADES, Rank.NINE)));
+
+                BlackjackGame softGame = new BlackjackGame(2, 1, softHands,
+                                new Card(Suit.DIAMONDS, Rank.NINE),
+                                new Card(Suit.CLUBS, Rank.SEVEN));
+
+                softGame.stand(0);
+                softGame.doubleDown(1, null);
+                GameState state = softGame.getState();
+
+                assertThat(state.getHands().get(1).getBetUnits()).isEqualTo(2);
+                assertThat(state.getHands().get(1).getCards()).hasSize(3);
+        }
+
+        @Test
+        @DisplayName("should allow double on soft 19 when double-on-9 is enabled")
+        void testDoubleOnSoft19AllowedWithDoubleOn9Enabled() {
+                HashMap<Integer, BlackjackService.HandCards> softHands = new HashMap<>();
+                softHands.put(0, new BlackjackService.HandCards(
+                                new Card(Suit.HEARTS, Rank.FIVE),
+                                new Card(Suit.SPADES, Rank.SIX)));
+                softHands.put(1, new BlackjackService.HandCards(
+                                new Card(Suit.HEARTS, Rank.ACE),
+                                new Card(Suit.SPADES, Rank.EIGHT)));
+
+                BlackjackGame softGame = new BlackjackGame(2, 1, softHands,
+                                new Card(Suit.DIAMONDS, Rank.NINE),
+                                new Card(Suit.CLUBS, Rank.SEVEN),
+                                true, false);
+
+                softGame.stand(0);
+                softGame.doubleDown(1, null);
+                GameState state = softGame.getState();
+
+                assertThat(state.getHands().get(1).getBetUnits()).isEqualTo(2);
+                assertThat(state.getHands().get(1).getCards()).hasSize(3);
+        }
+
+        @Test
+        @DisplayName("should prevent double on soft 19 when double-on-9 is disabled")
+        void testDoubleOnSoft19DisallowedWhenDoubleOn9Disabled() {
+                HashMap<Integer, BlackjackService.HandCards> softHands = new HashMap<>();
+                softHands.put(0, new BlackjackService.HandCards(
+                                new Card(Suit.HEARTS, Rank.FIVE),
+                                new Card(Suit.SPADES, Rank.SIX)));
+                softHands.put(1, new BlackjackService.HandCards(
+                                new Card(Suit.HEARTS, Rank.ACE),
+                                new Card(Suit.SPADES, Rank.EIGHT)));
+
+                BlackjackGame softGame = new BlackjackGame(2, 1, softHands,
+                                new Card(Suit.DIAMONDS, Rank.NINE),
+                                new Card(Suit.CLUBS, Rank.SEVEN),
+                                false, false);
+
+                softGame.stand(0);
+                assertThatThrownBy(() -> softGame.doubleDown(1, null))
+                                .isInstanceOf(IllegalArgumentException.class)
+                                .hasMessageContaining("soft 19");
         }
 
         @Test

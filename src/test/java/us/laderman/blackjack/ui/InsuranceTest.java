@@ -43,18 +43,15 @@ public class InsuranceTest extends BaseSeleniumTest {
         }
 
         // Resolve insurance for all hands
-        while (insuranceBtns.size() > 0) {
-            for (WebElement btn : insuranceBtns) {
-                String text = btn.getText();
-                if (text.contains("Decline")) {
-                    wait.until(ExpectedConditions.elementToBeClickable(btn));
-                    btn.click();
-                    sleepFor(1000);
-
-                    insuranceBtns = driver.findElements(By.cssSelector(".insurance-btn"));
-                    break;
-                }
+        while (true) {
+            insuranceBtns = driver.findElements(By.cssSelector(".insurance-btn"));
+            if (insuranceBtns.isEmpty()) {
+                break;
             }
+            WebElement declineBtn = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.xpath("//button[contains(@class,'insurance-btn') and contains(text(),'Decline')]")));
+            declineBtn.click();
+            sleepFor(1000);
         }
         sleepFor(1000);
 
