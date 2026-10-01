@@ -46,8 +46,9 @@ public class BlackjackService {
             }
         }
 
-        // Parse dealer card
+        // Parse dealer cards
         Card dealerCard1 = parseCard(allParams.get("dealerCard1Rank"), allParams.get("dealerCard1Suit"));
+        Card dealerCard2 = parseCard(allParams.get("dealerCard2Rank"), allParams.get("dealerCard2Suit"));
 
         // Parse player hand cards
         Map<Integer, HandCards> playerHandCards = new java.util.HashMap<>();
@@ -90,7 +91,7 @@ public class BlackjackService {
                 decks,
                 playerHandCards,
                 dealerCard1,
-                null,
+                dealerCard2,
                 allowDoubleOn9,
                 dealerHitSoft17,
                 allowDoubleOnSplit);

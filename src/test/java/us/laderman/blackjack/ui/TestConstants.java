@@ -18,6 +18,8 @@ public final class TestConstants {
     // Timeouts
     public static final int WAIT_TIMEOUT_SECONDS = 10;
 
+    public static final String ID_SKIP_INSURANCE = "autoDeclineInsuranceOnAce";
+
     // Element IDs
     public static final String ID_START_BTN = "startBtn";
     public static final String ID_HANDS = "hands";

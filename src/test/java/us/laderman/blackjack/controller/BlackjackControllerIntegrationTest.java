@@ -1,12 +1,6 @@
 package us.laderman.blackjack.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +14,9 @@ import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Suit;
 import us.laderman.blackjack.service.BlackjackService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -30,11 +26,11 @@ import java.util.UUID;
 class BlackjackControllerTest {
 
     private BlackjackController controller;
-    private BlackjackService mockService;
+    private TestBlackjackService mockService;
 
     @BeforeEach
     void setUp() {
-        mockService = mock(BlackjackService.class);
+        mockService = new TestBlackjackService();
         controller = new BlackjackController(mockService);
     }
 
@@ -46,15 +42,15 @@ class BlackjackControllerTest {
     void testStartGameEndpoint() {
         // Arrange
         GameState mockState = createMockGameState();
-        when(mockService.startGame(anyInt(), any())).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
-        GameState result = controller.start(1, 6, false, false, new java.util.HashMap<>());
+        GameState result = controller.start(1, 6, false, false, new HashMap<>());
 
         // Assert
         assertThat(result).isNotNull();
         assertThat(result.getId()).isNotBlank();
-        verify(mockService).startGame(eq(1), any());
+        assertThat(mockService.getLastStartHands()).isEqualTo(1);
     }
 
     @Test
@@ -66,14 +62,14 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        when(mockService.getState(any(UUID.class))).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.state(gameId);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).getState(any(UUID.class));
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
     }
 
     @Test
@@ -85,14 +81,15 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        when(mockService.hit(any(UUID.class), anyInt(), any(), any())).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.hit(gameId, 0, null, null);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).hit(any(UUID.class), eq(0), any(), any());
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
+        assertThat(mockService.getLastHandIndex()).isEqualTo(0);
     }
 
     @Test
@@ -104,14 +101,15 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        when(mockService.stand(any(UUID.class), anyInt())).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.stand(gameId, 0);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).stand(any(UUID.class), eq(0));
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
+        assertThat(mockService.getLastHandIndex()).isEqualTo(0);
     }
 
     @Test
@@ -123,14 +121,15 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        when(mockService.doubleDown(any(UUID.class), anyInt(), any(), any())).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.doubleDown(gameId, 0, null, null);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).doubleDown(any(UUID.class), eq(0), any(), any());
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
+        assertThat(mockService.getLastHandIndex()).isEqualTo(0);
     }
 
     @Test
@@ -139,17 +138,15 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        // Mock both split method signatures
-        when(mockService.split(any(UUID.class), anyInt())).thenReturn(mockState);
-        when(mockService.split(any(UUID.class), anyInt(), any(), any(), any(), any()))
-                .thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.split(gameId, 0, null, null, null, null);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).split(any(UUID.class), eq(0));
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
+        assertThat(mockService.getLastHandIndex()).isEqualTo(0);
     }
 
     @Test
@@ -158,15 +155,15 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        when(mockService.split(any(UUID.class), anyInt(), any(), any(), any(), any()))
-                .thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act - passing rank without suit
         GameState result = controller.split(gameId, 0, "FOUR", null, "FIVE", null);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).split(any(UUID.class), eq(0), eq("FOUR"), eq(null), eq("FIVE"), eq(null));
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
+        assertThat(mockService.getLastHandIndex()).isEqualTo(0);
     }
 
     @Test
@@ -175,15 +172,15 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        when(mockService.split(any(UUID.class), anyInt(), any(), any(), any(), any()))
-                .thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.split(gameId, 0, "THREE", null, null, null);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).split(any(UUID.class), eq(0), eq("THREE"), eq(null), eq(null), eq(null));
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
+        assertThat(mockService.getLastHandIndex()).isEqualTo(0);
     }
 
     @Test
@@ -192,15 +189,15 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        when(mockService.split(any(UUID.class), anyInt(), any(), any(), any(), any()))
-                .thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.split(gameId, 0, null, null, "ACE", null);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).split(any(UUID.class), eq(0), eq(null), eq(null), eq("ACE"), eq(null));
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
+        assertThat(mockService.getLastHandIndex()).isEqualTo(0);
     }
 
     @Test
@@ -209,14 +206,15 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        when(mockService.insurance(any(UUID.class), anyInt())).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.insurance(gameId, 0);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).insurance(any(UUID.class), eq(0));
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
+        assertThat(mockService.getLastHandIndex()).isEqualTo(0);
     }
 
     @Test
@@ -225,14 +223,15 @@ class BlackjackControllerTest {
         // Arrange
         String gameId = UUID.randomUUID().toString();
         GameState mockState = createMockGameState();
-        when(mockService.declineInsurance(any(UUID.class), anyInt())).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.declineInsurance(gameId, 0);
 
         // Assert
         assertThat(result).isNotNull();
-        verify(mockService).declineInsurance(any(UUID.class), eq(0));
+        assertThat(mockService.getLastGameId()).isEqualTo(UUID.fromString(gameId));
+        assertThat(mockService.getLastHandIndex()).isEqualTo(0);
     }
 
     @Test
@@ -240,10 +239,10 @@ class BlackjackControllerTest {
     void testSingleHandGame() {
         // Arrange
         GameState mockState = createMockGameState();
-        when(mockService.startGame(eq(1), any())).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
-        GameState result = controller.start(1, 6, false, false, new java.util.HashMap<>());
+        GameState result = controller.start(1, 6, false, false, new HashMap<>());
 
         // Assert
         assertThat(result.getHands()).hasSize(1);
@@ -262,10 +261,10 @@ class BlackjackControllerTest {
                         createMockPlayerHandState(1),
                         createMockPlayerHandState(2)),
                 0, 0, 52, 0, 0, "Dealer up card 6");
-        when(mockService.startGame(eq(3), any())).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
-        GameState result = controller.start(3, 6, false, false, new java.util.HashMap<>());
+        GameState result = controller.start(3, 6, false, false, new HashMap<>());
 
         // Assert
         assertThat(result.getHands()).hasSize(3);
@@ -276,7 +275,7 @@ class BlackjackControllerTest {
     void testGameDetailsInResponse() {
         // Arrange
         GameState mockState = createMockGameState();
-        when(mockService.getState(any(UUID.class))).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.state(UUID.randomUUID().toString());
@@ -294,7 +293,7 @@ class BlackjackControllerTest {
     void testCardCountingInfoInResponse() {
         // Arrange
         GameState mockState = createMockGameState();
-        when(mockService.getState(any(UUID.class))).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.state(UUID.randomUUID().toString());
@@ -310,7 +309,7 @@ class BlackjackControllerTest {
     void testStrategyAdviceInResponse() {
         // Arrange
         GameState mockState = createMockGameState();
-        when(mockService.getState(any(UUID.class))).thenReturn(mockState);
+        mockService.setNextState(mockState);
 
         // Act
         GameState result = controller.state(UUID.randomUUID().toString());
@@ -359,5 +358,101 @@ class BlackjackControllerTest {
                 true,
                 1,
                 0.0);
+    }
+
+    private static final class TestBlackjackService extends BlackjackService {
+        private int lastStartHands;
+        private UUID lastGameId;
+        private int lastHandIndex;
+        private GameState nextState = createMockGameState();
+
+        public void setNextState(GameState state) {
+            this.nextState = state;
+        }
+
+        public int getLastStartHands() {
+            return lastStartHands;
+        }
+
+        public UUID getLastGameId() {
+            return lastGameId;
+        }
+
+        public int getLastHandIndex() {
+            return lastHandIndex;
+        }
+
+        @Override
+        public GameState startGame(int hands, Map<String, String> allParams) {
+            this.lastStartHands = hands;
+            return nextState;
+        }
+
+        @Override
+        public GameState getState(UUID gameId) {
+            this.lastGameId = gameId;
+            return nextState;
+        }
+
+        @Override
+        public GameState hit(UUID gameId, int handIndex, String rank, String suit) {
+            this.lastGameId = gameId;
+            this.lastHandIndex = handIndex;
+            return nextState;
+        }
+
+        @Override
+        public GameState stand(UUID gameId, int handIndex) {
+            this.lastGameId = gameId;
+            this.lastHandIndex = handIndex;
+            return nextState;
+        }
+
+        @Override
+        public GameState doubleDown(UUID gameId, int handIndex, String rank, String suit) {
+            this.lastGameId = gameId;
+            this.lastHandIndex = handIndex;
+            return nextState;
+        }
+
+        @Override
+        public GameState split(UUID gameId, int handIndex) {
+            this.lastGameId = gameId;
+            this.lastHandIndex = handIndex;
+            return nextState;
+        }
+
+        @Override
+        public GameState split(UUID gameId, int handIndex, String card1Rank, String card1Suit,
+                String card2Rank, String card2Suit) {
+            this.lastGameId = gameId;
+            this.lastHandIndex = handIndex;
+            return nextState;
+        }
+
+        @Override
+        public GameState insurance(UUID gameId, int handIndex) {
+            this.lastGameId = gameId;
+            this.lastHandIndex = handIndex;
+            return nextState;
+        }
+
+        @Override
+        public GameState declineInsurance(UUID gameId, int handIndex) {
+            this.lastGameId = gameId;
+            this.lastHandIndex = handIndex;
+            return nextState;
+        }
+
+        private static GameState createMockGameState() {
+            List<Card> dealerCards = List.of(new Card(Suit.HEARTS, Rank.SIX));
+            DealerState dealerState = new DealerState(dealerCards, 6, false, false, false);
+            List<PlayerHandState> hands = List.of(new PlayerHandState(0, List.of(
+                    new Card(Suit.HEARTS, Rank.TEN), new Card(Suit.DIAMONDS, Rank.FIVE)),
+                    15, false, false, false, false, false, false, null, "HIT", false,
+                    true, 1, 0.0));
+            return new GameState(UUID.randomUUID().toString(), "PLAYER_TURN", dealerState,
+                    hands, 0, 0.0, 52, 0.0, 0.0, "New game");
+        }
     }
 }

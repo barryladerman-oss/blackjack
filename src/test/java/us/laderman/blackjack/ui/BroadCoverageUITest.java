@@ -35,8 +35,8 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
     void testStartGameAndVerifyUI() {
         clickBtn(TestConstants.ID_START_BTN);
         // Wait for game ID to be populated
-        wait.until(driver -> {
-            String gameId = driver.findElement(By.id(ID_GAME_ID)).getText();
+        wait.until(webDriver -> {
+            String gameId = webDriver.findElement(By.id(ID_GAME_ID)).getText();
             return gameId != null && !gameId.isEmpty();
         });
         assertThat(driver.findElement(By.id(ID_GAME_ID)).getText()).isNotBlank();
@@ -62,7 +62,7 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
         Select select = new Select(webElement);
         select.getOptions().forEach(option -> {
             String value = option.getAttribute("value");
-            assert (!value.toString().equals("HEARTS"));
+            assert (!"HEARTS".equals(value));
         });
     }
 

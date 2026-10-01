@@ -1,5 +1,7 @@
 package us.laderman.blackjack.ui;
 
+import java.lang.reflect.InvocationTargetException;
+
 import static us.laderman.blackjack.ui.TestConstants.BROWSER_WIDTH;
 import static us.laderman.blackjack.ui.TestConstants.BROWSER_HEIGHT;
 import static us.laderman.blackjack.ui.TestConstants.BASE_URL;
@@ -10,6 +12,7 @@ import static us.laderman.blackjack.ui.TestConstants.ID_DECKS;
 import static us.laderman.blackjack.ui.TestConstants.ID_HIT_CARD_MODAL;
 import static us.laderman.blackjack.ui.TestConstants.ID_SPLIT_CARD_MODAL;
 import static us.laderman.blackjack.ui.TestConstants.ID_DOUBLE_CARD_MODAL;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
@@ -18,12 +21,15 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Assumptions;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.chrome.ChromeDriver;
+
 import io.github.bonigarcia.wdm.WebDriverManager;
+
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -46,8 +52,15 @@ public abstract class BaseSeleniumTest {
 
     @BeforeEach
     public void setUpDriver() {
+        Assumptions.assumeTrue(isChromeAvailable(),
+                "Chrome/Chromium browser is not installed in this environment; skipping UI test");
+
         WebDriverManager.chromedriver().setup();
         ChromeOptions options = new ChromeOptions();
+        String chromeBinary = resolveChromeBinary();
+        if (chromeBinary != null && !chromeBinary.isBlank()) {
+            options.setBinary(chromeBinary);
+        }
         // options.addArguments("--headless=new");
         options.addArguments(String.format("--window-size=%d,%d", BROWSER_WIDTH, BROWSER_HEIGHT));
         driver = new ChromeDriver(options);
@@ -72,6 +85,46 @@ public abstract class BaseSeleniumTest {
             }
             driver = null;
         }
+    }
+
+    private static boolean isChromeAvailable() {
+        return resolveChromeBinary() != null;
+    }
+
+    private static String resolveChromeBinary() {
+        String configuredPath = System.getenv("CHROME_BIN");
+        if (configuredPath != null && !configuredPath.isBlank() && java.nio.file.Files.exists(java.nio.file.Paths.get(configuredPath))) {
+            return configuredPath;
+        }
+
+        String chromiumPath = System.getenv("CHROMIUM_BIN");
+        if (chromiumPath != null && !chromiumPath.isBlank() && java.nio.file.Files.exists(java.nio.file.Paths.get(chromiumPath))) {
+            return chromiumPath;
+        }
+
+        String[] candidates = {
+                "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+                "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+                "C:\\Program Files\\Chromium\\Application\\chrome.exe",
+                "C:\\Program Files (x86)\\Chromium\\Application\\chrome.exe",
+                "/usr/bin/google-chrome",
+                "/usr/bin/google-chrome-stable",
+                "/usr/bin/chromium",
+                "/usr/bin/chromium-browser",
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                "/Applications/Chromium.app/Contents/MacOS/Chromium"
+        };
+
+        for (String candidate : candidates) {
+            if (candidate != null && !candidate.isBlank()) {
+                java.nio.file.Path path = java.nio.file.Paths.get(candidate);
+                if (java.nio.file.Files.exists(path)) {
+                    return candidate;
+                }
+            }
+        }
+
+        return null;
     }
 
     @BeforeAll
@@ -102,14 +155,14 @@ public abstract class BaseSeleniumTest {
             Class<?> slf4jLogger = Class.forName("org.slf4j.LoggerFactory");
             Object logger = slf4jLogger.getMethod("getLogger", String.class).invoke(null, "io.github.bonigarcia.wdm");
             logger.getClass().getMethod("setLevel", String.class).invoke(logger, "ERROR");
-        } catch (Exception ignored) {
+        } catch (ClassNotFoundException | IllegalAccessException | NoSuchMethodException | InvocationTargetException ignored) {
         }
         try {
             Class<?> logManager = Class.forName("org.apache.logging.log4j.LogManager");
             Object logger = logManager.getMethod("getLogger", String.class).invoke(null, "io.github.bonigarcia.wdm");
             logger.getClass().getMethod("setLevel", Class.forName("org.apache.logging.log4j.Level")).invoke(logger,
                     Class.forName("org.apache.logging.log4j.Level").getField("ERROR").get(null));
-        } catch (Exception ignored) {
+        } catch (ClassNotFoundException | IllegalAccessException | NoSuchMethodException | InvocationTargetException | NoSuchFieldException ignored) {
         }
     }
 
@@ -128,14 +181,13 @@ public abstract class BaseSeleniumTest {
                 return;
 
             String css;
-            if (modalId.equals(ID_HIT_CARD_MODAL)) {
-                css = "hitCardCancelBtn";
-            } else if (modalId.equals(ID_DOUBLE_CARD_MODAL)) {
-                css = "doubleCardCancelBtn";
-            } else if (modalId.equals(ID_SPLIT_CARD_MODAL)) {
-                css = "splitCardCancelBtn";
-            } else {
-                return;
+            switch (modalId) {
+                case ID_HIT_CARD_MODAL -> css = "hitCardCancelBtn";
+                case ID_DOUBLE_CARD_MODAL -> css = "doubleCardCancelBtn";
+                case ID_SPLIT_CARD_MODAL -> css = "splitCardCancelBtn";
+                default -> {
+                    return;
+                }
             }
             WebElement cancelBtn = modal.findElement(By.id(css));
 
@@ -183,7 +235,10 @@ public abstract class BaseSeleniumTest {
                 standBtn.click();
                 closeModalIfOpen();
 
-                handActionSections = driver.findElements(By.cssSelector(".hand-actions"));
+                List<WebElement> refreshedSections = driver.findElements(By.cssSelector(".hand-actions"));
+                if (refreshedSections.isEmpty()) {
+                    break;
+                }
                 standBtns = section.findElements(By.cssSelector("button[data-action='stand']"));
             }
         }
@@ -215,20 +270,32 @@ public abstract class BaseSeleniumTest {
         webElement.sendKeys(Integer.toString(numDecks));
     }
 
+    @SuppressWarnings("unused")
     void setDealerUpCard(String rank) {
         setDealerUpCard(rank, null);
     }
 
     void setDealerUpCard(String rank, String suit) {
-        String css = "dealerCard1";
+        setDealerCard("dealerCard1", rank, suit);
+    }
+
+    void setDealerHoleCard(String rank) {
+        setDealerHoleCard(rank, null);
+    }
+
+    void setDealerHoleCard(String rank, String suit) {
+        setDealerCard("dealerCard2", rank, suit);
+    }
+
+    private void setDealerCard(String prefix, String rank, String suit) {
         if (rank != null) {
-            WebElement webElement = driver.findElement(By.id(css + "Rank"));
+            WebElement webElement = driver.findElement(By.id(prefix + "Rank"));
             Select select = new Select(webElement);
             select.selectByValue(rank);
         }
 
         if (suit != null) {
-            WebElement suitElement = driver.findElement(By.id(css + "Suit"));
+            WebElement suitElement = driver.findElement(By.id(prefix + "Suit"));
             Select suitSelect = new Select(suitElement);
             suitSelect.selectByValue(suit);
         }

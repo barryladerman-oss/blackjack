@@ -111,6 +111,13 @@ public class BlackjackRestApiTest {
         // Start game with dealer having a non-Ace card to avoid insurance
         java.util.Map<String, String> params = new java.util.HashMap<>();
         params.put("dealerCard1Rank", "KING");
+        params.put("dealerCard1Suit", "CLUBS");
+        params.put("dealerCard2Rank", "FIVE");
+        params.put("dealerCard2Suit", "HEARTS");
+        params.put("playerHand1Card1Rank", "TWO");
+        params.put("playerHand1Card1Suit", "DIAMONDS");
+        params.put("playerHand1Card2Rank", "THREE");
+        params.put("playerHand1Card2Suit", "SPADES");
         ApiResponse<GameState> startResponse = client.startGame(1, params);
         ApiAssertions.assertSuccess(startResponse);
         String gameId = startResponse.getData().getId();

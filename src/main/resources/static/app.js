@@ -953,11 +953,19 @@ if (startBtn) {
         params.append('decks', decks);
         const d1r = document.getElementById("dealerCard1Rank").value;
         const d1s = document.getElementById("dealerCard1Suit").value;
+        const d2r = document.getElementById("dealerCard2Rank").value;
+        const d2s = document.getElementById("dealerCard2Suit").value;
         let dealerCard1Rank = '';
         let dealerCard1Suit = '';
+        let dealerCard2Rank = '';
+        let dealerCard2Suit = '';
         if (d1r && d1s) {
             dealerCard1Rank = d1r;
             dealerCard1Suit = d1s;
+        }
+        if (d2r && d2s) {
+            dealerCard2Rank = d2r;
+            dealerCard2Suit = d2s;
         }
         const playerCards = [];
         for (let handNum = 1; handNum <= hands; handNum++) {
@@ -985,6 +993,7 @@ if (startBtn) {
         }
         const allSelectedCards = [];
         if (dealerCard1Rank && dealerCard1Suit) allSelectedCards.push({ rank: dealerCard1Rank, suit: dealerCard1Suit, name: "Dealer Up Card" });
+        if (dealerCard2Rank && dealerCard2Suit) allSelectedCards.push({ rank: dealerCard2Rank, suit: dealerCard2Suit, name: "Dealer Hole Card" });
         playerCards.forEach(hand => {
             if (hand.card1.rank && hand.card1.suit) {
                 allSelectedCards.push({
@@ -1016,6 +1025,10 @@ if (startBtn) {
         if (dealerCard1Rank && dealerCard1Suit) {
             params.append('dealerCard1Rank', dealerCard1Rank);
             params.append('dealerCard1Suit', dealerCard1Suit);
+        }
+        if (dealerCard2Rank && dealerCard2Suit) {
+            params.append('dealerCard2Rank', dealerCard2Rank);
+            params.append('dealerCard2Suit', dealerCard2Suit);
         }
         playerCards.forEach(hand => {
             if (hand.card1.rank && hand.card1.suit) {

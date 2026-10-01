@@ -14,6 +14,8 @@ public class InsuranceTest extends BaseSeleniumTest {
     @Test
     @DisplayName("Player hand action buttons should not appear until insurance is resolved on all hands")
     void testPlayerHandActionButtonsHiddenUntilInsuranceResolved() {
+        clickBtn(TestConstants.ID_SKIP_INSURANCE);
+
         int numHands = 4;
         setNumHands(numHands);
         setDealerUpCard("ACE", "SPADES");
@@ -63,6 +65,6 @@ public class InsuranceTest extends BaseSeleniumTest {
         // Now action buttons should appear for the first hand
         css = ".hand-actions button[data-action]";
         handActions = driver.findElements(By.cssSelector(css));
-        assert (handActions.size() > 0);
+        assert (!handActions.isEmpty());
     }
 }

@@ -1,3 +1,4 @@
+- **Java 25** (for Spring Boot 3.5.16)
 # Selenium Client-Side Tests
 
 ## Overview
@@ -122,7 +123,7 @@ See [src/test/java/us/laderman/blackjack/ui/README.md](src/test/java/us/laderman
 
 To run Selenium tests:
 - **Google Chrome** or Chromium browser installed
-- **Java 17+** (for Spring Boot 3.3.2)
+- **Java 27** (runtime target; Spring Boot 3.5.16 documents support through Java 25)
 - **Maven 3.9.5+** for building
 
 Note: Tests will be skipped if Chrome is not available (tests are optional).
