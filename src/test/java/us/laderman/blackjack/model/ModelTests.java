@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
  */
 @DisplayName("Card Model Tests")
 class CardModelTest {
+    private final ModelTestDataMocks.ModelTestData testData = ModelTestDataMocks.create();
 
     @Test
     @DisplayName("should create card with suit and rank")
@@ -20,9 +21,10 @@ class CardModelTest {
      * Tests card creation with suit and rank.
      */
     void testCardCreation() {
-        Card card = new Card(Suit.HEARTS, Rank.ACE);
-        assertThat(card.getSuit()).isEqualTo(Suit.HEARTS);
-        assertThat(card.getRank()).isEqualTo(Rank.ACE);
+        var input = testData.cardCreation();
+        Card card = new Card(input.suit(), input.rank());
+        assertThat(card.getSuit()).isEqualTo(input.suit());
+        assertThat(card.getRank()).isEqualTo(input.rank());
     }
 
     @Test
@@ -31,13 +33,10 @@ class CardModelTest {
      * Tests correct value assignment for cards.
      */
     void testCardValue() {
-        Card ace = new Card(Suit.HEARTS, Rank.ACE);
-        Card ten = new Card(Suit.DIAMONDS, Rank.TEN);
-        Card five = new Card(Suit.CLUBS, Rank.FIVE);
-
-        assertThat(ace.getValue()).isEqualTo(11);
-        assertThat(ten.getValue()).isEqualTo(10);
-        assertThat(five.getValue()).isEqualTo(5);
+        for (var input : testData.cardValues()) {
+            Card card = new Card(input.card().suit(), input.card().rank());
+            assertThat(card.getValue()).isEqualTo(input.expectedValue());
+        }
     }
 
     @Test
@@ -46,7 +45,8 @@ class CardModelTest {
      * Tests label generation for cards.
      */
     void testCardLabel() {
-        Card card = new Card(Suit.SPADES, Rank.KING);
+        var input = testData.cardLabel();
+        Card card = new Card(input.suit(), input.rank());
         String label = card.getLabel();
 
         assertThat(label).contains("K");
@@ -59,7 +59,8 @@ class CardModelTest {
      * Tests string representation of cards.
      */
     void testCardString() {
-        Card card = new Card(Suit.HEARTS, Rank.ACE);
+        var input = testData.cardString();
+        Card card = new Card(input.suit(), input.rank());
         String string = card.toString();
 
         assertThat(string).isNotNull();
@@ -188,173 +189,148 @@ class SuitModelTest {
 
 @DisplayName("GameState Model Tests")
 class GameStateModelTest {
+    private final ModelTestDataMocks.ModelTestData testData = ModelTestDataMocks.create();
+
+    private GameState createState(ModelTestDataMocks.GameStateInput input) {
+        return new GameState(
+                input.id(),
+                input.phase(),
+                input.dealer(),
+                input.hands(),
+                input.runningCount(),
+                input.trueCount(),
+                input.cardsRemaining(),
+                input.netUnits(),
+                input.insuranceTotal(),
+                input.note());
+    }
 
     @Test
     @DisplayName("should store game ID")
     void testGameIdStorage() {
-        GameState state = new GameState(
-                "test-id",
-                "PLAYER_TURN",
-                null,
-                null,
-                0,
-                0,
-                1,
-                0,
-                0,
-                "Test");
+        var input = testData.gameIdState();
+        GameState state = createState(input);
 
-        assertThat(state.getId()).isEqualTo("test-id");
+        assertThat(state.getId()).isEqualTo(input.id());
     }
 
     @Test
     @DisplayName("should store game phase")
     void testGamePhaseStorage() {
-        GameState state = new GameState(
-                "id",
-                "PLAYER_TURN",
-                null,
-                null,
-                0,
-                0,
-                1,
-                0,
-                0,
-                "Test");
+        var input = testData.gamePhaseState();
+        GameState state = createState(input);
 
-        assertThat(state.getPhase()).isEqualTo("PLAYER_TURN");
+        assertThat(state.getPhase()).isEqualTo(input.phase());
     }
 
     @Test
     @DisplayName("should store dealer state")
     void testDealerStateStorage() {
-        GameState.DealerState dealer = new GameState.DealerState(
-                java.util.List.of(new Card(Suit.HEARTS, Rank.SIX)),
-                6,
-                false,
-                false,
-                false);
-        GameState state = new GameState(
-                "id",
-                "PLAYER_TURN",
-                dealer,
-                null,
-                0,
-                0,
-                1,
-                0,
-                0,
-                "Test");
+        var input = testData.gameDealerState();
+        GameState state = createState(input);
 
         assertThat(state.getDealer()).isNotNull();
-        assertThat(state.getDealer().getTotal()).isEqualTo(6);
+        assertThat(state.getDealer().getTotal()).isEqualTo(input.dealer().getTotal());
     }
 
     @Test
     @DisplayName("should store card counts")
     void testCardCounts() {
-        GameState state = new GameState(
-                "id",
-                "PLAYER_TURN",
-                null,
-                java.util.List.of(),
-                5,
-                2.5,
-                52,
-                0,
-                0,
-                "Test");
+        var input = testData.gameCardCounts();
+        GameState state = createState(input);
 
-        assertThat(state.getRunningCount()).isEqualTo(5);
-        assertThat(state.getTrueCount()).isEqualTo(2.5);
+        assertThat(state.getRunningCount()).isEqualTo(input.runningCount());
+        assertThat(state.getTrueCount()).isEqualTo(input.trueCount());
     }
 
     @Test
     @DisplayName("should store note/message")
     void testGameNote() {
-        GameState state = new GameState(
-                "id",
-                "PLAYER_TURN",
-                null,
-                java.util.List.of(),
-                0,
-                0,
-                1,
-                0,
-                0,
-                "Dealer up card 6");
+        var input = testData.gameNote();
+        GameState state = createState(input);
 
-        assertThat(state.getNote()).isEqualTo("Dealer up card 6");
+        assertThat(state.getNote()).isEqualTo(input.note());
     }
 }
 
 @DisplayName("DealerState Model Tests")
 class DealerStateModelTest {
+    private final ModelTestDataMocks.ModelTestData testData = ModelTestDataMocks.create();
+
+    private GameState.DealerState createDealer(ModelTestDataMocks.DealerStateInput input) {
+        return new GameState.DealerState(input.cards(), input.total(), input.soft(), input.busted(), input.standing());
+    }
 
     @Test
     @DisplayName("should store dealer cards")
     void testDealerCards() {
-        var cards = java.util.List.of(new Card(Suit.SPADES, Rank.SIX));
-        var dealer = new GameState.DealerState(cards, 6, false, false, false);
+        var input = testData.dealerCards();
+        var dealer = createDealer(input);
 
-        assertThat(dealer.getCards()).hasSize(1);
+        assertThat(dealer.getCards()).hasSize(input.cards().size());
     }
 
     @Test
     @DisplayName("should store dealer total")
     void testDealerTotal() {
-        var dealer = new GameState.DealerState(java.util.List.of(), 17, true, false, true);
+        var input = testData.dealerTotal();
+        var dealer = createDealer(input);
 
-        assertThat(dealer.getTotal()).isEqualTo(17);
+        assertThat(dealer.getTotal()).isEqualTo(input.total());
     }
 
     @Test
     @DisplayName("should track soft hand state")
     void testDealerSoftState() {
-        var dealer = new GameState.DealerState(java.util.List.of(), 17, true, false, true);
+        var input = testData.dealerSoft();
+        var dealer = createDealer(input);
 
-        assertThat(dealer.isSoft()).isTrue();
+        assertThat(dealer.isSoft()).isEqualTo(input.soft());
     }
 
     @Test
     @DisplayName("should track bust state")
     void testDealerBustState() {
-        var dealer = new GameState.DealerState(java.util.List.of(), 22, false, true, true);
+        var input = testData.dealerBusted();
+        var dealer = createDealer(input);
 
-        assertThat(dealer.isBusted()).isTrue();
+        assertThat(dealer.isBusted()).isEqualTo(input.busted());
     }
 
     @Test
     @DisplayName("should track standing state")
     void testDealerStandingState() {
-        var dealer = new GameState.DealerState(java.util.List.of(), 17, false, false, true);
+        var input = testData.dealerStanding();
+        var dealer = createDealer(input);
 
-        assertThat(dealer.isStanding()).isTrue();
+        assertThat(dealer.isStanding()).isEqualTo(input.standing());
     }
 }
 
 @DisplayName("PlayerHandState Model Tests")
 class PlayerHandStateModelTest {
+    private final ModelTestDataMocks.ModelTestData testData = ModelTestDataMocks.create();
 
     @Test
     @DisplayName("should store hand index")
     void testHandIndex() {
+        var input = testData.playerHand();
         var hand = new GameState.PlayerHandState(
-                1,
-                java.util.List.of(),
-                15,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                null,
-                "HIT",
-                false,
-                true,
-                1,
-                0.0);
-        assertThat(hand.getIndex()).isEqualTo(1);
+                input.index(),
+                input.cards(),
+                input.total(),
+                input.soft(),
+                input.busted(),
+                input.standing(),
+                input.insured(),
+                input.insuranceDeclined(),
+                input.insuranceWon(),
+                input.result(),
+                input.recommendedAction(),
+                input.fromSplit(),
+                input.canHitAfterSplitAces(),
+                input.betUnits(),
+                input.bustProbability());
+        assertThat(hand.getIndex()).isEqualTo(input.index());
     }
 }
