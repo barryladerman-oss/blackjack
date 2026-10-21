@@ -61,7 +61,7 @@ public class BroadCoverageUITest extends BaseSeleniumTest {
         WebElement webElement = driver.findElement(By.id(css + "Suit"));
         Select select = new Select(webElement);
         select.getOptions().forEach(option -> {
-            String value = option.getAttribute("value");
+            String value = option.getDomAttribute("value");
             assert (!"HEARTS".equals(value));
         });
     }

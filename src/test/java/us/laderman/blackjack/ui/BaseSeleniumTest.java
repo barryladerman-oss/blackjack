@@ -16,7 +16,6 @@ import static us.laderman.blackjack.ui.TestConstants.ID_DOUBLE_CARD_MODAL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -223,35 +222,7 @@ public abstract class BaseSeleniumTest {
         webElement.click();
     }
 
-    // Select Stand action on every hand if available, calling closeModalIfOpen
-    // after each action
-    void standAllHandsIfAvailable() {
-        List<WebElement> handActionSections = driver.findElements(By.cssSelector(".hand-actions"));
-        for (WebElement section : handActionSections) {
-            List<WebElement> standBtns = section.findElements(By.cssSelector("button[data-action='stand']"));
-            while (!standBtns.isEmpty()) {
-                WebElement standBtn = standBtns.get(0);
-                wait.until(ExpectedConditions.elementToBeClickable(standBtn));
-                standBtn.click();
-                closeModalIfOpen();
-
-                List<WebElement> refreshedSections = driver.findElements(By.cssSelector(".hand-actions"));
-                if (refreshedSections.isEmpty()) {
-                    break;
-                }
-                standBtns = section.findElements(By.cssSelector("button[data-action='stand']"));
-            }
-        }
-    }
-
     void clickBtn(String buttonID) {
-        WebElement webElement = driver.findElement(By.id(buttonID));
-
-        wait.until(ExpectedConditions.elementToBeClickable(webElement));
-        webElement.click();
-    }
-
-    void clickModalBtn(String buttonID) {
         WebElement webElement = driver.findElement(By.id(buttonID));
 
         wait.until(ExpectedConditions.elementToBeClickable(webElement));
@@ -270,17 +241,8 @@ public abstract class BaseSeleniumTest {
         webElement.sendKeys(Integer.toString(numDecks));
     }
 
-    @SuppressWarnings("unused")
-    void setDealerUpCard(String rank) {
-        setDealerUpCard(rank, null);
-    }
-
     void setDealerUpCard(String rank, String suit) {
         setDealerCard("dealerCard1", rank, suit);
-    }
-
-    void setDealerHoleCard(String rank) {
-        setDealerHoleCard(rank, null);
     }
 
     void setDealerHoleCard(String rank, String suit) {

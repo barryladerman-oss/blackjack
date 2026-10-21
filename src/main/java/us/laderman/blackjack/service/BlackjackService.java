@@ -79,7 +79,7 @@ public class BlackjackService {
                 allCards.add(hc.card2);
             }
         }
-        validateNoDuplicates(allCards.toArray(new Card[0]), decks);
+        validateNoDuplicates(allCards.toArray(Card[]::new), decks);
 
         // Parse rule settings
         boolean allowDoubleOn9 = Boolean.parseBoolean(allParams.get("doubleOn9"));
