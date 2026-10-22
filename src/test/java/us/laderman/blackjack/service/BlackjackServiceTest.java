@@ -8,9 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
 import us.laderman.blackjack.model.GameState;
+import us.laderman.blackjack.persistence.CompletedGamePersistence;
 
 import java.util.HashMap;
 import java.util.UUID;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * Unit tests for BlackjackService methods.
@@ -22,7 +25,7 @@ class BlackjackServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new BlackjackService();
+        service = new BlackjackService(mock(CompletedGamePersistence.class));
     }
 
     @Test

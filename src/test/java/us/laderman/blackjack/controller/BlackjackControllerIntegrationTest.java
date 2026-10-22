@@ -366,6 +366,11 @@ class BlackjackControllerTest {
         private int lastHandIndex;
         private GameState nextState = createMockGameState();
 
+        private TestBlackjackService() {
+            super((state, decks) -> {
+            });
+        }
+
         public void setNextState(GameState state) {
             this.nextState = state;
         }

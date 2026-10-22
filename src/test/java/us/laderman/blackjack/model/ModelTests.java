@@ -2,12 +2,12 @@ package us.laderman.blackjack.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
+import java.util.HashSet;
+import java.util.Set;
 
-/**
- * Unit tests for Card model in Blackjack.
- */
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 /**
  * Unit tests for Card model in Blackjack.
  */
@@ -73,16 +73,14 @@ class CardModelTest {
      * Tests that all 52 card combinations are unique.
      */
     void testAllCardsAreUnique() {
-        int cardCount = 0;
+        Set<String> cardLabels = new HashSet<>();
         for (Suit suit : Suit.values()) {
             for (Rank rank : Rank.values()) {
-                @SuppressWarnings("unused")
-                var card = new Card(suit, rank);
-                cardCount++;
+                cardLabels.add(new Card(suit, rank).getLabel());
             }
         }
 
-        assertThat(cardCount).isEqualTo(52);
+        assertThat(cardLabels).hasSize(52);
     }
 }
 

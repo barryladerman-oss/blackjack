@@ -4,12 +4,14 @@ import us.laderman.blackjack.model.Card;
 import us.laderman.blackjack.model.GameState;
 import us.laderman.blackjack.model.Rank;
 import us.laderman.blackjack.model.Suit;
+import us.laderman.blackjack.persistence.CompletedGamePersistence;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -23,6 +25,11 @@ public class BlackjackService {
     private static final Duration GAME_TTL = Duration.ofMinutes(30);
 
     private final Map<UUID, GameEntry> games = new ConcurrentHashMap<>();
+    private final CompletedGamePersistence persistenceService;
+
+    public BlackjackService(CompletedGamePersistence persistenceService) {
+        this.persistenceService = persistenceService;
+    }
 
     /**
      * Starts a new Blackjack game with the specified number of hands and
@@ -95,17 +102,31 @@ public class BlackjackService {
                 allowDoubleOn9,
                 dealerHitSoft17,
                 allowDoubleOnSplit);
-        games.put(game.getId(), new GameEntry(game));
-        return game.getState();
+        GameEntry entry = new GameEntry(game, decks);
+        games.put(game.getId(), entry);
+        return entry.persistIfComplete(game.getState(), persistenceService);
     }
 
     private static class GameEntry {
         private final BlackjackGame game;
+        private final int decks;
         private volatile long lastAccessMillis;
+        private boolean persisted;
 
-        private GameEntry(BlackjackGame game) {
+        private GameEntry(BlackjackGame game, int decks) {
             this.game = game;
+            this.decks = decks;
             touch();
+        }
+
+        private synchronized GameState persistIfComplete(
+                GameState state,
+                CompletedGamePersistence persistenceService) {
+            if (!persisted && "COMPLETE".equals(state.getPhase())) {
+                persistenceService.persistCompletedGame(state, decks);
+                persisted = true;
+            }
+            return state;
         }
 
         private void touch() {
@@ -177,7 +198,7 @@ public class BlackjackService {
      * @return the updated game state
      */
     public GameState hit(UUID gameId, int handIndex) {
-        return getGame(gameId).hit(handIndex, null);
+        return applyAction(gameId, game -> game.hit(handIndex, null));
     }
 
     /**
@@ -191,7 +212,7 @@ public class BlackjackService {
      */
     public GameState hit(UUID gameId, int handIndex, String rankStr, String suitStr) {
         Card selectedCard = parseCard(rankStr, suitStr);
-        return getGame(gameId).hit(handIndex, selectedCard);
+        return applyAction(gameId, game -> game.hit(handIndex, selectedCard));
     }
 
     /**
@@ -202,7 +223,7 @@ public class BlackjackService {
      * @return the updated game state
      */
     public GameState stand(UUID gameId, int handIndex) {
-        return getGame(gameId).stand(handIndex);
+        return applyAction(gameId, game -> game.stand(handIndex));
     }
 
     /**
@@ -216,7 +237,7 @@ public class BlackjackService {
      */
     public GameState doubleDown(UUID gameId, int handIndex, String rank, String suit) {
         Card selectedCard = parseCard(rank, suit);
-        return getGame(gameId).doubleDown(handIndex, selectedCard);
+        return applyAction(gameId, game -> game.doubleDown(handIndex, selectedCard));
     }
 
     /**
@@ -227,7 +248,7 @@ public class BlackjackService {
      * @return the updated game state
      */
     public GameState split(UUID gameId, int handIndex) {
-        return getGame(gameId).split(handIndex, null, null);
+        return applyAction(gameId, game -> game.split(handIndex, null, null));
     }
 
     /**
@@ -275,7 +296,12 @@ public class BlackjackService {
 
         System.out.println("DEBUG: Parsed cards - card1=" + selectedCard1 + ", card2=" + selectedCard2
                 + ", rank1=" + rank1 + ", rank2=" + rank2);
-        return getGame(gameId).split(handIndex, selectedCard1, selectedCard2, rank1, rank2);
+        Card splitCard1 = selectedCard1;
+        Card splitCard2 = selectedCard2;
+        Rank splitRank1 = rank1;
+        Rank splitRank2 = rank2;
+        return applyAction(gameId,
+                game -> game.split(handIndex, splitCard1, splitCard2, splitRank1, splitRank2));
     }
 
     /**
@@ -286,7 +312,7 @@ public class BlackjackService {
      * @return the updated game state
      */
     public GameState insurance(UUID gameId, int handIndex) {
-        return getGame(gameId).insurance(handIndex);
+        return applyAction(gameId, game -> game.insurance(handIndex));
     }
 
     /**
@@ -297,7 +323,7 @@ public class BlackjackService {
      * @return the updated game state
      */
     public GameState declineInsurance(UUID gameId, int handIndex) {
-        return getGame(gameId).declineInsurance(handIndex);
+        return applyAction(gameId, game -> game.declineInsurance(handIndex));
     }
 
     /**
@@ -307,7 +333,13 @@ public class BlackjackService {
      * @return the current game state
      */
     public GameState getState(UUID gameId) {
-        return getGame(gameId).getState();
+        GameEntry entry = getEntry(gameId);
+        return entry.persistIfComplete(entry.game.getState(), persistenceService);
+    }
+
+    private GameState applyAction(UUID gameId, Function<BlackjackGame, GameState> action) {
+        GameEntry entry = getEntry(gameId);
+        return entry.persistIfComplete(action.apply(entry.game), persistenceService);
     }
 
     /**
@@ -317,7 +349,7 @@ public class BlackjackService {
      * @return BlackjackGame instance
      * @throws IllegalArgumentException if game is not found or expired
      */
-    private BlackjackGame getGame(UUID gameId) {
+    private GameEntry getEntry(UUID gameId) {
         GameEntry entry = games.get(gameId);
         if (entry == null) {
             throw new IllegalArgumentException("Game not found");
@@ -328,7 +360,7 @@ public class BlackjackService {
             throw new IllegalArgumentException("Game expired");
         }
         entry.touch();
-        return entry.game;
+        return entry;
     }
 
     /**
